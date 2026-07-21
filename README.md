@@ -47,6 +47,8 @@ De Nederlandse kolomnamen in de Sheet worden op headernaam gekoppeld.
 De `state`-response bevat daarnaast `activePlayers`: spelers die in het
 afgelopen uur een spel zijn gestart en daarna nog geen score voor dat spel
 hebben ingeleverd.
+De overzichtspagina ververst deze actieve spelers, het leaderboard en het
+spelersaantal iedere 30 seconden en zodra de app opnieuw op de voorgrond komt.
 
 Voor POST wordt in de frontend `URLSearchParams` gebruikt:
 

@@ -523,6 +523,9 @@
       const appUrl = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
       let deferredPrompt = null;
       let activePlayerName = '';
+      let activePlayersSignature = '';
+      let leaderboardSignature = '';
+      let liveOverviewRefreshPending = false;
 
       function setNameLocked(locked) {
         nameInput.readOnly = locked;
@@ -610,6 +613,13 @@
 
       function renderLeaderboard(leaderboard) {
         const board = Array.isArray(leaderboard) ? leaderboard : [];
+        const signature = JSON.stringify(board.map(row => [
+          row.name,
+          row.games,
+          row.score
+        ]));
+        if (signature === leaderboardSignature) return;
+        leaderboardSignature = signature;
 
         if (!board.length) {
           leaderboardWrap.innerHTML = '<div class="empty">Nog geen scores beschikbaar.</div>';
@@ -636,6 +646,14 @@
 
       function renderActivePlayers(activePlayers) {
         const players = Array.isArray(activePlayers) ? activePlayers : [];
+        const signature = JSON.stringify(players.map(player => [
+          player.name,
+          player.gameId,
+          player.startedAt
+        ]));
+        if (signature === activePlayersSignature) return;
+        activePlayersSignature = signature;
+
         if (!players.length) {
           activePlayersRoot.innerHTML = '<span class="empty">Er speelt nu niemand.</span>';
           return;
@@ -705,6 +723,23 @@
         playerCount.textContent = String(leaderboard.length);
         setStatus('Scorebord geladen. Sla je naam op om jouw spelstatus te laden.');
         refreshButton.disabled = false;
+      }
+
+      async function refreshLiveOverview() {
+        if (liveOverviewRefreshPending || document.hidden || !isConfigValid()) return;
+        liveOverviewRefreshPending = true;
+
+        try {
+          const playerName = sanitizePlayerName(activePlayerName || nameInput.value);
+          const data = await apiGet('state', { playerName });
+          renderActivePlayers(data.activePlayers);
+          renderLeaderboard(data.leaderboard);
+          playerCount.textContent = String(Array.isArray(data.leaderboard) ? data.leaderboard.length : 0);
+        } catch (error) {
+          console.warn('Live overzicht verversen is mislukt.', error);
+        } finally {
+          liveOverviewRefreshPending = false;
+        }
       }
 
       function isConfigValid() {
@@ -805,6 +840,11 @@
       window.addEventListener('appinstalled', () => {
         installButton.classList.remove('show');
         deferredPrompt = null;
+      });
+
+      window.setInterval(refreshLiveOverview, 30000);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshLiveOverview();
       });
 
       if ('serviceWorker' in navigator) {
