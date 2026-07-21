@@ -1,0 +1,26 @@
+{
+  "name": "Vriendenweekend 2026",
+  "short_name": "Vriendenweekend",
+  "description": "Spellen en hints voor Vriendenweekend 2026",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0b0a",
+  "theme_color": "#15100d",
+  "lang": "nl-NL",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
