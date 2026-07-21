@@ -1,13 +1,13 @@
 {
-  "name": "Vriendenweekend 2026",
-  "short_name": "Vriendenweekend",
-  "description": "Spellen en hints voor Vriendenweekend 2026",
+  "name": "Het Verzegelde Dossier",
+  "short_name": "Het Dossier",
+  "description": "Geheime spellen en aanwijzingen voor Vriendenweekend 2026",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0c0b0a",
-  "theme_color": "#15100d",
+  "background_color": "#10130f",
+  "theme_color": "#1b2119",
   "lang": "nl-NL",
   "icons": [
     {

@@ -1,3 +1,7 @@
+# Het Verzegelde Dossier – PWA
+
+Deze versie gebruikt een geheimzinnig historisch thema zonder de bestemming of het echte kasteel herkenbaar te maken.
+
 # Vriendenweekend 2026 PWA
 
 Deze map bevat een installeerbare PWA-schil rond de bestaande Google Apps Script-webapp.

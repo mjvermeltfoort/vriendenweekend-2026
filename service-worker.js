@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vriendenweekend-shell-v1';
+const CACHE_NAME = 'vriendenweekend-castle-shell-v2';
 const APP_SHELL = [
   './',
   './index.html',
