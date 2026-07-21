@@ -54,6 +54,27 @@
       margin: 0 auto;
     }
 
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .close-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: .9rem;
+    }
+
     .game-header {
       display: flex;
       align-items: flex-start;
@@ -437,6 +458,10 @@
 </head>
 <body>
   <main class="game">
+    <div class="top-actions">
+      <a class="close-link" id="close-link" href="../index.html">Sluit spel</a>
+    </div>
+
     <header class="game-header">
       <div class="stats" aria-label="Spelstatus">
         <div class="stat">
@@ -507,9 +532,9 @@
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const urlParams = new URLSearchParams(window.location.search);
-    const PLAYER_NAME = sanitizeName(
-      urlParams.get("playerName") || localStorage.getItem(PLAYER_KEY) || ""
-    );
+    const RAW_URL_PLAYER_NAME = sanitizeName(urlParams.get("playerName") || "");
+    const RAW_STORED_PLAYER_NAME = sanitizeName(localStorage.getItem(PLAYER_KEY) || "");
+    const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
     const GAME_ID = sanitizeGameId(urlParams.get("gameId") || "code");
     const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
 
@@ -533,6 +558,7 @@
     const result = document.getElementById("result");
     const scoreText = document.getElementById("scoreText");
     const hintText = document.getElementById("hintText");
+    const closeLink = document.getElementById("close-link");
 
     function sanitizeName(value) {
       return String(value || "")
@@ -863,6 +889,8 @@
 
     async function bootstrap() {
       setGameEnabled(false);
+
+      closeLink.href = "../index.html?playerName=" + encodeURIComponent(PLAYER_NAME || "");
 
       if (!isConfigValid()) {
         showError("Apps Script URL in config.js is ongeldig.");

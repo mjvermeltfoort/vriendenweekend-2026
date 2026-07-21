@@ -10,6 +10,8 @@
     body { padding:16px; }
     p { margin:0 0 14px; line-height:1.5; }
     .muted { color:var(--muted); }
+    .top-actions { display:flex; justify-content:flex-end; margin-bottom:10px; }
+    .close-link { display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:0 11px; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,.05); color:var(--muted); text-decoration:none; font-weight:700; font-size:.9rem; }
     .puzzle-wrap { display:grid; grid-template-columns:minmax(0,1fr) 170px; gap:18px; align-items:start; }
     .puzzle { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:100%; max-width:520px; aspect-ratio:1; margin:auto; overflow:hidden; border:3px solid #514934; border-radius:16px; background:#11150f; touch-action:manipulation; }
     .tile { min-width:0; min-height:0; margin:0; padding:0; border:1px solid rgba(255,255,255,.06); border-radius:0; background-image:var(--flame); background-size:400% 400%; -webkit-tap-highlight-color:transparent; }
@@ -24,6 +26,10 @@
   </style>
 </head>
 <body>
+  <div class="top-actions">
+    <a class="close-link" id="close-link" href="../index.html">Sluit spel</a>
+  </div>
+
   <p class="muted">Schuif de tegels naar de lege plek en herstel de afbeelding.</p>
   <div class="puzzle-wrap">
     <div class="puzzle" id="puzzle"></div>
@@ -39,7 +45,9 @@
 <script>
   const PLAYER_KEY = 'vriendenweekend-player-name';
   const urlParams = new URLSearchParams(window.location.search);
-  const PLAYER_NAME = sanitizeName(urlParams.get('playerName') || localStorage.getItem(PLAYER_KEY) || '');
+  const RAW_URL_PLAYER_NAME = sanitizeName(urlParams.get('playerName') || '');
+  const RAW_STORED_PLAYER_NAME = sanitizeName(localStorage.getItem(PLAYER_KEY) || '');
+  const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
   const GAME_ID = sanitizeGameId(urlParams.get('gameId') || 'mozaiek');
   const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
   const flameSvg = `data:image/svg+xml,${encodeURIComponent(`
@@ -58,6 +66,7 @@
 
   let puzzleState = null;
   let gameAllowed = false;
+  const closeLink = document.getElementById('close-link');
 
   function sanitizeName(value) {
     return String(value || '')
@@ -156,6 +165,8 @@
 
   async function bootstrap() {
     const result = document.getElementById('result');
+
+    closeLink.href = '../index.html?playerName=' + encodeURIComponent(PLAYER_NAME || '');
 
     if (!isConfigValid()) {
       showBlocked('Apps Script URL in config.js is ongeldig.');

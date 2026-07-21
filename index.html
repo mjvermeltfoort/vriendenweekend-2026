@@ -157,6 +157,11 @@
       font: inherit;
     }
 
+    .name-input:read-only {
+      opacity: .78;
+      cursor: not-allowed;
+    }
+
     .button {
       min-height: 44px;
       padding: 0 16px;
@@ -382,7 +387,7 @@
         <label for="player-name">Speler</label>
         <div class="row">
           <input class="name-input" id="player-name" name="playerName" autocomplete="name" maxlength="40" placeholder="Bijv. Mark" required>
-          <button class="button" type="submit">Status laden</button>
+          <button class="button" id="save-name-button" type="submit">Naam opslaan</button>
         </div>
       </form>
 
@@ -448,6 +453,7 @@
 
       const form = document.getElementById('player-form');
       const nameInput = document.getElementById('player-name');
+      const saveNameButton = document.getElementById('save-name-button');
       const status = document.getElementById('status');
       const gamesRoot = document.getElementById('games');
       const availableCount = document.getElementById('available-count');
@@ -459,6 +465,12 @@
       const appUrl = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
       let deferredPrompt = null;
       let activePlayerName = '';
+
+      function setNameLocked(locked) {
+        nameInput.readOnly = locked;
+        saveNameButton.disabled = locked;
+        saveNameButton.textContent = locked ? 'Naam opgeslagen' : 'Naam opslaan';
+      }
 
       function setStatus(message, type) {
         status.textContent = message;
@@ -597,6 +609,18 @@
         refreshButton.disabled = false;
       }
 
+      async function loadLeaderboardOnly() {
+        refreshButton.disabled = true;
+
+        const data = await apiGet('state', { playerName: '' });
+        const leaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+
+        renderLeaderboard(leaderboard);
+        playerCount.textContent = String(leaderboard.length);
+        setStatus('Scorebord geladen. Sla je naam op om jouw spelstatus te laden.');
+        refreshButton.disabled = false;
+      }
+
       function isConfigValid() {
         return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(appUrl);
       }
@@ -615,9 +639,17 @@
           return;
         }
 
+        const savedName = sanitizePlayerName(localStorage.getItem(PLAYER_KEY) || '');
+        if (savedName && savedName.toLowerCase() !== playerName.toLowerCase()) {
+          nameInput.value = savedName;
+          setStatus('Naam is al opgeslagen op dit apparaat en kan niet worden gewijzigd.', 'error');
+          return;
+        }
+
         nameInput.value = playerName;
         localStorage.setItem(PLAYER_KEY, playerName);
         activePlayerName = playerName;
+        setNameLocked(true);
 
         try {
           await loadStateForPlayer(playerName);
@@ -630,7 +662,12 @@
       refreshButton.addEventListener('click', async () => {
         const playerName = sanitizePlayerName(activePlayerName || nameInput.value);
         if (!playerName) {
-          setStatus('Vul eerst een geldige naam in.', 'error');
+          try {
+            await loadLeaderboardOnly();
+          } catch (error) {
+            refreshButton.disabled = false;
+            setStatus(error && error.message ? error.message : 'Vernieuwen is mislukt.', 'error');
+          }
           return;
         }
 
@@ -650,6 +687,19 @@
       if (rememberedName) {
         nameInput.value = rememberedName;
         activePlayerName = rememberedName;
+        setNameLocked(true);
+        loadStateForPlayer(rememberedName)
+          .catch(error => {
+            refreshButton.disabled = false;
+            setStatus(error && error.message ? error.message : 'Status laden is mislukt.', 'error');
+          });
+      } else {
+        setNameLocked(false);
+        loadLeaderboardOnly()
+          .catch(error => {
+            refreshButton.disabled = false;
+            setStatus(error && error.message ? error.message : 'Scorebord laden is mislukt.', 'error');
+          });
       }
 
       window.addEventListener('beforeinstallprompt', event => {
