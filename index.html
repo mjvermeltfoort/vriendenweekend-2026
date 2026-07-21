@@ -645,7 +645,9 @@
       }
 
       function renderActivePlayers(activePlayers) {
-        const players = Array.isArray(activePlayers) ? activePlayers : [];
+        const currentPlayer = sanitizePlayerName(activePlayerName || nameInput.value).toLowerCase();
+        const players = (Array.isArray(activePlayers) ? activePlayers : [])
+          .filter(player => sanitizePlayerName(player.name).toLowerCase() !== currentPlayer);
         const signature = JSON.stringify(players.map(player => [
           player.name,
           player.gameId,
@@ -655,7 +657,7 @@
         activePlayersSignature = signature;
 
         if (!players.length) {
-          activePlayersRoot.innerHTML = '<span class="empty">Er speelt nu niemand.</span>';
+          activePlayersRoot.innerHTML = '<span class="empty">Er spelen nu geen andere spelers.</span>';
           return;
         }
 
