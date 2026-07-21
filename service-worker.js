@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v6';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v7';
 
 const APP_SHELL = [
   './',
@@ -6,7 +6,8 @@ const APP_SHELL = [
   './config.js',
   './manifest.webmanifest',
   './games/code.html',
-  './games/mozaiek.html'
+  './games/mozaiek.html',
+  './games/rebus.html'
 ];
 
 self.addEventListener('install', event => {
@@ -54,6 +55,8 @@ self.addEventListener('fetch', event => {
       ? './games/code.html'
       : url.pathname.endsWith('/games/mozaiek.html')
         ? './games/mozaiek.html'
+        : url.pathname.endsWith('/games/rebus.html')
+          ? './games/rebus.html'
         : './index.html';
 
     event.respondWith(

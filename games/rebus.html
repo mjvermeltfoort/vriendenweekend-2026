@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Het verzegelde bericht</title>
+  <style>
+    :root {
+      --bg: #0f1410;
+      --panel: #1b241c;
+      --panel-2: #243026;
+      --line: rgba(210, 184, 111, 0.3);
+      --gold: #d2b86f;
+      --gold-light: #f0dfb1;
+      --text: #f4efdf;
+      --muted: #beb8a6;
+      --success: #7fbf89;
+      --danger: #d9796d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 50% -20%, rgba(93, 113, 75, 0.24), transparent 42%),
+        linear-gradient(180deg, #101710 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      padding:
+        max(18px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(24px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .game {
+      width: min(100%, 760px);
+      margin: 0 auto;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .close-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .header {
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--gold);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.7rem, 6vw, 2.4rem);
+      line-height: 1.08;
+    }
+
+    .intro {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 11px;
+      text-align: center;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.69rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--gold-light);
+      font-size: 1.03rem;
+    }
+
+    .board {
+      border: 1px solid rgba(210, 184, 111, 0.38);
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 42%),
+        var(--panel-2);
+      padding: 16px;
+    }
+
+    .rows {
+      display: grid;
+      gap: 10px;
+    }
+
+    .row {
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .row-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .clue {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: var(--gold-light);
+    }
+
+    .badge {
+      min-width: 74px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      padding: 4px 10px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .badge.done {
+      border-color: rgba(130, 191, 137, 0.74);
+      color: #d6f0d9;
+      background: rgba(52, 94, 58, 0.55);
+    }
+
+    .answer {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid rgba(210, 184, 111, 0.48);
+      border-radius: 10px;
+      padding: 0 12px;
+      outline: none;
+      background: #101710;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .answer:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(210, 184, 111, 0.14);
+    }
+
+    .answer:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 14px;
+    }
+
+    .button {
+      min-height: 48px;
+      padding: 0 22px;
+      border: 1px solid rgba(210, 184, 111, 0.52);
+      border-radius: 12px;
+      cursor: pointer;
+      background: linear-gradient(180deg, #d8c07a, #ab8d45);
+      color: #14170f;
+      font-weight: 800;
+    }
+
+    .button:disabled {
+      cursor: wait;
+      opacity: 0.66;
+    }
+
+    .feedback {
+      min-height: 22px;
+      margin: 12px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .feedback.error {
+      color: var(--danger);
+    }
+
+    .feedback.success {
+      color: var(--success);
+    }
+
+    .result {
+      display: none;
+      margin-top: 16px;
+      padding: 18px;
+      border: 1px solid rgba(134, 184, 137, 0.45);
+      border-radius: 18px;
+      background: rgba(38, 66, 40, 0.5);
+      text-align: center;
+    }
+
+    .result.visible {
+      display: block;
+    }
+
+    .result h2 {
+      margin: 0 0 8px;
+      font-family: Georgia, serif;
+    }
+
+    .result p {
+      margin: 7px 0;
+      color: #ddd7c9;
+      line-height: 1.5;
+    }
+
+    .hint {
+      margin-top: 10px;
+      padding: 14px;
+      border-left: 3px solid var(--gold);
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--gold-light);
+      font-family: Georgia, serif;
+      font-size: 1.1rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 620px) {
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .row-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .badge {
+        min-width: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <div class="top-actions">
+      <a class="close-link" id="close-link" href="../index.html">Sluit spel</a>
+    </div>
+
+    <header class="header">
+      <p class="eyebrow">Dossier II</p>
+      <h1>Het verzegelde bericht</h1>
+      <p class="intro">Los vier mini-rebussen op. Elk goed antwoord ontgrendelt een deel van het bericht. Alles goed? Dan wordt je score opgeslagen.</p>
+    </header>
+
+    <section class="stats" aria-label="Spelstatus">
+      <div class="stat">
+        <span>Tijd</span>
+        <strong id="timer">00:00</strong>
+      </div>
+      <div class="stat">
+        <span>Pogingen</span>
+        <strong id="attempts">0</strong>
+      </div>
+      <div class="stat">
+        <span>Opgelost</span>
+        <strong id="solved-count">0 / 4</strong>
+      </div>
+    </section>
+
+    <section class="board" id="board">
+      <div class="rows" id="rows"></div>
+
+      <div class="actions">
+        <button class="button" id="check-button" type="button">Controleer antwoorden</button>
+      </div>
+
+      <p class="feedback" id="feedback" aria-live="polite">Tip: hoofdletters en kleine letters worden gelijk behandeld.</p>
+    </section>
+
+    <section class="result" id="result" aria-live="polite">
+      <h2>Bericht ontgrendeld</h2>
+      <p id="score-text">Je resultaat wordt opgeslagen...</p>
+      <div class="hint" id="hint-text">De aanwijzing wordt opgehaald...</div>
+    </section>
+  </main>
+
+  <script src="../config.js?v=20260721-23"></script>
+  <script>
+    const PLAYER_KEY = "vriendenweekend-player-name";
+    const urlParams = new URLSearchParams(window.location.search);
+    const RAW_URL_PLAYER_NAME = sanitizeName(urlParams.get("playerName") || "");
+    const RAW_STORED_PLAYER_NAME = sanitizeName(localStorage.getItem(PLAYER_KEY) || "");
+    const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
+    const GAME_ID = sanitizeGameId(urlParams.get("gameId") || "rebus");
+    const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
+
+    const REBUS_ITEMS = [
+      { id: "r1", clue: "REE + BUS", answer: "REBUS" },
+      { id: "r2", clue: "ZON + DAG", answer: "ZONDAG" },
+      { id: "r3", clue: "BOOM - O", answer: "BOM" },
+      { id: "r4", clue: "KERK + HOF", answer: "KERKHOF" }
+    ];
+
+    let startedAt = Date.now();
+    let attempts = 0;
+    let completed = false;
+    let saving = false;
+    let timerHandle = null;
+    let accessAllowed = false;
+
+    const timer = document.getElementById("timer");
+    const attemptsLabel = document.getElementById("attempts");
+    const solvedCountLabel = document.getElementById("solved-count");
+    const rows = document.getElementById("rows");
+    const checkButton = document.getElementById("check-button");
+    const feedback = document.getElementById("feedback");
+    const board = document.getElementById("board");
+    const result = document.getElementById("result");
+    const scoreText = document.getElementById("score-text");
+    const hintText = document.getElementById("hint-text");
+    const closeLink = document.getElementById("close-link");
+
+    function sanitizeName(value) {
+      return String(value || "")
+        .replace(/[<>]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 40);
+    }
+
+    function sanitizeGameId(value) {
+      const candidate = String(value || "").trim().toLowerCase();
+      return candidate === "rebus" ? "rebus" : "rebus";
+    }
+
+    function isConfigValid() {
+      return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(APP_URL);
+    }
+
+    async function apiGet(action, params) {
+      const query = new URLSearchParams(Object.assign({ action }, params || {}));
+      const response = await fetch(APP_URL + "?" + query.toString(), {
+        method: "GET",
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("API-verzoek mislukt met status " + response.status + ".");
+      }
+
+      const body = await response.json();
+      if (!body.success) {
+        throw new Error(body.error || "De API gaf een fout terug.");
+      }
+
+      return body.data;
+    }
+
+    async function apiPost(action, payload) {
+      const body = new URLSearchParams({
+        action,
+        payload: JSON.stringify(payload || {})
+      });
+
+      const response = await fetch(APP_URL, {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store",
+        body
+      });
+
+      if (!response.ok) {
+        throw new Error("API-verzoek mislukt met status " + response.status + ".");
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || "De API gaf een fout terug.");
+      }
+
+      return data.data;
+    }
+
+    function elapsedSeconds() {
+      return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+    }
+
+    function formatTime(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+    }
+
+    function normalizeAnswer(value) {
+      return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Za-z0-9]/g, "")
+        .toUpperCase();
+    }
+
+    function updateTimer() {
+      timer.textContent = formatTime(elapsedSeconds());
+    }
+
+    function setFeedback(message, type) {
+      feedback.textContent = message;
+      feedback.className = type ? "feedback " + type : "feedback";
+    }
+
+    function createRows() {
+      rows.innerHTML = "";
+
+      REBUS_ITEMS.forEach((item, index) => {
+        const row = document.createElement("article");
+        row.className = "row";
+        row.dataset.id = item.id;
+
+        const head = document.createElement("div");
+        head.className = "row-head";
+
+        const clue = document.createElement("p");
+        clue.className = "clue";
+        clue.textContent = (index + 1) + ". " + item.clue;
+
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = "Open";
+        badge.setAttribute("data-badge", "");
+
+        head.appendChild(clue);
+        head.appendChild(badge);
+
+        const input = document.createElement("input");
+        input.className = "answer";
+        input.type = "text";
+        input.autocomplete = "off";
+        input.maxLength = 28;
+        input.placeholder = "Jouw antwoord";
+        input.setAttribute("data-answer", "");
+        input.setAttribute("aria-label", "Antwoord op rebus " + (index + 1));
+
+        input.addEventListener("keydown", event => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            evaluateBoard();
+          }
+        });
+
+        row.appendChild(head);
+        row.appendChild(input);
+        rows.appendChild(row);
+      });
+    }
+
+    function getRowState() {
+      return REBUS_ITEMS.map(item => {
+        const row = rows.querySelector('[data-id="' + item.id + '"]');
+        const input = row.querySelector("[data-answer]");
+        const badge = row.querySelector("[data-badge]");
+        const entered = normalizeAnswer(input.value);
+        const solved = entered === normalizeAnswer(item.answer);
+
+        return {
+          id: item.id,
+          solved,
+          entered,
+          input,
+          badge,
+          answer: item.answer
+        };
+      });
+    }
+
+    function syncSolvedUi(states) {
+      let solvedCount = 0;
+
+      states.forEach(state => {
+        if (state.solved) {
+          solvedCount += 1;
+          state.badge.textContent = "Goed";
+          state.badge.classList.add("done");
+          state.input.disabled = true;
+          state.input.value = state.answer;
+        } else {
+          state.badge.textContent = "Open";
+          state.badge.classList.remove("done");
+          state.input.disabled = completed;
+        }
+      });
+
+      solvedCountLabel.textContent = solvedCount + " / " + REBUS_ITEMS.length;
+      return solvedCount;
+    }
+
+    function setGameEnabled(enabled) {
+      checkButton.disabled = !enabled;
+      const inputs = [...rows.querySelectorAll("[data-answer]")];
+      inputs.forEach(input => {
+        if (input.disabled && enabled) {
+          return;
+        }
+        input.disabled = !enabled;
+      });
+    }
+
+    function showError(message) {
+      setFeedback(message, "error");
+    }
+
+    async function evaluateBoard() {
+      if (!accessAllowed || completed || saving) {
+        return;
+      }
+
+      attempts += 1;
+      attemptsLabel.textContent = String(attempts);
+
+      const states = getRowState();
+      const solvedCount = syncSolvedUi(states);
+
+      if (solvedCount < REBUS_ITEMS.length) {
+        setFeedback("Je hebt " + solvedCount + " van de " + REBUS_ITEMS.length + " rebussen goed.", "error");
+        const firstUnsolved = states.find(state => !state.solved);
+        if (firstUnsolved && !firstUnsolved.input.disabled) {
+          firstUnsolved.input.focus();
+        }
+        return;
+      }
+
+      completed = true;
+      setGameEnabled(false);
+      clearInterval(timerHandle);
+      setFeedback("Alle rebussen opgelost. Score wordt opgeslagen...", "success");
+
+      await saveResult(states);
+    }
+
+    async function saveResult(states) {
+      saving = true;
+      const seconds = elapsedSeconds();
+
+      try {
+        const data = await apiPost("score", {
+          name: PLAYER_NAME,
+          gameId: GAME_ID,
+          seconds,
+          attempts,
+          detail: {
+            type: "rebus-grid",
+            solved: states.map(state => state.id),
+            variant: 1
+          }
+        });
+
+        showCompleted(data.result || data);
+      } catch (error) {
+        completed = false;
+        setGameEnabled(true);
+        timerHandle = setInterval(updateTimer, 1000);
+        showError(
+          error && error.message
+            ? error.message
+            : "Opslaan is mislukt. Probeer het opnieuw."
+        );
+      } finally {
+        saving = false;
+      }
+    }
+
+    function showCompleted(response) {
+      const data = response && response.result ? response.result : response;
+      const score = data && data.score;
+      const seconds = data && Number.isFinite(Number(data.seconds))
+        ? Number(data.seconds)
+        : elapsedSeconds();
+      const usedAttempts = data && Number.isFinite(Number(data.attempts))
+        ? Number(data.attempts)
+        : attempts;
+      const hint = data && data.hint
+        ? data.hint
+        : "De volgende aanwijzing blijft nog verzegeld.";
+
+      board.style.display = "none";
+      result.classList.add("visible");
+
+      scoreText.textContent = score === null || score === undefined
+        ? "Voltooid in " + formatTime(seconds) + " met " + usedAttempts + " poging(en)."
+        : "Je behaalde " + score + " punten in " + formatTime(seconds) + " met " + usedAttempts + " poging(en).";
+
+      hintText.textContent = hint;
+    }
+
+    async function bootstrap() {
+      createRows();
+      setGameEnabled(false);
+
+      closeLink.href = "../index.html?playerName=" + encodeURIComponent(PLAYER_NAME || "");
+
+      if (!isConfigValid()) {
+        showError("Apps Script URL in config.js is ongeldig.");
+        return;
+      }
+
+      if (!PLAYER_NAME) {
+        showError("Geen spelernaam gevonden. Open dit spel via de startpagina.");
+        return;
+      }
+
+      localStorage.setItem(PLAYER_KEY, PLAYER_NAME);
+      setFeedback("Toegang wordt gecontroleerd...");
+
+      try {
+        const access = await apiGet("access", {
+          gameId: GAME_ID,
+          playerName: PLAYER_NAME
+        });
+
+        if (!access.allowed) {
+          if (access.completed) {
+            completed = true;
+            const done = access.completed;
+            board.style.display = "none";
+            result.classList.add("visible");
+            scoreText.textContent = "Je behaalde al " + done.score + " punten in " + formatTime(Number(done.seconds) || 0) + " met " + done.attempts + " poging(en).";
+            hintText.textContent = done.hint || "De volgende aanwijzing blijft nog verzegeld.";
+            setFeedback("Dit spel is al voltooid.", "success");
+            return;
+          }
+
+          showError("Dit spel is nog niet vrijgegeven of al afgesloten.");
+          return;
+        }
+
+        await apiPost("start", {
+          name: PLAYER_NAME,
+          gameId: GAME_ID,
+          source: "github-pages",
+          userAgent: navigator.userAgent
+        });
+
+        startedAt = Date.now();
+        timerHandle = setInterval(updateTimer, 1000);
+        updateTimer();
+
+        accessAllowed = true;
+        setGameEnabled(true);
+        const firstInput = rows.querySelector("[data-answer]");
+        if (firstInput) {
+          firstInput.focus();
+        }
+        setFeedback("Speel gestart. Los alle rebussen op.");
+      } catch (error) {
+        showError(
+          error && error.message
+            ? error.message
+            : "De spelstatus kon niet worden geladen."
+        );
+      }
+    }
+
+    checkButton.addEventListener("click", evaluateBoard);
+    bootstrap();
+  </script>
+</body>
+</html>
