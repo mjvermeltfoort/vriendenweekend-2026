@@ -39,6 +39,11 @@ De frontend gebruikt exact deze routes:
 - `POST action=start + payload={...}`
 - `POST action=score + payload={...}`
 
+De routes `state` en `access` lezen de spelinformatie uit het werkblad
+`Spellen`. Een spelobject bevat: `id`, `title`, `description`, `status`,
+`state`, `openFrom`, `closeAt`, `hint`, `maxPoints`, `order` en `completed`.
+De Nederlandse kolomnamen in de Sheet worden op headernaam gekoppeld.
+
 Voor POST wordt in de frontend `URLSearchParams` gebruikt:
 
 ```txt

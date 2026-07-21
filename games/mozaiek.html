@@ -30,7 +30,8 @@
     <button class="close-button" id="close-button" type="button">Sluit spel</button>
   </div>
 
-  <p class="muted">Schuif de tegels naar de lege plek en herstel de afbeelding.</p>
+  <h1 id="game-title">Het gebroken zegel</h1>
+  <p class="muted" id="game-description">Schuif de tegels naar de lege plek en herstel de afbeelding.</p>
   <div class="puzzle-wrap">
     <div class="puzzle" id="puzzle"></div>
     <div class="puzzle-info">
@@ -117,6 +118,17 @@
     return body.data;
   }
 
+  function applyGameInfo(game) {
+    if (!game) return;
+    if (game.title) {
+      document.title = game.title;
+      document.getElementById('game-title').textContent = game.title;
+    }
+    if (game.description) {
+      document.getElementById('game-description').textContent = game.description;
+    }
+  }
+
   async function apiPost(action, payload) {
     const body = new URLSearchParams({
       action,
@@ -196,6 +208,7 @@
         gameId: GAME_ID,
         playerName: PLAYER_NAME
       });
+      applyGameInfo(access.game);
 
       if (!access.allowed) {
         if (access.completed) {

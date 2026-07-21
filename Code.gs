@@ -12,7 +12,7 @@
 const SETTINGS_SHEET = 'Spellen';
 const SCORES_SHEET = 'Scores';
 const STARTS_SHEET = 'Spelstarts';
-const API_VERSION = '1.0.0';
+const API_VERSION = '1.1.0';
 
 /**
  * Publieke GET-ingang van de web-app.
@@ -234,17 +234,7 @@ function getPublicState(playerName) {
   const completed = getCompletedForPlayer_(playerName || '');
 
   return {
-    games: games.map(game => ({
-      id: game.id,
-      title: game.title,
-      description: game.description,
-      state: calculateState_(game),
-      openFrom: dateToIso_(game.openFrom),
-      closeAt: dateToIso_(game.closeAt),
-      maxPoints: game.maxPoints,
-      order: game.order,
-      completed: completed[game.id] || null
-    })),
+    games: games.map(game => serializeGame_(game, completed[game.id] || null)),
     leaderboard: getLeaderboard_()
   };
 }
@@ -262,12 +252,27 @@ function getGameAccess(gameId, playerName) {
     allowed: state === 'open' && !completed,
     state: state,
     completed: completed,
-    game: {
-      id: game.id,
-      title: game.title,
-      description: game.description,
-      maxPoints: game.maxPoints
-    }
+    game: serializeGame_(game, completed)
+  };
+}
+
+/**
+ * Zet een rij uit Spellen om naar het publieke API-formaat.
+ * Alle ingestelde Sheet-velden zijn hierdoor beschikbaar via state en access.
+ */
+function serializeGame_(game, completed) {
+  return {
+    id: game.id,
+    title: game.title,
+    description: game.description,
+    status: game.status,
+    state: calculateState_(game),
+    openFrom: dateToIso_(game.openFrom),
+    closeAt: dateToIso_(game.closeAt),
+    hint: game.hint,
+    maxPoints: game.maxPoints,
+    order: game.order,
+    completed: completed || null
   };
 }
 
@@ -397,18 +402,34 @@ function readGames_() {
 
   const values = sheet.getDataRange().getValues();
 
+  if (!values.length) return [];
+
+  const headers = values[0].reduce((result, value, index) => {
+    result[String(value || '').trim().toLowerCase()] = index;
+    return result;
+  }, {});
+  const requiredHeaders = [
+    'id', 'titel', 'omschrijving', 'status', 'open_vanaf',
+    'sluit_op', 'hint', 'max_punten', 'volgorde'
+  ];
+  const missingHeaders = requiredHeaders.filter(header => headers[header] === undefined);
+
+  if (missingHeaders.length) {
+    throw new Error('Ontbrekende kolommen in Spellen: ' + missingHeaders.join(', ') + '.');
+  }
+
   return values.slice(1)
-    .filter(row => row[0])
+    .filter(row => row[headers.id])
     .map(row => ({
-      id: String(row[0]).trim(),
-      title: String(row[1] || row[0]),
-      description: String(row[2] || ''),
-      status: String(row[3] || 'gesloten').toLowerCase().trim(),
-      openFrom: row[4],
-      closeAt: row[5],
-      hint: String(row[6] || ''),
-      maxPoints: Number(row[7]) || 1000,
-      order: Number(row[8]) || 999
+      id: String(row[headers.id]).trim(),
+      title: String(row[headers.titel] || row[headers.id]),
+      description: String(row[headers.omschrijving] || ''),
+      status: String(row[headers.status] || 'gesloten').toLowerCase().trim(),
+      openFrom: row[headers.open_vanaf],
+      closeAt: row[headers.sluit_op],
+      hint: String(row[headers.hint] || ''),
+      maxPoints: Number(row[headers.max_punten]) || 1000,
+      order: Number(row[headers.volgorde]) || 999
     }))
     .sort((a, b) => a.order - b.order);
 }

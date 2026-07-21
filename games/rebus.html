@@ -316,8 +316,8 @@
 
     <header class="header">
       <p class="eyebrow">Dossier II</p>
-      <h1>Het verzegelde bericht</h1>
-      <p class="intro">Los de rebus op door de volledige zin in te vullen. Bij een goed antwoord wordt je score opgeslagen.</p>
+      <h1 id="game-title">Het verzegelde bericht</h1>
+      <p class="intro" id="game-description">Los de rebus op door de volledige zin in te vullen. Bij een goed antwoord wordt je score opgeslagen.</p>
     </header>
 
     <section class="stats" aria-label="Spelstatus">
@@ -428,6 +428,17 @@
       }
 
       return body.data;
+    }
+
+    function applyGameInfo(game) {
+      if (!game) return;
+      if (game.title) {
+        document.title = game.title;
+        document.getElementById("game-title").textContent = game.title;
+      }
+      if (game.description) {
+        document.getElementById("game-description").textContent = game.description;
+      }
     }
 
     async function apiPost(action, payload) {
@@ -690,6 +701,7 @@
           gameId: GAME_ID,
           playerName: PLAYER_NAME
         });
+        applyGameInfo(access.game);
 
         if (!access.allowed) {
           if (access.completed) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v10';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v12';
 
 const APP_SHELL = [
   './',

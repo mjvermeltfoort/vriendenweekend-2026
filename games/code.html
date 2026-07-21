@@ -463,6 +463,10 @@
     </div>
 
     <header class="game-header">
+      <div class="title-block">
+        <p class="eyebrow">Dossier III</p>
+        <h1 id="game-title">De viercijferige code</h1>
+      </div>
       <div class="stats" aria-label="Spelstatus">
         <div class="stat">
           <span>Tijd</span>
@@ -474,6 +478,8 @@
         </div>
       </div>
     </header>
+
+    <p class="intro" id="game-description">Vind de code met aanwijzingen uit eerdere spellen.</p>
 
     <section class="lockbox" id="lockbox">
       <div class="lock-emblem" aria-hidden="true">⚿</div>
@@ -597,6 +603,17 @@
       }
 
       return body.data;
+    }
+
+    function applyGameInfo(game) {
+      if (!game) return;
+      if (game.title) {
+        document.title = game.title;
+        document.getElementById("game-title").textContent = game.title;
+      }
+      if (game.description) {
+        document.getElementById("game-description").textContent = game.description;
+      }
     }
 
     async function apiPost(action, payload) {
@@ -909,6 +926,7 @@
           gameId: GAME_ID,
           playerName: PLAYER_NAME
         });
+        applyGameInfo(access.game);
 
         if (!access.allowed) {
           if (access.completed) {

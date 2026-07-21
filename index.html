@@ -508,6 +508,7 @@
 
       function updateCard(card, game, playerName) {
         const stateNode = card.querySelector('[data-state]');
+        const titleNode = card.querySelector('h2');
         const descriptionNode = card.querySelector('[data-description]');
         const linkNode = card.querySelector('[data-link]');
 
@@ -518,8 +519,16 @@
         stateNode.textContent = isDone ? 'Voltooid' : statusDef.label;
         stateNode.className = 'pill ' + (isDone ? 'done' : statusDef.className);
 
+        if (game && game.title) {
+          titleNode.textContent = game.title;
+        }
+
         if (game && game.description) {
           descriptionNode.textContent = game.description;
+        }
+
+        if (game && Number.isFinite(Number(game.order))) {
+          card.style.order = String(Number(game.order));
         }
 
         const canOpen = Boolean(game && game.state === 'open' && !isDone);
