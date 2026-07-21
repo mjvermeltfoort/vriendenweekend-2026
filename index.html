@@ -62,7 +62,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
       padding: 10px 12px;
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -113,6 +113,129 @@
 
     .install-button.show { display: inline-flex; align-items: center; }
 
+    .hero {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      min-height: 380px;
+      display: grid;
+      align-items: end;
+      margin-bottom: 14px;
+      padding: clamp(28px, 6vw, 62px);
+      border: 1px solid rgba(212,189,120,.28);
+      border-radius: 22px;
+      background:
+        linear-gradient(90deg, rgba(12,16,12,.98) 0%, rgba(15,20,15,.9) 55%, rgba(15,20,15,.48) 100%),
+        repeating-linear-gradient(0deg, transparent 0 38px, rgba(212,189,120,.035) 39px 40px),
+        #171d16;
+      box-shadow: 0 22px 70px rgba(0,0,0,.32);
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      width: 360px;
+      height: 360px;
+      top: -150px;
+      right: -90px;
+      border: 1px solid rgba(212,189,120,.16);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 34px rgba(212,189,120,.025),
+        0 0 0 68px rgba(212,189,120,.018);
+    }
+
+    .hero::after {
+      content: 'VERTROUWELIJK';
+      position: absolute;
+      right: clamp(22px, 6vw, 62px);
+      bottom: 42px;
+      z-index: -1;
+      color: rgba(212,189,120,.075);
+      font-size: clamp(2.6rem, 8vw, 6.5rem);
+      font-weight: 950;
+      letter-spacing: .08em;
+      line-height: .8;
+      transform: rotate(-7deg);
+      white-space: nowrap;
+    }
+
+    .hero-content { max-width: 650px; }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 18px;
+      color: var(--accent-2);
+      font-size: .74rem;
+      font-weight: 850;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: '';
+      width: 34px;
+      height: 1px;
+      background: currentColor;
+    }
+
+    .hero h1 {
+      max-width: 620px;
+      margin: 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: clamp(2.65rem, 8vw, 5.7rem);
+      font-weight: 500;
+      letter-spacing: -.045em;
+      line-height: .92;
+    }
+
+    .hero h1 em {
+      display: block;
+      color: var(--accent-2);
+      font-weight: inherit;
+    }
+
+    .hero-lead {
+      max-width: 590px;
+      margin: 24px 0 0;
+      color: #d6d0bc;
+      font-size: clamp(1rem, 2.1vw, 1.13rem);
+      line-height: 1.65;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 26px;
+    }
+
+    .hero-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 32px;
+      padding: 6px 11px;
+      border: 1px solid rgba(212,189,120,.25);
+      border-radius: 999px;
+      background: rgba(10,13,10,.38);
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .hero-meta span::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 10px rgba(212,189,120,.55);
+    }
+
     .panel {
       border: 1px solid var(--border);
       border-radius: 18px;
@@ -123,7 +246,9 @@
     }
 
     .intro {
-      margin: 0 0 14px;
+      margin: 0 0 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
       color: var(--muted);
       line-height: 1.6;
     }
@@ -397,6 +522,10 @@
       .brand-text { font-size: 14px; }
       .install-button { min-height: 36px; padding: 7px 10px; font-size: 14px; }
       .metrics { grid-template-columns: 1fr; }
+      .hero { min-height: 410px; padding: 30px 22px; }
+      .hero::after { bottom: 30px; font-size: 3rem; }
+      .hero h1 { font-size: clamp(2.65rem, 15vw, 4rem); }
+      .hero-lead { line-height: 1.55; }
     }
   </style>
 </head>
@@ -410,8 +539,21 @@
       <button class="install-button" id="install-button" type="button">Installeer app</button>
     </header>
 
+    <header class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">Dossier 2026 · Alleen voor ingewijden</p>
+        <h1>Het verzegelde <em>dossier</em></h1>
+        <p class="hero-lead">Er is iets achtergelaten. Vijf archiefstukken, een spoor van verborgen aanwijzingen en maar één kans om de waarheid boven tafel te krijgen. Werk samen, vertrouw niemand blindelings en kraak het dossier voor het te laat is.</p>
+        <div class="hero-meta" aria-label="Missiegegevens">
+          <span>Meerdere opdrachten</span>
+          <span>De tijd tikt…</span>
+          <span>Vriendenweekend 2026</span>
+        </div>
+      </div>
+    </header>
+
     <section class="panel">
-      <p class="intro">Voer je naam in om mee te doen.</p>
+      <p class="intro"><strong>Jouw missie begint hier.</strong> Registreer je codenaam om de beschikbare archiefstukken te openen en je voortgang bij te houden.</p>
 
       <form class="identity" id="player-form">
         <label for="player-name">Speler</label>
@@ -490,6 +632,8 @@
       <div class="section-head">
         <h2>Tussenstand</h2>
       </div>
+
+      <p class="helper">🏆 Wie bovenaan het leaderboard staat, maakt extra kans op prijzen. Iedere opdracht telt!</p>
 
       <div class="leaderboard-wrap" id="leaderboard-wrap" aria-live="polite">
         <div class="empty" id="leaderboard-empty">Hier worden de scores van andere vrienden getoond.</div>
