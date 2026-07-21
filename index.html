@@ -526,6 +526,19 @@
       .hero::after { bottom: 30px; font-size: 3rem; }
       .hero h1 { font-size: clamp(2.65rem, 15vw, 4rem); }
       .hero-lead { line-height: 1.55; }
+      .leaderboard { min-width: 0; table-layout: fixed; }
+      .leaderboard th,
+      .leaderboard td { padding: 9px 6px; }
+      .leaderboard th { font-size: .7rem; letter-spacing: .03em; }
+      .leaderboard th:nth-child(1) { width: 10%; }
+      .leaderboard th:nth-child(2) { width: 42%; }
+      .leaderboard th:nth-child(3),
+      .leaderboard th:nth-child(4) { width: 24%; }
+      .leaderboard td:nth-child(2) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
   </style>
 </head>
