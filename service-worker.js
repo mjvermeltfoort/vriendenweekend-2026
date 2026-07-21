@@ -1,8 +1,12 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v4';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v5';
 
 const APP_SHELL = [
   './',
-  './index.html'
+  './index.html',
+  './config.js',
+  './manifest.webmanifest',
+  './games/code.html',
+  './games/mozaiek.html'
 ];
 
 self.addEventListener('install', event => {
@@ -46,18 +50,32 @@ self.addEventListener('fetch', event => {
   }
 
   if (event.request.mode === 'navigate') {
+    const fallbackPath = url.pathname.endsWith('/games/code.html')
+      ? './games/code.html'
+      : url.pathname.endsWith('/games/mozaiek.html')
+        ? './games/mozaiek.html'
+        : './index.html';
+
     event.respondWith(
       fetch(event.request)
         .then(response => {
           const copy = response.clone();
 
           caches.open(CACHE_NAME).then(cache => {
-            cache.put('./index.html', copy);
+            cache.put(event.request, copy);
           });
 
           return response;
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(() =>
+          caches.match(event.request).then(hit => {
+            if (hit) return hit;
+            return caches.match(fallbackPath).then(pathHit => {
+              if (pathHit) return pathHit;
+              return caches.match('./index.html');
+            });
+          })
+        )
     );
 
     return;

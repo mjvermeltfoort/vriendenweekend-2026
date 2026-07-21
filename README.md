@@ -1,7 +1,19 @@
-# Het Verzegelde Dossier – PWA
+# Het Verzegelde Dossier - PWA
 
-Deze map bevat een installeerbare PWA-schil rond de bestaande Google Apps Script-webapp.
-De spelgegevens, scores en vrijgave blijven via Apps Script en Google Sheets lopen.
+Deze map bevat een installeerbare PWA met statische HTML-pagina's op GitHub Pages.
+Google Apps Script wordt alleen gebruikt als JSON API voor spelstatus, toegang, starts en scores.
+
+## Architectuur
+
+- Frontend (GitHub Pages):
+	- indexpagina met spelernaam en speloverzicht
+	- statische spelpagina's in `games/`
+	- service worker voor app shell caching
+- Backend (Google Apps Script + Sheets):
+	- API-routes in `Code.gs`
+	- opslag in werkbladen `Spellen`, `Scores`, `Spelstarts`
+
+Er is geen iframe-laag meer en geen template-rendering via Apps Script nodig.
 
 ## 1. Apps Script-link instellen
 
@@ -15,15 +27,29 @@ door jouw volledige gepubliceerde `/exec`-URL.
 
 Controleer in Apps Script:
 
-- uitvoeren als: **Ik**;
-- toegang: **Iedereen**;
-- `setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)` staat in `doGet()`.
+- uitvoeren als: **Ik**
+- toegang: **Iedereen**
 
-## 2. Gratis publiceren met GitHub Pages
+## 2. API-contract
 
-1. Maak op GitHub een nieuwe openbare repository, bijvoorbeeld `vriendenweekend-2026`.
-2. Upload alle bestanden en de map `icons` uit dit pakket naar de hoofdmap.
-3. Open in de repository **Settings → Pages**.
+De frontend gebruikt exact deze routes:
+
+- `GET ?action=state&playerName=Mark`
+- `GET ?action=access&gameId=mozaiek&playerName=Mark`
+- `POST action=start + payload={...}`
+- `POST action=score + payload={...}`
+
+Voor POST wordt in de frontend `URLSearchParams` gebruikt:
+
+```txt
+action=score&payload={...json...}
+```
+
+## 3. Gratis publiceren met GitHub Pages
+
+1. Maak op GitHub een openbare repository, bijvoorbeeld `vriendenweekend-2026`.
+2. Upload alle bestanden en de map `icons` naar de hoofdmap.
+3. Open in de repository **Settings -> Pages**.
 4. Kies **Deploy from a branch**.
 5. Kies branch `main` en map `/ (root)`.
 6. Sla op.
@@ -32,9 +58,7 @@ De site komt dan op een adres zoals:
 
 `https://jouwgebruikersnaam.github.io/vriendenweekend-2026/`
 
-Een eigen domein kan later via dezelfde Pages-instellingen worden gekoppeld.
-
-## 3. Installeren op telefoon
+## 4. Installeren op telefoon
 
 ### Android / Chrome
 
@@ -44,15 +68,11 @@ Open de PWA-URL. Gebruik de knop **Installeer app** of kies in Chrome **App inst
 
 Open de PWA-URL in Safari, tik op **Delen** en kies **Zet op beginscherm**.
 
-## Mobiele werking
+## 5. Mobiele werking
 
-De PWA vult de volledige beschikbare schermhoogte met `100dvh`, ondersteunt safe areas bij iPhones en toont de Apps Script-webapp in een schermvullend iframe.
+De PWA gebruikt `100dvh`, safe areas op iPhone en directe navigatie naar de statische spelpagina's.
 
-## Offline gedrag
+## 6. Offline gedrag
 
-De PWA-schil en iconen worden gecachet. De spellen en scores hebben een internetverbinding nodig omdat Apps Script en Google Sheets online worden geladen.
-
-
-## Thema
-
-De PWA-schil gebruikt een mysterieus historisch dossier-thema. De inhoud van de Apps Script-webapp, waaronder de vlam-mozaïek, wordt niet aangepast.
+De app shell en spelpagina's worden gecachet.
+API-calls naar Apps Script en score-opslag vereisen internet.

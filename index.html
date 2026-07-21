@@ -9,20 +9,23 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Vriendenweekend">
   <meta name="description" content="Spellen en hints voor Vriendenweekend 2026">
-  <link rel="manifest" href="manifest.webmanifest?v=20260721-22">
-  <link rel="icon" href="icons/icon-192.png?v=20260721-22">
-  <link rel="apple-touch-icon" href="icons/icon-192.png?v=20260721-22">
+  <link rel="manifest" href="manifest.webmanifest?v=20260721-23">
+  <link rel="icon" href="icons/icon-192.png?v=20260721-23">
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=20260721-23">
   <title>Vriendenweekend 2026</title>
   <style>
     :root {
       color-scheme: dark;
       --bg: #10130f;
       --panel: #1c211b;
+      --panel-2: #242b23;
       --text: #f5f0df;
       --muted: #c5bfaa;
       --accent: #a8833e;
       --accent-2: #d4bd78;
       --border: rgba(255,255,255,.14);
+      --danger: #d9796d;
+      --success: #7eb783;
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -31,26 +34,27 @@
       width: 100%;
       min-height: 100%;
       margin: 0;
-      overflow: hidden;
       background: var(--bg);
       color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     body {
       min-height: 100vh;
       min-height: 100dvh;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(168,131,62,.22), transparent 28rem),
+        var(--bg);
     }
 
     .app {
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
-      width: 100%;
-      height: 100vh;
-      height: 100dvh;
-      background:
-        radial-gradient(circle at 50% -10%, rgba(168,131,62,.22), transparent 30rem),
-        var(--bg);
+      width: min(100%, 980px);
+      margin: 0 auto;
+      padding:
+        max(14px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(22px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
     }
 
     .toolbar {
@@ -58,11 +62,12 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      min-height: 56px;
-      padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(28,33,27,.96);
-      backdrop-filter: blur(14px);
+      margin-bottom: 18px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(28,33,27,.88);
+      backdrop-filter: blur(12px);
     }
 
     .brand {
@@ -108,74 +113,255 @@
 
     .install-button.show { display: inline-flex; align-items: center; }
 
-    .frame-wrap {
-      position: relative;
-      min-width: 0;
-      min-height: 0;
-      overflow: hidden;
-      padding-bottom: env(safe-area-inset-bottom);
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.03), transparent 44%),
+        var(--panel);
+      padding: 18px;
     }
 
-    #game-frame {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-width: 0;
-      border: 0;
-      background: var(--bg);
+    .intro {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.6;
     }
 
-    .loading {
-      position: absolute;
-      inset: 0;
+    .identity {
       display: grid;
-      place-items: center;
-      padding: 24px;
-      background: var(--bg);
-      transition: opacity .2s ease, visibility .2s ease;
-      z-index: 2;
+      gap: 9px;
+      margin-bottom: 15px;
     }
 
-    .loading.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-    .loading-card { text-align: center; color: var(--muted); }
-
-    .spinner {
-      width: 42px;
-      height: 42px;
-      margin: 0 auto 14px;
-      border: 4px solid rgba(255,255,255,.12);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
+    .identity label {
+      font-weight: 700;
+      color: var(--muted);
+      font-size: 0.94rem;
     }
 
-    .error {
-      display: none;
-      position: absolute;
-      inset: 0;
-      place-items: center;
-      padding: 24px;
-      background: var(--bg);
-      z-index: 3;
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
-    .error.show { display: grid; }
-    .error-content { max-width: 560px; text-align: center; }
-    .error-content p { color: var(--muted); line-height: 1.6; }
-    .error-content a { color: var(--accent-2); }
+    .name-input {
+      flex: 1 1 260px;
+      min-height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 10px 12px;
+      background: #121711;
+      color: var(--text);
+      font: inherit;
+    }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .button {
+      min-height: 44px;
+      padding: 0 16px;
+      border: 1px solid rgba(210,184,111,.5);
+      border-radius: 11px;
+      cursor: pointer;
+      background: linear-gradient(180deg, #d8c07a, #ab8d45);
+      color: #151a13;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .status {
+      margin: 0 0 15px;
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .status.error { color: var(--danger); }
+    .status.success { color: var(--success); }
+
+    .metrics {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-weight: 700;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.5rem;
+      color: var(--accent-2);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 8px 0 12px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 1.12rem;
+    }
+
+    .secondary {
+      min-height: 36px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .secondary:disabled {
+      opacity: .58;
+      cursor: wait;
+    }
+
+    .games {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    }
+
+    .game-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--panel-2);
+      display: grid;
+      gap: 8px;
+    }
+
+    .game-card h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .game-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .pill {
+      justify-self: start;
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .pill.open { color: var(--success); border-color: rgba(126,183,131,.45); }
+    .pill.closed { color: #d3ad7e; border-color: rgba(211,173,126,.45); }
+    .pill.done { color: #93c7f0; border-color: rgba(147,199,240,.45); }
+
+    .game-link {
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(210,184,111,.5);
+      background: linear-gradient(180deg, #d8c07a, #ab8d45);
+      color: #151a13;
+      font-weight: 800;
+    }
+
+    .game-link[aria-disabled="true"] {
+      pointer-events: none;
+      opacity: .56;
+      filter: grayscale(.3);
+    }
+
+    .helper {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+
+    .leaderboard-wrap {
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(255,255,255,.02);
+    }
+
+    .leaderboard-scroll {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .leaderboard {
+      width: 100%;
+      min-width: 420px;
+      border-collapse: collapse;
+    }
+
+    .leaderboard th,
+    .leaderboard td {
+      padding: 10px 11px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .leaderboard th {
+      color: var(--muted);
+      font-size: .79rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .leaderboard td:last-child,
+    .leaderboard th:last-child {
+      text-align: right;
+    }
+
+    .leaderboard tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .empty {
+      padding: 14px;
+      color: var(--muted);
+    }
 
     @media (max-width: 560px) {
-      .toolbar { min-height: 50px; padding-inline: 9px; }
+      .toolbar { padding: 9px 10px; }
       .brand-icon { width: 34px; height: 34px; border-radius: 10px; font-size: 19px; }
       .brand-text { font-size: 14px; }
       .install-button { min-height: 36px; padding: 7px 10px; font-size: 14px; }
-    }
-
-    @media (display-mode: standalone) {
-      .toolbar { padding-top: calc(8px + env(safe-area-inset-top)); }
+      .metrics { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -189,57 +375,281 @@
       <button class="install-button" id="install-button" type="button">Installeer app</button>
     </header>
 
-    <section class="frame-wrap">
-      <div class="loading" id="loading" aria-live="polite">
-        <div class="loading-card">
-          <div class="spinner" aria-hidden="true"></div>
-          <div>Archiefstukken worden geladen…</div>
+    <section class="panel">
+      <p class="intro">Voer je naam in, laad de spelstatus via de Apps Script API en open daarna een spel via normale paginanavigatie.</p>
+
+      <form class="identity" id="player-form">
+        <label for="player-name">Speler</label>
+        <div class="row">
+          <input class="name-input" id="player-name" name="playerName" autocomplete="name" maxlength="40" placeholder="Bijv. Mark" required>
+          <button class="button" type="submit">Status laden</button>
+        </div>
+      </form>
+
+      <p class="status" id="status" aria-live="polite">Vul je naam in om de actuele spelstatus op te halen.</p>
+
+      <div class="metrics" aria-label="Voortgangsoverzicht">
+        <div class="metric">
+          <span>Beschikbaar</span>
+          <strong id="available-count">0</strong>
+        </div>
+        <div class="metric">
+          <span>Voltooid</span>
+          <strong id="completed-count">0</strong>
+        </div>
+        <div class="metric">
+          <span>Spelers</span>
+          <strong id="player-count">0</strong>
         </div>
       </div>
 
-      <div class="error" id="error">
-        <div class="error-content">
-          <h1>Het archief kon niet laden</h1>
-          <p>Controleer de Apps Script-link in <code>config.js</code> en controleer of de web-app toegankelijk is voor iedereen.</p>
-          <p><a id="direct-link" href="#" target="_blank" rel="noopener">Open het archief rechtstreeks</a></p>
-        </div>
+      <div class="section-head">
+        <h2>Archiefstukken</h2>
+        <button class="secondary" id="refresh-button" type="button">Vernieuwen</button>
       </div>
 
-      <iframe
-        id="game-frame"
-        title="Vriendenweekend spellen"
-        allow="fullscreen"
-        referrerpolicy="strict-origin-when-cross-origin">
-      </iframe>
+      <div class="games" id="games">
+        <article class="game-card" data-game-id="mozaiek" data-fallback-state="gesloten">
+          <span class="pill closed" data-state>Gesloten</span>
+          <h2>Het gebroken zegel</h2>
+          <p data-description>Herstel het oude zegel en ontdek de eerste aanwijzing.</p>
+          <a class="game-link" data-link href="games/mozaiek.html" aria-disabled="true">Open spel</a>
+        </article>
+
+        <article class="game-card" data-game-id="code" data-fallback-state="gesloten">
+          <span class="pill closed" data-state>Gesloten</span>
+          <h2>De viercijferige code</h2>
+          <p data-description>Vind de code met aanwijzingen uit eerdere spellen.</p>
+          <a class="game-link" data-link href="games/code.html" aria-disabled="true">Open spel</a>
+        </article>
+      </div>
+
+      <div class="section-head">
+        <h2>Tussenstand</h2>
+      </div>
+
+      <div class="leaderboard-wrap" id="leaderboard-wrap" aria-live="polite">
+        <div class="empty" id="leaderboard-empty">Vul je naam in om het scorebord te laden.</div>
+      </div>
+
+      <p class="helper">Deze pagina laadt geen templates via JavaScript. De spellen zijn gewone HTML-pagina's en gebruiken alleen de API-routes voor data en scores.</p>
     </section>
   </main>
 
-  <script src="config.js?v=20260721-22"></script>
+  <script src="config.js?v=20260721-23"></script>
   <script>
     (() => {
-      const frame = document.getElementById('game-frame');
-      const loading = document.getElementById('loading');
-      const error = document.getElementById('error');
-      const directLink = document.getElementById('direct-link');
+      const PLAYER_KEY = 'vriendenweekend-player-name';
+      const STATUS_TEXT = {
+        open: { label: 'Open', className: 'open' },
+        gesloten: { label: 'Gesloten', className: 'closed' },
+        afgelopen: { label: 'Afgelopen', className: 'closed' }
+      };
+
+      const form = document.getElementById('player-form');
+      const nameInput = document.getElementById('player-name');
+      const status = document.getElementById('status');
+      const gamesRoot = document.getElementById('games');
+      const availableCount = document.getElementById('available-count');
+      const completedCount = document.getElementById('completed-count');
+      const playerCount = document.getElementById('player-count');
+      const refreshButton = document.getElementById('refresh-button');
+      const leaderboardWrap = document.getElementById('leaderboard-wrap');
       const installButton = document.getElementById('install-button');
       const appUrl = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
       let deferredPrompt = null;
-      let loadTimer = null;
+      let activePlayerName = '';
 
-      if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(appUrl)) {
-        loading.classList.add('hidden');
-        error.classList.add('show');
-      } else {
-        frame.src = appUrl;
-        directLink.href = appUrl;
-        loadTimer = window.setTimeout(() => {
-          loading.classList.add('hidden');
-        }, 12000);
+      function setStatus(message, type) {
+        status.textContent = message;
+        status.className = type ? 'status ' + type : 'status';
+      }
 
-        frame.addEventListener('load', () => {
-          window.clearTimeout(loadTimer);
-          loading.classList.add('hidden');
+      function sanitizePlayerName(raw) {
+        return String(raw || '')
+          .replace(/[<>]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 40);
+      }
+
+      function getCardsById() {
+        return [...gamesRoot.querySelectorAll('[data-game-id]')].reduce((map, card) => {
+          map[card.dataset.gameId] = card;
+          return map;
+        }, {});
+      }
+
+      function updateCard(card, game, playerName) {
+        const stateNode = card.querySelector('[data-state]');
+        const descriptionNode = card.querySelector('[data-description]');
+        const linkNode = card.querySelector('[data-link]');
+
+        const isDone = Boolean(game && game.completed);
+        const gameState = game && game.state ? game.state : card.dataset.fallbackState || 'gesloten';
+        const statusDef = STATUS_TEXT[gameState] || STATUS_TEXT.gesloten;
+
+        stateNode.textContent = isDone ? 'Voltooid' : statusDef.label;
+        stateNode.className = 'pill ' + (isDone ? 'done' : statusDef.className);
+
+        if (game && game.description) {
+          descriptionNode.textContent = game.description;
+        }
+
+        const canOpen = Boolean(game && game.state === 'open' && !isDone);
+        linkNode.setAttribute('aria-disabled', canOpen ? 'false' : 'true');
+
+        const query = new URLSearchParams({
+          playerName,
+          gameId: card.dataset.gameId
         });
+
+        linkNode.href = linkNode.pathname + '?' + query.toString();
+      }
+
+      function renderMetrics(games, leaderboard) {
+        const list = Array.isArray(games) ? games : [];
+        const board = Array.isArray(leaderboard) ? leaderboard : [];
+
+        const available = list.filter(item => item.state === 'open' && !item.completed).length;
+        const completed = list.filter(item => Boolean(item.completed)).length;
+
+        availableCount.textContent = String(available);
+        completedCount.textContent = String(completed);
+        playerCount.textContent = String(board.length);
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[char]));
+      }
+
+      function renderLeaderboard(leaderboard) {
+        const board = Array.isArray(leaderboard) ? leaderboard : [];
+
+        if (!board.length) {
+          leaderboardWrap.innerHTML = '<div class="empty">Nog geen scores beschikbaar.</div>';
+          return;
+        }
+
+        const rows = board.map((row, index) => (
+          '<tr>' +
+            '<td>' + (index + 1) + '</td>' +
+            '<td>' + escapeHtml(row.name) + '</td>' +
+            '<td>' + Number(row.games || 0) + '</td>' +
+            '<td><strong>' + Number(row.score || 0) + '</strong></td>' +
+          '</tr>'
+        )).join('');
+
+        leaderboardWrap.innerHTML =
+          '<div class="leaderboard-scroll">' +
+            '<table class="leaderboard">' +
+              '<thead><tr><th>#</th><th>Naam</th><th>Spellen</th><th>Punten</th></tr></thead>' +
+              '<tbody>' + rows + '</tbody>' +
+            '</table>' +
+          '</div>';
+      }
+
+      async function apiGet(action, params) {
+        const query = new URLSearchParams(Object.assign({ action }, params || {}));
+        const response = await fetch(appUrl + '?' + query.toString(), {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store'
+        });
+
+        if (!response.ok) {
+          throw new Error('API-verzoek mislukt met status ' + response.status + '.');
+        }
+
+        const body = await response.json();
+        if (!body.success) {
+          throw new Error(body.error || 'De API gaf een fout terug.');
+        }
+
+        return body.data;
+      }
+
+      async function loadStateForPlayer(playerName) {
+        const cardsById = getCardsById();
+        setStatus('Spelstatus wordt geladen…');
+        refreshButton.disabled = true;
+
+        const data = await apiGet('state', { playerName });
+        const games = Array.isArray(data.games) ? data.games : [];
+        const leaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+
+        Object.keys(cardsById).forEach(gameId => {
+          const match = games.find(item => item.id === gameId);
+          updateCard(cardsById[gameId], match, playerName);
+        });
+
+        renderMetrics(games, leaderboard);
+        renderLeaderboard(leaderboard);
+
+        setStatus('Status geladen voor ' + playerName + '.', 'success');
+        refreshButton.disabled = false;
+      }
+
+      function isConfigValid() {
+        return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(appUrl);
+      }
+
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+
+        if (!isConfigValid()) {
+          setStatus('Apps Script URL in config.js is ongeldig.', 'error');
+          return;
+        }
+
+        const playerName = sanitizePlayerName(nameInput.value);
+        if (!playerName) {
+          setStatus('Vul eerst een geldige naam in.', 'error');
+          return;
+        }
+
+        nameInput.value = playerName;
+        localStorage.setItem(PLAYER_KEY, playerName);
+        activePlayerName = playerName;
+
+        try {
+          await loadStateForPlayer(playerName);
+        } catch (error) {
+          refreshButton.disabled = false;
+          setStatus(error && error.message ? error.message : 'Status laden is mislukt.', 'error');
+        }
+      });
+
+      refreshButton.addEventListener('click', async () => {
+        const playerName = sanitizePlayerName(activePlayerName || nameInput.value);
+        if (!playerName) {
+          setStatus('Vul eerst een geldige naam in.', 'error');
+          return;
+        }
+
+        nameInput.value = playerName;
+        activePlayerName = playerName;
+        localStorage.setItem(PLAYER_KEY, playerName);
+
+        try {
+          await loadStateForPlayer(playerName);
+        } catch (error) {
+          refreshButton.disabled = false;
+          setStatus(error && error.message ? error.message : 'Vernieuwen is mislukt.', 'error');
+        }
+      });
+
+      const rememberedName = sanitizePlayerName(localStorage.getItem(PLAYER_KEY) || '');
+      if (rememberedName) {
+        nameInput.value = rememberedName;
+        activePlayerName = rememberedName;
       }
 
       window.addEventListener('beforeinstallprompt', event => {
@@ -264,8 +674,8 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
-            .register('./service-worker.js?v=20260721-22', {
-                updateViaCache: 'none'
+            .register('./service-worker.js?v=20260721-23', {
+              updateViaCache: 'none'
             })
             .then(registration => registration.update())
             .catch(console.error);

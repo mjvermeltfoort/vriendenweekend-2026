@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <style>
+    :root { --bg:#11150f; --panel:#20281e; --border:rgba(200,175,115,.22); --text:#f3ead6; --muted:#b9b09d; --accent:#d1ae62; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
+    body { padding:16px; }
+    p { margin:0 0 14px; line-height:1.5; }
+    .muted { color:var(--muted); }
+    .puzzle-wrap { display:grid; grid-template-columns:minmax(0,1fr) 170px; gap:18px; align-items:start; }
+    .puzzle { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:100%; max-width:520px; aspect-ratio:1; margin:auto; overflow:hidden; border:3px solid #514934; border-radius:16px; background:#11150f; touch-action:manipulation; }
+    .tile { min-width:0; min-height:0; margin:0; padding:0; border:1px solid rgba(255,255,255,.06); border-radius:0; background-image:var(--flame); background-size:400% 400%; -webkit-tap-highlight-color:transparent; }
+    .tile.blank { background-image:none; background-color:#11150f; }
+    .puzzle-info { display:flex; flex-direction:column; gap:12px; }
+    .stat { padding:14px; border:1px solid var(--border); border-radius:14px; background:var(--panel); }
+    .stat strong { display:block; margin-top:3px; font-size:27px; }
+    button.action { min-height:48px; border:1px solid var(--border); border-radius:13px; padding:12px; background:rgba(255,255,255,.04); color:var(--text); font-weight:800; }
+    .hint { margin-top:16px; padding:18px; border:1px solid rgba(209,174,98,.42); border-radius:16px; background:rgba(209,174,98,.13); }
+    .hint strong { display:block; margin-bottom:8px; color:var(--accent); }
+    @media(max-width:680px){ body{padding:10px}.puzzle-wrap{grid-template-columns:1fr}.puzzle-info{display:grid;grid-template-columns:1fr 1fr}.puzzle-info button{grid-column:1/-1} }
+  </style>
+</head>
+<body>
+  <p class="muted">Schuif de tegels naar de lege plek en herstel de afbeelding.</p>
+  <div class="puzzle-wrap">
+    <div class="puzzle" id="puzzle"></div>
+    <div class="puzzle-info">
+      <div class="stat"><span class="muted">Tijd</span><strong id="timer">0s</strong></div>
+      <div class="stat"><span class="muted">Zetten</span><strong id="moves">0</strong></div>
+      <button class="action" id="reshuffle" type="button">Opnieuw schudden</button>
+    </div>
+  </div>
+  <div id="result" aria-live="polite"></div>
+
+<script src="../config.js?v=20260721-23"></script>
+<script>
+  const PLAYER_KEY = 'vriendenweekend-player-name';
+  const urlParams = new URLSearchParams(window.location.search);
+  const PLAYER_NAME = sanitizeName(urlParams.get('playerName') || localStorage.getItem(PLAYER_KEY) || '');
+  const GAME_ID = sanitizeGameId(urlParams.get('gameId') || 'mozaiek');
+  const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
+  const flameSvg = `data:image/svg+xml,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+      <defs>
+        <radialGradient id="bg"><stop stop-color="#4b2418"/><stop offset="1" stop-color="#130e0b"/></radialGradient>
+        <linearGradient id="outer" x1="0" y1="1" x2=".5" y2="0"><stop stop-color="#ff3d00"/><stop offset=".55" stop-color="#ff8f00"/><stop offset="1" stop-color="#ffd54f"/></linearGradient>
+        <linearGradient id="inner" x1="0" y1="1" x2=".5" y2="0"><stop stop-color="#fff59d"/><stop offset="1" stop-color="#fffde7"/></linearGradient>
+      </defs>
+      <rect width="400" height="400" fill="url(#bg)"/>
+      <circle cx="200" cy="205" r="142" fill="none" stroke="#ffb74d" stroke-opacity=".12" stroke-width="3"/>
+      <path fill="url(#outer)" d="M211 45c15 68-31 87-13 129 13-17 25-40 18-69 59 49 102 105 90 173-10 58-57 99-114 99-66 0-119-48-119-113 0-69 47-114 91-157-5 44 8 67 29 84-7-57 39-83 18-146z"/>
+      <path fill="url(#inner)" d="M206 190c11 41-20 54-13 81 10-9 17-23 15-39 29 28 47 54 42 84-5 31-29 52-59 52-34 0-60-25-60-58 0-34 24-58 45-79-2 22 5 35 16 44-3-31 23-45 14-85z"/>
+      <g fill="#fff" opacity=".16"><circle cx="90" cy="92" r="4"/><circle cx="322" cy="126" r="6"/><circle cx="310" cy="310" r="3"/><circle cx="78" cy="288" r="5"/></g>
+    </svg>`)} `;
+
+  let puzzleState = null;
+  let gameAllowed = false;
+
+  function sanitizeName(value) {
+    return String(value || '')
+      .replace(/[<>]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 40);
+  }
+
+  function sanitizeGameId(value) {
+    const candidate = String(value || '').trim().toLowerCase();
+    return candidate === 'mozaiek' ? 'mozaiek' : 'mozaiek';
+  }
+
+  function isConfigValid() {
+    return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(APP_URL);
+  }
+
+  async function apiGet(action, params) {
+    const query = new URLSearchParams(Object.assign({ action }, params || {}));
+    const response = await fetch(APP_URL + '?' + query.toString(), {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error('API-verzoek mislukt met status ' + response.status + '.');
+    }
+
+    const body = await response.json();
+    if (!body.success) {
+      throw new Error(body.error || 'De API gaf een fout terug.');
+    }
+
+    return body.data;
+  }
+
+  async function apiPost(action, payload) {
+    const body = new URLSearchParams({
+      action,
+      payload: JSON.stringify(payload || {})
+    });
+
+    const response = await fetch(APP_URL, {
+      method: 'POST',
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-store',
+      body
+    });
+
+    if (!response.ok) {
+      throw new Error('API-verzoek mislukt met status ' + response.status + '.');
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'De API gaf een fout terug.');
+    }
+
+    return result.data;
+  }
+
+  function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+  function formatTime(seconds) { const m=Math.floor(seconds/60),s=seconds%60; return m?`${m}:${String(s).padStart(2,'0')}`:`${s}s`; }
+  function start() {
+    let tiles=Array.from({length:16},(_,i)=>i);
+    do { tiles=shuffleSolvable(tiles); } while(isSolved(tiles));
+    puzzleState={tiles,moves:0,started:Date.now(),timer:setInterval(updateTimer,1000),submitted:false};
+    document.getElementById('result').innerHTML='';
+    document.getElementById('moves').textContent='0';
+    document.getElementById('timer').textContent='0s';
+    document.getElementById('puzzle').style.setProperty('--flame', `url('${flameSvg}')`);
+    render();
+  }
+  function shuffleSolvable(original){const arr=original.slice();for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}if(!isSolvable(arr))[arr[0],arr[1]]=[arr[1],arr[0]];return arr;}
+  function isSolvable(arr){let inv=0;const list=arr.filter(n=>n!==15);for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++)if(list[i]>list[j])inv++;const row=4-Math.floor(arr.indexOf(15)/4);return row%2===0?inv%2===1:inv%2===0;}
+  function isSolved(arr){return arr.every((v,i)=>v===i);}
+  function render(){const el=document.getElementById('puzzle');el.innerHTML='';puzzleState.tiles.forEach((n,pos)=>{const b=document.createElement('button');b.type='button';b.className=`tile${n===15?' blank':''}`;b.setAttribute('aria-label',n===15?'Lege plek':`Mozaïektegel ${n+1}`);if(n!==15){const x=n%4,y=Math.floor(n/4);b.style.backgroundPosition=`${x*100/3}% ${y*100/3}%`;b.addEventListener('click',()=>move(pos));}el.appendChild(b);});}
+  function move(pos){if(!gameAllowed||!puzzleState||puzzleState.submitted)return;const blank=puzzleState.tiles.indexOf(15);const r=Math.floor(pos/4),c=pos%4,br=Math.floor(blank/4),bc=blank%4;if(Math.abs(r-br)+Math.abs(c-bc)!==1)return;[puzzleState.tiles[pos],puzzleState.tiles[blank]]=[puzzleState.tiles[blank],puzzleState.tiles[pos]];puzzleState.moves++;document.getElementById('moves').textContent=puzzleState.moves;render();if(isSolved(puzzleState.tiles))finish();}
+  function updateTimer(){if(puzzleState)document.getElementById('timer').textContent=formatTime(Math.floor((Date.now()-puzzleState.started)/1000));}
+  async function finish(){if(!puzzleState||puzzleState.submitted)return;puzzleState.submitted=true;clearInterval(puzzleState.timer);const seconds=Math.floor((Date.now()-puzzleState.started)/1000);const result=document.getElementById('result');result.innerHTML='<div class="hint"><strong>Afbeelding hersteld</strong>Score opslaan…</div>';try{const data=await apiPost('score',{name:PLAYER_NAME,gameId:GAME_ID,seconds,attempts:puzzleState.moves,detail:{version:3,modular:true}});const saved=data.result||data;result.innerHTML=`<div class="hint"><strong>${escapeHtml(saved.score)} punten verdiend</strong><div>Jouw aanwijzing:</div><h3>“${escapeHtml(saved.hint || 'De volgende aanwijzing blijft nog verzegeld.')}”</h3><div class="muted">Tijd: ${formatTime(Number(saved.seconds) || seconds)} · ${Number(saved.attempts) || puzzleState.moves} zetten</div></div>`;}catch(error){puzzleState.submitted=false;result.innerHTML=`<div class="hint"><strong>Opslaan mislukt</strong>${escapeHtml(error.message)}</div>`;}}
+
+  function showBlocked(message) {
+    gameAllowed = false;
+    const result = document.getElementById('result');
+    if (puzzleState?.timer) {
+      clearInterval(puzzleState.timer);
+    }
+    puzzleState = null;
+    document.getElementById('puzzle').innerHTML = '';
+    result.innerHTML = `<div class="hint"><strong>Spel geblokkeerd</strong>${escapeHtml(message)}</div>`;
+  }
+
+  async function bootstrap() {
+    const result = document.getElementById('result');
+
+    if (!isConfigValid()) {
+      showBlocked('Apps Script URL in config.js is ongeldig.');
+      return;
+    }
+
+    if (!PLAYER_NAME) {
+      showBlocked('Geen spelernaam gevonden. Open dit spel via de startpagina.');
+      return;
+    }
+
+    localStorage.setItem(PLAYER_KEY, PLAYER_NAME);
+
+    result.innerHTML = '<div class="hint"><strong>Voorbereiden…</strong>Toegang wordt gecontroleerd.</div>';
+
+    try {
+      const access = await apiGet('access', {
+        gameId: GAME_ID,
+        playerName: PLAYER_NAME
+      });
+
+      if (!access.allowed) {
+        if (access.completed) {
+          const done = access.completed;
+          result.innerHTML = `<div class="hint"><strong>Al voltooid</strong><div class="muted">Je behaalde al ${escapeHtml(done.score)} punten in ${formatTime(Number(done.seconds) || 0)} met ${escapeHtml(done.attempts)} zetten.</div></div>`;
+          return;
+        }
+
+        showBlocked('Dit spel is nog niet vrijgegeven of al afgesloten.');
+        return;
+      }
+
+      await apiPost('start', {
+        name: PLAYER_NAME,
+        gameId: GAME_ID,
+        source: 'github-pages',
+        userAgent: navigator.userAgent
+      });
+
+      gameAllowed = true;
+      result.innerHTML = '';
+      start();
+    } catch (error) {
+      showBlocked(error && error.message ? error.message : 'De spelstatus kon niet worden geladen.');
+    }
+  }
+
+  document.getElementById('reshuffle').addEventListener('click',()=>{if(!gameAllowed)return;if(puzzleState?.timer)clearInterval(puzzleState.timer);start();});
+  bootstrap();
+</script>
+</body>
+</html>

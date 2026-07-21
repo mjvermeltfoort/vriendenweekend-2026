@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>De viercijferige code</title>
+  <style>
+    :root {
+      --bg: #0c110c;
+      --panel: #172018;
+      --panel-2: #202b20;
+      --line: rgba(210, 184, 111, 0.28);
+      --gold: #d2b86f;
+      --gold-light: #f1dda4;
+      --text: #f5f0e4;
+      --muted: #b9b4a7;
+      --danger: #d9796d;
+      --success: #7eb783;
+      --correct-bg: #3f7045;
+      --present-bg: #a27c2d;
+      --absent-bg: #3a403a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 50% -20%, rgba(93, 113, 75, 0.28), transparent 42%),
+        linear-gradient(180deg, #111811 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      padding:
+        max(18px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(24px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .game {
+      width: min(100%, 720px);
+      margin: 0 auto;
+    }
+
+    .game-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .title-block {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--gold);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.75rem, 7vw, 2.7rem);
+      line-height: 1.05;
+    }
+
+    .stats {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .stat {
+      min-width: 82px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(23, 32, 24, 0.88);
+      text-align: center;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.67rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 3px;
+      color: var(--gold-light);
+      font-size: 1rem;
+    }
+
+    .intro {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .lockbox {
+      padding: 20px;
+      border: 1px solid rgba(210, 184, 111, 0.38);
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 42%),
+        var(--panel-2);
+    }
+
+    .lock-emblem {
+      display: grid;
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 14px;
+      place-items: center;
+      border: 1px solid rgba(210, 184, 111, 0.56);
+      border-radius: 50%;
+      color: var(--gold-light);
+      font-family: Georgia, serif;
+      font-size: 1.6rem;
+    }
+
+    .lock-title {
+      margin: 0 0 15px;
+      text-align: center;
+      color: var(--gold-light);
+      font-family: Georgia, serif;
+      font-size: 1.15rem;
+    }
+
+    .digits {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 9px;
+      width: min(100%, 330px);
+      margin: 0 auto 14px;
+    }
+
+    .digit {
+      width: 100%;
+      min-width: 0;
+      height: 64px;
+      border: 1px solid rgba(210, 184, 111, 0.52);
+      border-radius: 12px;
+      outline: none;
+      background: #0f160f;
+      color: var(--gold-light);
+      text-align: center;
+      font-family: Georgia, serif;
+      font-size: 2rem;
+      font-weight: 700;
+      caret-color: var(--gold);
+      appearance: textfield;
+    }
+
+    .digit::-webkit-inner-spin-button,
+    .digit::-webkit-outer-spin-button {
+      margin: 0;
+      appearance: none;
+    }
+
+    .digit:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(210, 184, 111, 0.14);
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+    }
+
+    .button {
+      min-height: 48px;
+      padding: 0 22px;
+      border: 1px solid rgba(210, 184, 111, 0.52);
+      border-radius: 12px;
+      cursor: pointer;
+      background: linear-gradient(180deg, #d8c07a, #ab8d45);
+      color: #14170f;
+      font-weight: 800;
+    }
+
+    .button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+    .feedback {
+      min-height: 24px;
+      margin: 13px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .feedback.error {
+      color: var(--danger);
+    }
+
+    .feedback.success {
+      color: var(--success);
+    }
+
+    .attempts-panel {
+      margin-top: 16px;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+    }
+
+    .attempts-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .attempts-heading h2 {
+      margin: 0;
+      font-family: Georgia, serif;
+      font-size: 1.08rem;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px 12px;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+    }
+
+    .legend-box.correct {
+      background: var(--correct-bg);
+    }
+
+    .legend-box.present {
+      background: var(--present-bg);
+    }
+
+    .legend-box.absent {
+      background: var(--absent-bg);
+    }
+
+    .attempts-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .empty-attempts {
+      margin: 4px 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.92rem;
+    }
+
+    .attempt-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 9px;
+      border: 1px solid rgba(210, 184, 111, 0.16);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.018);
+    }
+
+    .attempt-number {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .attempt-digits {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(42px, 54px));
+      gap: 7px;
+    }
+
+    .attempt-digit {
+      display: grid;
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 9px;
+      color: #fff;
+      font-family: Georgia, serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .attempt-digit.correct {
+      background: var(--correct-bg);
+      border-color: rgba(150, 209, 156, 0.72);
+    }
+
+    .attempt-digit.present {
+      background: var(--present-bg);
+      border-color: rgba(230, 192, 101, 0.72);
+    }
+
+    .attempt-digit.absent {
+      background: var(--absent-bg);
+      color: #cbcfc9;
+    }
+
+    .shake {
+      animation: shake 0.35s ease-in-out;
+    }
+
+    .result {
+      display: none;
+      margin-top: 16px;
+      padding: 20px;
+      border: 1px solid rgba(134, 184, 137, 0.45);
+      border-radius: 18px;
+      background: rgba(38, 66, 40, 0.5);
+      text-align: center;
+    }
+
+    .result.visible {
+      display: block;
+    }
+
+    .seal {
+      display: grid;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 12px;
+      place-items: center;
+      border: 2px solid var(--gold);
+      border-radius: 50%;
+      color: var(--gold-light);
+      font-family: Georgia, serif;
+      font-size: 2rem;
+    }
+
+    .result h2 {
+      margin: 0 0 8px;
+      font-family: Georgia, serif;
+    }
+
+    .result p {
+      margin: 7px 0;
+      color: #ddd7c9;
+      line-height: 1.5;
+    }
+
+    .destination-hint {
+      margin-top: 14px;
+      padding: 14px;
+      border-left: 3px solid var(--gold);
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--gold-light);
+      font-family: Georgia, serif;
+      font-size: 1.1rem;
+      line-height: 1.45;
+    }
+
+    @keyframes shake {
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+
+    @media (max-width: 600px) {
+      .game-header {
+        gap: 10px;
+      }
+
+      .stats {
+        flex-direction: row;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+
+      .stat {
+        min-width: 76px;
+        padding: 7px 9px;
+      }
+
+      .stat strong {
+        font-size: 0.92rem;
+      }
+
+      .digit {
+        height: 58px;
+        font-size: 1.75rem;
+      }
+
+      .attempts-heading {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .legend {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <header class="game-header">
+      <div class="stats" aria-label="Spelstatus">
+        <div class="stat">
+          <span>Tijd</span>
+          <strong id="timer">00:00</strong>
+        </div>
+        <div class="stat">
+          <span>Pogingen</span>
+          <strong id="attempts">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="lockbox" id="lockbox">
+      <div class="lock-emblem" aria-hidden="true">⚿</div>
+      <h2 class="lock-title">Voer een code in</h2>
+
+      <div class="digits" aria-label="Viercijferige code">
+        <input class="digit" id="digit1" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Eerste cijfer">
+        <input class="digit" id="digit2" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Tweede cijfer">
+        <input class="digit" id="digit3" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Derde cijfer">
+        <input class="digit" id="digit4" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Vierde cijfer">
+      </div>
+
+      <div class="actions">
+        <button class="button" id="submitButton" type="button">Probeer code</button>
+      </div>
+
+      <p class="feedback" id="feedback" aria-live="polite">
+        Kraak de code met zo weinig mogelijk pogingen.
+      </p>
+    </section>
+
+    <section class="attempts-panel">
+      <div class="attempts-heading">
+        <h2>Eerdere pogingen</h2>
+
+        <div class="legend" aria-label="Betekenis van de kleuren">
+          <span class="legend-item">
+            <span class="legend-box correct" aria-hidden="true"></span>
+            Juiste plek
+          </span>
+          <span class="legend-item">
+            <span class="legend-box present" aria-hidden="true"></span>
+            Verkeerde plek
+          </span>
+          <span class="legend-item">
+            <span class="legend-box absent" aria-hidden="true"></span>
+            Niet aanwezig
+          </span>
+        </div>
+      </div>
+
+      <div class="attempts-list" id="attemptsList">
+        <p class="empty-attempts" id="emptyAttempts">Nog geen pogingen gedaan.</p>
+      </div>
+    </section>
+
+    <section class="result" id="result" aria-live="polite">
+      <div class="seal" aria-hidden="true">⚜</div>
+      <h2>Het slot is geopend</h2>
+      <p id="scoreText">Je resultaat wordt opgeslagen…</p>
+      <div class="destination-hint" id="hintText">De aanwijzing wordt opgehaald…</div>
+    </section>
+  </main>
+
+  <script src="../config.js?v=20260721-23"></script>
+  <script>
+    const PLAYER_KEY = "vriendenweekend-player-name";
+    const urlParams = new URLSearchParams(window.location.search);
+    const PLAYER_NAME = sanitizeName(
+      urlParams.get("playerName") || localStorage.getItem(PLAYER_KEY) || ""
+    );
+    const GAME_ID = sanitizeGameId(urlParams.get("gameId") || "code");
+    const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
+
+    // Pas hier de geheime code aan.
+    const CORRECT_CODE = "4564";
+
+    let startedAt = Date.now();
+    let attempts = 0;
+    let completed = false;
+    let timerHandle = null;
+    let accessAllowed = false;
+
+    const digits = [...document.querySelectorAll(".digit")];
+    const timer = document.getElementById("timer");
+    const attemptsLabel = document.getElementById("attempts");
+    const submitButton = document.getElementById("submitButton");
+    const feedback = document.getElementById("feedback");
+    const lockbox = document.getElementById("lockbox");
+    const attemptsList = document.getElementById("attemptsList");
+    const emptyAttempts = document.getElementById("emptyAttempts");
+    const result = document.getElementById("result");
+    const scoreText = document.getElementById("scoreText");
+    const hintText = document.getElementById("hintText");
+
+    function sanitizeName(value) {
+      return String(value || "")
+        .replace(/[<>]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 40);
+    }
+
+    function sanitizeGameId(value) {
+      const candidate = String(value || "").trim().toLowerCase();
+      return candidate === "code" ? "code" : "code";
+    }
+
+    function isConfigValid() {
+      return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(APP_URL);
+    }
+
+    async function apiGet(action, params) {
+      const query = new URLSearchParams(Object.assign({ action }, params || {}));
+      const response = await fetch(APP_URL + "?" + query.toString(), {
+        method: "GET",
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("API-verzoek mislukt met status " + response.status + ".");
+      }
+
+      const body = await response.json();
+
+      if (!body.success) {
+        throw new Error(body.error || "De API gaf een fout terug.");
+      }
+
+      return body.data;
+    }
+
+    async function apiPost(action, payload) {
+      const body = new URLSearchParams({
+        action,
+        payload: JSON.stringify(payload || {})
+      });
+
+      const response = await fetch(APP_URL, {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store",
+        body
+      });
+
+      if (!response.ok) {
+        throw new Error("API-verzoek mislukt met status " + response.status + ".");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || "De API gaf een fout terug.");
+      }
+
+      return result.data;
+    }
+
+    function elapsedSeconds() {
+      return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+    }
+
+    function formatTime(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+    }
+
+    function updateTimer() {
+      timer.textContent = formatTime(elapsedSeconds());
+    }
+
+    function cleanDigit(input) {
+      input.value = input.value.replace(/\D/g, "").slice(-1);
+    }
+
+    digits.forEach((input, index) => {
+      input.addEventListener("input", () => {
+        cleanDigit(input);
+
+        if (input.value && digits[index + 1]) {
+          digits[index + 1].focus();
+        }
+      });
+
+      input.addEventListener("keydown", event => {
+        if (event.key === "Backspace" && !input.value && digits[index - 1]) {
+          digits[index - 1].focus();
+        }
+
+        if (event.key === "Enter") {
+          checkCode();
+        }
+      });
+
+      input.addEventListener("paste", event => {
+        const pasted = (event.clipboardData || window.clipboardData)
+          .getData("text")
+          .replace(/\D/g, "")
+          .slice(0, 4);
+
+        if (pasted.length > 1) {
+          event.preventDefault();
+
+          pasted.split("").forEach((value, pastedIndex) => {
+            if (digits[pastedIndex]) {
+              digits[pastedIndex].value = value;
+            }
+          });
+
+          digits[Math.min(pasted.length, 4) - 1].focus();
+        }
+      });
+    });
+
+    function enteredCode() {
+      return digits.map(input => input.value).join("");
+    }
+
+    function showError(message) {
+      feedback.textContent = message;
+      feedback.className = "feedback error";
+      lockbox.classList.remove("shake");
+      void lockbox.offsetWidth;
+      lockbox.classList.add("shake");
+    }
+
+    function setGameEnabled(enabled) {
+      submitButton.disabled = !enabled;
+      digits.forEach(input => {
+        input.disabled = !enabled;
+      });
+
+      if (enabled) {
+        digits[0].focus();
+      }
+    }
+
+    /*
+     * Mastermind-evaluatie met correcte verwerking van dubbele cijfers.
+     * Eerst worden exacte matches vastgelegd. Daarna worden de resterende
+     * cijfers gekoppeld aan nog niet gebruikte posities in de geheime code.
+     */
+    function evaluateCode(code, solution) {
+      const result = Array(code.length).fill("absent");
+      const remainingSolution = solution.split("");
+      const remainingGuess = code.split("");
+
+      for (let index = 0; index < code.length; index += 1) {
+        if (code[index] === solution[index]) {
+          result[index] = "correct";
+          remainingSolution[index] = null;
+          remainingGuess[index] = null;
+        }
+      }
+
+      for (let index = 0; index < remainingGuess.length; index += 1) {
+        const value = remainingGuess[index];
+
+        if (value === null) {
+          continue;
+        }
+
+        const matchingIndex = remainingSolution.indexOf(value);
+
+        if (matchingIndex !== -1) {
+          result[index] = "present";
+          remainingSolution[matchingIndex] = null;
+        }
+      }
+
+      return result;
+    }
+
+    function addAttempt(code, evaluation) {
+      if (emptyAttempts && emptyAttempts.isConnected) {
+        emptyAttempts.remove();
+      }
+
+      const row = document.createElement("div");
+      row.className = "attempt-row";
+
+      const number = document.createElement("div");
+      number.className = "attempt-number";
+      number.textContent = "#" + attempts;
+
+      const attemptDigits = document.createElement("div");
+      attemptDigits.className = "attempt-digits";
+
+      [...code].forEach((value, index) => {
+        const state = evaluation[index];
+        const cell = document.createElement("div");
+
+        cell.className = "attempt-digit " + state;
+        cell.textContent = value;
+
+        const labels = {
+          correct: "juiste cijfer op de juiste plek",
+          present: "juist cijfer op een andere plek",
+          absent: "cijfer komt niet voor"
+        };
+
+        cell.setAttribute("aria-label", value + ", " + labels[state]);
+        attemptDigits.appendChild(cell);
+      });
+
+      row.appendChild(number);
+      row.appendChild(attemptDigits);
+      attemptsList.prepend(row);
+    }
+
+    function clearInputs() {
+      digits.forEach(input => {
+        input.value = "";
+      });
+
+      digits[0].focus();
+    }
+
+    function checkCode() {
+      if (completed || !accessAllowed) {
+        return;
+      }
+
+      const code = enteredCode();
+
+      if (code.length !== 4) {
+        showError("Vul eerst alle vier de cijfers in.");
+        return;
+      }
+
+      attempts += 1;
+      attemptsLabel.textContent = String(attempts);
+
+      const evaluation = evaluateCode(code, CORRECT_CODE);
+      addAttempt(code, evaluation);
+
+      if (code !== CORRECT_CODE) {
+        const correct = evaluation.filter(state => state === "correct").length;
+        const present = evaluation.filter(state => state === "present").length;
+
+        feedback.textContent =
+          correct + " op de juiste plek, " +
+          present + " op een andere plek.";
+
+        feedback.className = "feedback error";
+        clearInputs();
+        return;
+      }
+
+      completed = true;
+      clearInterval(timerHandle);
+
+      feedback.textContent = "De tandwielen komen in beweging…";
+      feedback.className = "feedback success";
+
+      submitButton.disabled = true;
+      digits.forEach(input => input.disabled = true);
+
+      saveResult();
+    }
+
+    function saveResult() {
+      const seconds = elapsedSeconds();
+
+      apiPost("score", {
+        name: PLAYER_NAME,
+        gameId: GAME_ID,
+        seconds,
+        attempts,
+        detail: {
+          type: "mastermind-code",
+          solved: true
+        }
+      })
+        .then(data => {
+          showCompleted(data.result || data);
+        })
+        .catch(error => {
+          completed = false;
+          submitButton.disabled = false;
+          digits.forEach(input => input.disabled = false);
+
+          showError(
+            error && error.message
+              ? error.message
+              : "Opslaan is mislukt. Probeer het opnieuw."
+          );
+        });
+    }
+
+    function showCompleted(response) {
+      const data = response && response.result ? response.result : response;
+      const score = data && data.score;
+
+      const seconds = data && Number.isFinite(Number(data.seconds))
+        ? Number(data.seconds)
+        : elapsedSeconds();
+
+      const usedAttempts = data && Number.isFinite(Number(data.attempts))
+        ? Number(data.attempts)
+        : attempts;
+
+      const hint = data && data.hint
+        ? data.hint
+        : "De volgende aanwijzing blijft nog verzegeld.";
+
+      lockbox.style.display = "none";
+      result.classList.add("visible");
+
+      scoreText.textContent = score === null || score === undefined
+        ? "Voltooid in " + formatTime(seconds) +
+          " met " + usedAttempts + " poging(en)."
+        : "Je behaalde " + score + " punten in " +
+          formatTime(seconds) + " met " +
+          usedAttempts + " poging(en).";
+
+      hintText.textContent = hint;
+    }
+
+    async function bootstrap() {
+      setGameEnabled(false);
+
+      if (!isConfigValid()) {
+        showError("Apps Script URL in config.js is ongeldig.");
+        return;
+      }
+
+      if (!PLAYER_NAME) {
+        showError("Geen spelernaam gevonden. Open dit spel via de startpagina.");
+        return;
+      }
+
+      localStorage.setItem(PLAYER_KEY, PLAYER_NAME);
+
+      try {
+        const access = await apiGet("access", {
+          gameId: GAME_ID,
+          playerName: PLAYER_NAME
+        });
+
+        if (!access.allowed) {
+          if (access.completed) {
+            showCompleted(access.completed);
+            return;
+          }
+
+          showError("Dit spel is nog niet vrijgegeven of al afgesloten.");
+          return;
+        }
+
+        await apiPost("start", {
+          name: PLAYER_NAME,
+          gameId: GAME_ID,
+          source: "github-pages",
+          userAgent: navigator.userAgent
+        });
+
+        startedAt = Date.now();
+        updateTimer();
+        timerHandle = setInterval(updateTimer, 1000);
+        accessAllowed = true;
+        feedback.textContent = "Kraak de code met zo weinig mogelijk pogingen.";
+        feedback.className = "feedback";
+        setGameEnabled(true);
+      } catch (error) {
+        showError(
+          error && error.message
+            ? error.message
+            : "De spelstatus kon niet worden geladen."
+        );
+      }
+    }
+
+    submitButton.addEventListener("click", checkCode);
+
+    bootstrap();
+  </script>
+</body>
+</html>
