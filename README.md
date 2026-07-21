@@ -1,9 +1,5 @@
 # Het Verzegelde Dossier – PWA
 
-Deze versie gebruikt een geheimzinnig historisch thema zonder de bestemming of het echte kasteel herkenbaar te maken.
-
-# Vriendenweekend 2026 PWA
-
 Deze map bevat een installeerbare PWA-schil rond de bestaande Google Apps Script-webapp.
 De spelgegevens, scores en vrijgave blijven via Apps Script en Google Sheets lopen.
 
@@ -55,3 +51,8 @@ De PWA vult de volledige beschikbare schermhoogte met `100dvh`, ondersteunt safe
 ## Offline gedrag
 
 De PWA-schil en iconen worden gecachet. De spellen en scores hebben een internetverbinding nodig omdat Apps Script en Google Sheets online worden geladen.
+
+
+## Thema
+
+De PWA-schil gebruikt een mysterieus historisch dossier-thema. De inhoud van de Apps Script-webapp, waaronder de vlam-mozaïek, wordt niet aangepast.
