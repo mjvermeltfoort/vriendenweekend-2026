@@ -227,6 +227,11 @@
         source: 'github-pages',
         userAgent: navigator.userAgent
       });
+      window.setInterval(() => {
+        if (!document.hidden) {
+          apiPost('heartbeat', { name: PLAYER_NAME, gameId: GAME_ID }).catch(() => {});
+        }
+      }, 10000);
 
       gameAllowed = true;
       result.innerHTML = '';

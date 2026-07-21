@@ -1025,6 +1025,11 @@
           source: "github-pages",
           userAgent: navigator.userAgent
         });
+        window.setInterval(() => {
+          if (!document.hidden) {
+            apiPost("heartbeat", { name: PLAYER_NAME, gameId: GAME_ID }).catch(() => {});
+          }
+        }, 10000);
 
         accessAllowed = true;
         setGameEnabled(true);

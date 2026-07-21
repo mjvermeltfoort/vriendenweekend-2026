@@ -4,6 +4,7 @@
  * GET  ?action=state&playerName=Mark
  * GET  ?action=access&gameId=mozaiek&playerName=Mark
  * POST action=start  + payload={...}
+ * POST action=heartbeat + payload={...}
  * POST action=score  + payload={...}
  *
  * Gebruik voor POST vanuit GitHub Pages bij voorkeur URLSearchParams.
@@ -12,8 +13,9 @@
 const SETTINGS_SHEET = 'Spellen';
 const SCORES_SHEET = 'Scores';
 const STARTS_SHEET = 'Spelstarts';
-const API_VERSION = '1.2.0';
-const ACTIVE_PLAYER_WINDOW_MS = 60 * 60 * 1000;
+const API_VERSION = '1.3.0';
+const ACTIVE_PLAYERS_PROPERTY = 'activePlayers';
+const ACTIVE_PLAYER_WINDOW_MS = 30 * 1000;
 
 /**
  * Publieke GET-ingang van de web-app.
@@ -82,6 +84,12 @@ function handleApiRequest_(method, e) {
         data = registerGameStart(request.payload);
         break;
 
+      case 'heartbeat':
+      case 'gameheartbeat':
+        requireMethod_(method, 'POST');
+        data = registerGameHeartbeat(request.payload);
+        break;
+
       case 'score':
       case 'submitscore':
         requireMethod_(method, 'POST');
@@ -90,7 +98,7 @@ function handleApiRequest_(method, e) {
 
       default:
         throw new Error(
-          'Onbekende API-actie. Gebruik health, state, access, start of score.'
+          'Onbekende API-actie. Gebruik health, state, access, start, heartbeat of score.'
         );
     }
 
@@ -243,57 +251,15 @@ function getPublicState(playerName) {
 }
 
 /**
- * Spelers blijven maximaal een uur zichtbaar. Een ingeleverde score na de
- * start haalt de speler direct uit de lijst voor dat spel.
+ * Alleen spelers met een recente heartbeat worden als actief getoond.
  */
 function getActivePlayers_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const startsSheet = ss.getSheetByName(STARTS_SHEET);
-  if (!startsSheet || startsSheet.getLastRow() < 2) return [];
-
   const cutoff = Date.now() - ACTIVE_PLAYER_WINDOW_MS;
-  const starts = startsSheet
-    .getRange(2, 1, startsSheet.getLastRow() - 1, 7)
-    .getValues();
-  const scoresSheet = ss.getSheetByName(SCORES_SHEET);
-  const scores = scoresSheet && scoresSheet.getLastRow() >= 2
-    ? scoresSheet.getRange(2, 1, scoresSheet.getLastRow() - 1, 8).getValues()
-    : [];
-  const latestScores = {};
-
-  scores.forEach(row => {
-    const key = String(row[1] || '').trim().toLowerCase() + '|' + String(row[2] || '').trim();
-    const timestamp = row[0] instanceof Date ? row[0].getTime() : new Date(row[0]).getTime();
-    if (key !== '|' && Number.isFinite(timestamp)) {
-      latestScores[key] = Math.max(latestScores[key] || 0, timestamp);
-    }
-  });
-
-  const active = {};
-  starts.forEach(row => {
-    const timestamp = row[0] instanceof Date ? row[0].getTime() : new Date(row[0]).getTime();
-    const name = sanitizeName_(row[1]);
-    const gameId = String(row[2] || '').trim();
-    const gameTitle = sanitizeText_(row[3], 100);
-    if (!name || !gameId || !Number.isFinite(timestamp) || timestamp < cutoff) return;
-
-    const scoreKey = name.toLowerCase() + '|' + gameId;
-    if ((latestScores[scoreKey] || 0) >= timestamp) return;
-
-    const playerKey = name.toLowerCase();
-    if (!active[playerKey] || active[playerKey].startedAtMs < timestamp) {
-      active[playerKey] = {
-        name: name,
-        gameId: gameId,
-        gameTitle: gameTitle || gameId,
-        startedAt: new Date(timestamp).toISOString(),
-        startedAtMs: timestamp
-      };
-    }
-  });
+  const active = readActivePlayers_();
 
   return Object.values(active)
-    .sort((a, b) => b.startedAtMs - a.startedAtMs)
+    .filter(item => Number(item.lastSeen) >= cutoff)
+    .sort((a, b) => Number(b.lastSeen) - Number(a.lastSeen))
     .map(item => ({
       name: item.name,
       gameId: item.gameId,
@@ -371,7 +337,93 @@ function registerGameStart(payload) {
     sanitizeText_(payload.userAgent || '', 250)
   ]);
 
+  setActivePlayer_(name, game);
+
   return { registered: true };
+}
+
+function registerGameHeartbeat(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Ongeldige heartbeat.');
+  }
+
+  const name = sanitizeName_(payload.name || payload.playerName);
+  const gameId = String(payload.gameId || '').trim();
+  if (!name || !gameId) throw new Error('Naam of spel-id ontbreekt.');
+
+  const game = readGames_().find(item => item.id === gameId);
+  if (!game || calculateState_(game) !== 'open') {
+    throw new Error('Dit spel is niet actief.');
+  }
+  if (getCompletedForPlayer_(name)[gameId]) {
+    removeActivePlayer_(name);
+    return { active: false, reason: 'completed' };
+  }
+
+  setActivePlayer_(name, game);
+  return { active: true };
+}
+
+function readActivePlayers_() {
+  const raw = PropertiesService.getScriptProperties().getProperty(ACTIVE_PLAYERS_PROPERTY);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function setActivePlayer_(name, game) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+  try {
+    const active = readActivePlayers_();
+    const key = name.toLowerCase();
+    const now = Date.now();
+    const existing = active[key];
+    active[key] = {
+      name: name,
+      gameId: game.id,
+      gameTitle: game.title,
+      startedAt: existing && existing.gameId === game.id
+        ? existing.startedAt
+        : new Date(now).toISOString(),
+      lastSeen: now
+    };
+
+    Object.keys(active).forEach(playerKey => {
+      if (Number(active[playerKey].lastSeen) < now - ACTIVE_PLAYER_WINDOW_MS) {
+        delete active[playerKey];
+      }
+    });
+    PropertiesService.getScriptProperties().setProperty(
+      ACTIVE_PLAYERS_PROPERTY,
+      JSON.stringify(active)
+    );
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function removeActivePlayer_(name) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+  try {
+    removeActivePlayerUnlocked_(name);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function removeActivePlayerUnlocked_(name) {
+  const active = readActivePlayers_();
+  delete active[String(name || '').toLowerCase()];
+  PropertiesService.getScriptProperties().setProperty(
+    ACTIVE_PLAYERS_PROPERTY,
+    JSON.stringify(active)
+  );
 }
 
 function getOrCreateStartsSheet_() {
@@ -417,6 +469,7 @@ function submitScore(payload) {
 
     const existing = getCompletedForPlayer_(name)[gameId];
     if (existing) {
+      removeActivePlayerUnlocked_(name);
       return {
         alreadySubmitted: true,
         result: existing,
@@ -438,6 +491,7 @@ function submitScore(payload) {
       attempts,
       detail
     ]);
+    removeActivePlayerUnlocked_(name);
 
     return {
       alreadySubmitted: false,

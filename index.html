@@ -842,7 +842,7 @@
         deferredPrompt = null;
       });
 
-      window.setInterval(refreshLiveOverview, 30000);
+      window.setInterval(refreshLiveOverview, 10000);
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) refreshLiveOverview();
       });

@@ -37,6 +37,7 @@ De frontend gebruikt exact deze routes:
 - `GET ?action=state&playerName=Mark`
 - `GET ?action=access&gameId=mozaiek&playerName=Mark`
 - `POST action=start + payload={...}`
+- `POST action=heartbeat + payload={...}`
 - `POST action=score + payload={...}`
 
 De routes `state` en `access` lezen de spelinformatie uit het werkblad
@@ -44,11 +45,12 @@ De routes `state` en `access` lezen de spelinformatie uit het werkblad
 `state`, `openFrom`, `closeAt`, `hint`, `maxPoints`, `order` en `completed`.
 De Nederlandse kolomnamen in de Sheet worden op headernaam gekoppeld.
 
-De `state`-response bevat daarnaast `activePlayers`: spelers die in het
-afgelopen uur een spel zijn gestart en daarna nog geen score voor dat spel
-hebben ingeleverd.
+De `state`-response bevat daarnaast `activePlayers`. Een geopende spelpagina
+stuurt iedere 10 seconden een heartbeat; zonder heartbeat verdwijnt een speler
+na 30 seconden uit deze lijst. Een ingeleverde score verwijdert de speler
+direct.
 De overzichtspagina ververst deze actieve spelers, het leaderboard en het
-spelersaantal iedere 30 seconden en zodra de app opnieuw op de voorgrond komt.
+spelersaantal iedere 10 seconden en zodra de app opnieuw op de voorgrond komt.
 
 Voor POST wordt in de frontend `URLSearchParams` gebruikt:
 
