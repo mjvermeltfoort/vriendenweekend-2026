@@ -138,6 +138,18 @@
       padding: 16px;
     }
 
+    .emoji-rebus {
+      margin: 0 0 12px;
+      border: 1px solid rgba(210, 184, 111, 0.24);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.16);
+      color: var(--gold-light);
+      font-size: clamp(1rem, 2.8vw, 1.15rem);
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
     .rows {
       display: grid;
       gap: 10px;
@@ -305,7 +317,7 @@
     <header class="header">
       <p class="eyebrow">Dossier II</p>
       <h1>Het verzegelde bericht</h1>
-      <p class="intro">Los vier mini-rebussen op. Elk goed antwoord ontgrendelt een deel van het bericht. Alles goed? Dan wordt je score opgeslagen.</p>
+      <p class="intro">Los de rebus op door de volledige zin in te vullen. Bij een goed antwoord wordt je score opgeslagen.</p>
     </header>
 
     <section class="stats" aria-label="Spelstatus">
@@ -318,19 +330,23 @@
         <strong id="attempts">0</strong>
       </div>
       <div class="stat">
-        <span>Opgelost</span>
-        <strong id="solved-count">0 / 4</strong>
+        <span>Doel</span>
+        <strong>1 zin</strong>
       </div>
     </section>
 
     <section class="board" id="board">
+      <p class="emoji-rebus" aria-label="Emoji rebus">
+        ℹ️ + K | 🧙‍♀️ − KS + B | 🦓 − EBRA + IN | 📥 | 🧙‍♀️ − KS + T | 🧑‍🤝‍🧑 | 📅 + 🔚
+      </p>
+
       <div class="rows" id="rows"></div>
 
       <div class="actions">
         <button class="button" id="check-button" type="button">Controleer antwoorden</button>
       </div>
 
-      <p class="feedback" id="feedback" aria-live="polite">Tip: hoofdletters en kleine letters worden gelijk behandeld.</p>
+      <p class="feedback" id="feedback" aria-live="polite">Tip: hoofdletters, leestekens en extra spaties tellen niet mee.</p>
     </section>
 
     <section class="result" id="result" aria-live="polite">
@@ -351,10 +367,11 @@
     const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
 
     const REBUS_ITEMS = [
-      { id: "r1", clue: "REE + BUS", answer: "REBUS" },
-      { id: "r2", clue: "ZON + DAG", answer: "ZONDAG" },
-      { id: "r3", clue: "BOOM - O", answer: "BOM" },
-      { id: "r4", clue: "KERK + HOF", answer: "KERKHOF" }
+      {
+        id: "r1",
+        clue: "Volledige oplossing",
+        answer: "Ik heb zin in het vriendenweekend!"
+      }
     ];
 
     let startedAt = Date.now();
@@ -366,7 +383,6 @@
 
     const timer = document.getElementById("timer");
     const attemptsLabel = document.getElementById("attempts");
-    const solvedCountLabel = document.getElementById("solved-count");
     const rows = document.getElementById("rows");
     const checkButton = document.getElementById("check-button");
     const feedback = document.getElementById("feedback");
@@ -494,8 +510,8 @@
         input.className = "answer";
         input.type = "text";
         input.autocomplete = "off";
-        input.maxLength = 28;
-        input.placeholder = "Jouw antwoord";
+        input.maxLength = 80;
+        input.placeholder = "Vul de volledige zin in";
         input.setAttribute("data-answer", "");
         input.setAttribute("aria-label", "Antwoord op rebus " + (index + 1));
 
@@ -548,7 +564,6 @@
         }
       });
 
-      solvedCountLabel.textContent = solvedCount + " / " + REBUS_ITEMS.length;
       return solvedCount;
     }
 
@@ -579,7 +594,7 @@
       const solvedCount = syncSolvedUi(states);
 
       if (solvedCount < REBUS_ITEMS.length) {
-        setFeedback("Je hebt " + solvedCount + " van de " + REBUS_ITEMS.length + " rebussen goed.", "error");
+        setFeedback("Nog niet juist. Vul de volledige zin van de rebus in.", "error");
         const firstUnsolved = states.find(state => !state.solved);
         if (firstUnsolved && !firstUnsolved.input.disabled) {
           firstUnsolved.input.focus();
@@ -590,7 +605,7 @@
       completed = true;
       setGameEnabled(false);
       clearInterval(timerHandle);
-      setFeedback("Alle rebussen opgelost. Score wordt opgeslagen...", "success");
+      setFeedback("Juiste oplossing. Score wordt opgeslagen...", "success");
 
       await saveResult(states);
     }
@@ -606,9 +621,10 @@
           seconds,
           attempts,
           detail: {
-            type: "rebus-grid",
+            type: "emoji-rebus",
             solved: states.map(state => state.id),
-            variant: 1
+            variant: 2,
+            answerLength: states[0] ? states[0].entered.length : 0
           }
         });
 
@@ -708,7 +724,7 @@
         if (firstInput) {
           firstInput.focus();
         }
-        setFeedback("Speel gestart. Los alle rebussen op.");
+        setFeedback("Speel gestart. Los de rebus op.");
       } catch (error) {
         showError(
           error && error.message
