@@ -12,7 +12,8 @@
 const SETTINGS_SHEET = 'Spellen';
 const SCORES_SHEET = 'Scores';
 const STARTS_SHEET = 'Spelstarts';
-const API_VERSION = '1.1.0';
+const API_VERSION = '1.2.0';
+const ACTIVE_PLAYER_WINDOW_MS = 60 * 60 * 1000;
 
 /**
  * Publieke GET-ingang van de web-app.
@@ -236,8 +237,69 @@ function getPublicState(playerName) {
 
   return {
     games: games.map(game => serializeGame_(game, completed[game.id] || null)),
-    leaderboard: getLeaderboard_()
+    leaderboard: getLeaderboard_(),
+    activePlayers: getActivePlayers_()
   };
+}
+
+/**
+ * Spelers blijven maximaal een uur zichtbaar. Een ingeleverde score na de
+ * start haalt de speler direct uit de lijst voor dat spel.
+ */
+function getActivePlayers_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const startsSheet = ss.getSheetByName(STARTS_SHEET);
+  if (!startsSheet || startsSheet.getLastRow() < 2) return [];
+
+  const cutoff = Date.now() - ACTIVE_PLAYER_WINDOW_MS;
+  const starts = startsSheet
+    .getRange(2, 1, startsSheet.getLastRow() - 1, 7)
+    .getValues();
+  const scoresSheet = ss.getSheetByName(SCORES_SHEET);
+  const scores = scoresSheet && scoresSheet.getLastRow() >= 2
+    ? scoresSheet.getRange(2, 1, scoresSheet.getLastRow() - 1, 8).getValues()
+    : [];
+  const latestScores = {};
+
+  scores.forEach(row => {
+    const key = String(row[1] || '').trim().toLowerCase() + '|' + String(row[2] || '').trim();
+    const timestamp = row[0] instanceof Date ? row[0].getTime() : new Date(row[0]).getTime();
+    if (key !== '|' && Number.isFinite(timestamp)) {
+      latestScores[key] = Math.max(latestScores[key] || 0, timestamp);
+    }
+  });
+
+  const active = {};
+  starts.forEach(row => {
+    const timestamp = row[0] instanceof Date ? row[0].getTime() : new Date(row[0]).getTime();
+    const name = sanitizeName_(row[1]);
+    const gameId = String(row[2] || '').trim();
+    const gameTitle = sanitizeText_(row[3], 100);
+    if (!name || !gameId || !Number.isFinite(timestamp) || timestamp < cutoff) return;
+
+    const scoreKey = name.toLowerCase() + '|' + gameId;
+    if ((latestScores[scoreKey] || 0) >= timestamp) return;
+
+    const playerKey = name.toLowerCase();
+    if (!active[playerKey] || active[playerKey].startedAtMs < timestamp) {
+      active[playerKey] = {
+        name: name,
+        gameId: gameId,
+        gameTitle: gameTitle || gameId,
+        startedAt: new Date(timestamp).toISOString(),
+        startedAtMs: timestamp
+      };
+    }
+  });
+
+  return Object.values(active)
+    .sort((a, b) => b.startedAtMs - a.startedAtMs)
+    .map(item => ({
+      name: item.name,
+      gameId: item.gameId,
+      gameTitle: item.gameTitle,
+      startedAt: item.startedAt
+    }));
 }
 
 function getGameAccess(gameId, playerName) {

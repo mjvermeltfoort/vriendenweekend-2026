@@ -44,6 +44,10 @@ De routes `state` en `access` lezen de spelinformatie uit het werkblad
 `state`, `openFrom`, `closeAt`, `hint`, `maxPoints`, `order` en `completed`.
 De Nederlandse kolomnamen in de Sheet worden op headernaam gekoppeld.
 
+De `state`-response bevat daarnaast `activePlayers`: spelers die in het
+afgelopen uur een spel zijn gestart en daarna nog geen score voor dat spel
+hebben ingeleverd.
+
 Voor POST wordt in de frontend `URLSearchParams` gebruikt:
 
 ```txt

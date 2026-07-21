@@ -361,6 +361,36 @@
       color: var(--muted);
     }
 
+    .active-players {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-bottom: 16px;
+    }
+
+    .active-player {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 7px 11px;
+      border: 1px solid rgba(126,183,131,.4);
+      border-radius: 999px;
+      background: rgba(126,183,131,.09);
+    }
+
+    .active-player::before {
+      content: '';
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(126,183,131,.13);
+    }
+
+    .active-player small { color: var(--muted); }
+
     @media (max-width: 560px) {
       .toolbar { padding: 9px 10px; }
       .brand-icon { width: 34px; height: 34px; border-radius: 10px; font-size: 19px; }
@@ -406,6 +436,13 @@
           <span>Spelers</span>
           <strong id="player-count">0</strong>
         </div>
+      </div>
+
+      <div class="section-head">
+        <h2>Nu aan het spelen</h2>
+      </div>
+      <div class="active-players" id="active-players" aria-live="polite">
+        <span class="empty">Er speelt nu niemand.</span>
       </div>
 
       <div class="section-head">
@@ -458,8 +495,7 @@
         <div class="empty" id="leaderboard-empty">Hier worden de scores van andere vrienden getoond.</div>
       </div>
 
-      <p class="helper">Deze pagina laadt geen templates via JavaScript. De spellen zijn gewone HTML-pagina's en gebruiken alleen de API-routes voor data en scores.</p>
-    </section>
+     </section>
   </main>
 
   <script src="config.js?v=20260721-23"></script>
@@ -483,6 +519,7 @@
       const refreshButton = document.getElementById('refresh-button');
       const leaderboardWrap = document.getElementById('leaderboard-wrap');
       const installButton = document.getElementById('install-button');
+      const activePlayersRoot = document.getElementById('active-players');
       const appUrl = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
       let deferredPrompt = null;
       let activePlayerName = '';
@@ -597,6 +634,21 @@
           '</div>';
       }
 
+      function renderActivePlayers(activePlayers) {
+        const players = Array.isArray(activePlayers) ? activePlayers : [];
+        if (!players.length) {
+          activePlayersRoot.innerHTML = '<span class="empty">Er speelt nu niemand.</span>';
+          return;
+        }
+
+        activePlayersRoot.innerHTML = players.map(player => (
+          '<span class="active-player">' +
+            '<strong>' + escapeHtml(player.name) + '</strong>' +
+            '<small>' + escapeHtml(player.gameTitle || 'is aan het spelen') + '</small>' +
+          '</span>'
+        )).join('');
+      }
+
       async function apiGet(action, params) {
         const query = new URLSearchParams(Object.assign({ action }, params || {}));
         const response = await fetch(appUrl + '?' + query.toString(), {
@@ -626,6 +678,7 @@
         const data = await apiGet('state', { playerName });
         const games = Array.isArray(data.games) ? data.games : [];
         const leaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+        const activePlayers = Array.isArray(data.activePlayers) ? data.activePlayers : [];
 
         Object.keys(cardsById).forEach(gameId => {
           const match = games.find(item => item.id === gameId);
@@ -634,6 +687,7 @@
 
         renderMetrics(games, leaderboard);
         renderLeaderboard(leaderboard);
+        renderActivePlayers(activePlayers);
 
         setStatus('Status geladen voor ' + playerName + '.', 'success');
         refreshButton.disabled = false;
@@ -644,8 +698,10 @@
 
         const data = await apiGet('state', { playerName: '' });
         const leaderboard = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+        const activePlayers = Array.isArray(data.activePlayers) ? data.activePlayers : [];
 
         renderLeaderboard(leaderboard);
+        renderActivePlayers(activePlayers);
         playerCount.textContent = String(leaderboard.length);
         setStatus('Scorebord geladen. Sla je naam op om jouw spelstatus te laden.');
         refreshButton.disabled = false;
