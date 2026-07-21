@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Vriendenweekend">
   <meta name="description" content="Spellen en hints voor Vriendenweekend 2026">
-  <link rel="manifest" href="manifest.webmanifest?v=20260721-21">
-  <link rel="icon" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest?v=20260721-22">
+  <link rel="icon" href="icons/icon-192.png?v=20260721-22">
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=20260721-22">
   <title>Vriendenweekend 2026</title>
   <style>
     :root {
@@ -214,7 +214,7 @@
     </section>
   </main>
 
-  <script src="config.js?v=20260721-21"></script>
+  <script src="config.js?v=20260721-22"></script>
   <script>
     (() => {
       const frame = document.getElementById('game-frame');
@@ -263,7 +263,12 @@
 
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js').catch(console.error);
+          navigator.serviceWorker
+            .register('./service-worker.js?v=20260721-22', {
+                updateViaCache: 'none'
+            })
+            .then(registration => registration.update())
+            .catch(console.error);
         });
       }
     })();

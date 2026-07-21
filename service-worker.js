@@ -1,22 +1,28 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v3';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v4';
+
 const APP_SHELL = [
   './',
-  './index.html',
-  './config.js',
-  './manifest.webmanifest',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  './index.html'
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
+  );
+
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys =>
+        Promise.all(
+          keys
+            .filter(key => key !== CACHE_NAME)
+            .map(key => caches.delete(key))
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
@@ -24,32 +30,40 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
-  const requestUrl = new URL(event.request.url);
+  const url = new URL(event.request.url);
 
-  // Apps Script en Google Sheets blijven online-only.
-  if (requestUrl.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) return;
 
-  // Voor navigaties eerst de nieuwste versie ophalen; offline terugvallen op cache.
+  const isAlwaysFresh =
+    url.pathname.endsWith('/manifest.webmanifest') ||
+    url.pathname.endsWith('/config.js') ||
+    url.pathname.includes('/icons/') ||
+    url.pathname.endsWith('/service-worker.js');
+
+  if (isAlwaysFresh) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then(response => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
+
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put('./index.html', copy);
+          });
+
           return response;
         })
         .catch(() => caches.match('./index.html'))
     );
+
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
-      if (response.ok) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-      }
-      return response;
-    }))
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
