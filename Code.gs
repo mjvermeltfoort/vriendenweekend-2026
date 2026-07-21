@@ -209,12 +209,13 @@ function setup() {
   games.getRange(1, 1, 1, 9).setValues([[
     'id', 'titel', 'omschrijving', 'status', 'open_vanaf', 'sluit_op', 'hint', 'max_punten', 'volgorde'
   ]]);
-  games.getRange(2, 1, 5, 9).setValues([
+  games.getRange(2, 1, 6, 9).setValues([
     ['mozaiek', 'Het gebroken zegel', 'Herstel het oude zegel en ontdek de eerste aanwijzing.', 'open', '', '', 'Waar oude muren verhalen bewaren.', 1000, 1],
     ['rebus', 'Het verzegelde bericht', 'Ontcijfer een cryptische rebus.', 'gesloten', '', '', 'Een plek waar muren verhalen bewaren.', 800, 2],
     ['code', 'De viercijferige code', 'Vind de code met aanwijzingen uit eerdere spellen.', 'gesloten', '', '', 'Twee namen, maar één bestemming.', 700, 3],
     ['memory', 'Het geheugenarchief', 'Vind alle kaartparen en onthul de verborgen aanwijzing.', 'gesloten', '', '', 'Soms onthult volgorde wat stilte verbergt.', 650, 4],
-    ['vluchtroute', 'Vluchtroute', 'Ontwijk de obstakels en bereik de finish.', 'gesloten', '', '', 'BOSPAD', 900, 5]
+    ['vluchtroute', 'Vluchtroute', 'Ontwijk de obstakels en bereik de finish.', 'gesloten', '', '', 'BOSPAD', 900, 5],
+    ['vallende-stenen', 'De Vallende Stenen', 'Plaats de vallende stenen en maak 10 volledige rijen.', 'gesloten', '', '', 'ONDER DE OUDE BRUG', 900, 6]
   ]);
   games.setFrozenRows(1);
   games.autoResizeColumns(1, 9);
@@ -237,6 +238,33 @@ function setup() {
   starts.autoResizeColumns(1, 7);
 
   return 'Installatie voltooid. Publiceer het script opnieuw als web-app.';
+}
+
+/**
+ * Voegt De Vallende Stenen toe aan een bestaande installatie zonder scores
+ * of andere spelinstellingen te wissen. Voer deze functie één keer handmatig uit.
+ */
+function addVallendeStenenGame() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const games = ss.getSheetByName(SETTINGS_SHEET);
+  if (!games) throw new Error('Voer eerst setup() uit.');
+
+  const ids = games.getLastRow() > 1
+    ? games.getRange(2, 1, games.getLastRow() - 1, 1).getDisplayValues().flat()
+    : [];
+  if (ids.some(id => String(id).trim() === 'vallende-stenen')) return;
+
+  games.appendRow([
+    'vallende-stenen',
+    'De Vallende Stenen',
+    'Plaats de vallende stenen en maak 10 volledige rijen.',
+    'gesloten',
+    '',
+    '',
+    'ONDER DE OUDE BRUG',
+    900,
+    6
+  ]);
 }
 
 function getPublicState(playerName) {
@@ -649,6 +677,12 @@ function calculateScore_(gameId, maxPoints, seconds, attempts) {
     const timePenalty = Math.min(500, Math.floor(seconds * 2));
     const movePenalty = Math.min(350, Math.max(0, attempts - 15) * 5);
     return Math.max(100, maxPoints - timePenalty - movePenalty);
+  }
+
+  if (gameId === 'vallende-stenen') {
+    const timePenalty = Math.min(500, Math.floor(seconds * 1.5));
+    const piecePenalty = Math.min(250, Math.max(0, attempts - 30) * 4);
+    return Math.max(100, maxPoints - timePenalty - piecePenalty);
   }
 
   return Math.max(
