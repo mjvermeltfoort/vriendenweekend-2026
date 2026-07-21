@@ -211,11 +211,13 @@
     }
 
     .card-inner {
+      display: block;
       position: relative;
       width: 100%;
       height: 100%;
       transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
       transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
       border-radius: 12px;
     }
 
@@ -230,6 +232,7 @@
       inset: 0;
       border-radius: 12px;
       backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
       border: 1px solid rgba(210, 184, 111, 0.4);
       display: grid;
       place-items: center;
@@ -251,6 +254,8 @@
         radial-gradient(circle at 68% 18%, rgba(255, 255, 255, 0.22), transparent 44%),
         var(--card-face);
       font-size: clamp(1.7rem, 7vw, 2.2rem);
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+      line-height: 1;
     }
 
     .card.matched .card-back {
@@ -441,10 +446,10 @@
     const HIDDEN_CLUE = "MONNIK";
     const SYMBOLS = [
       { id: "sleutel", icon: "🔑", label: "Sleutel" },
-      { id: "kaart", icon: "🗺", label: "Kaart" },
+      { id: "kaart", icon: "🗺️", label: "Kaart" },
       { id: "fiets", icon: "🚲", label: "Fiets" },
       { id: "boom", icon: "🌲", label: "Boom" },
-      { id: "anker", icon: "⚓", label: "Anker" },
+      { id: "anker", icon: "⚓️", label: "Anker" },
       { id: "bierpul", icon: "🍺", label: "Bierpul" }
     ];
 
