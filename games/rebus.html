@@ -555,11 +555,13 @@
           solvedCount += 1;
           state.badge.textContent = "Goed";
           state.badge.classList.add("done");
+          state.input.setAttribute("data-solved", "true");
           state.input.disabled = true;
           state.input.value = state.answer;
         } else {
           state.badge.textContent = "Open";
           state.badge.classList.remove("done");
+          state.input.removeAttribute("data-solved");
           state.input.disabled = completed;
         }
       });
@@ -571,10 +573,8 @@
       checkButton.disabled = !enabled;
       const inputs = [...rows.querySelectorAll("[data-answer]")];
       inputs.forEach(input => {
-        if (input.disabled && enabled) {
-          return;
-        }
-        input.disabled = !enabled;
+        const isSolved = input.getAttribute("data-solved") === "true";
+        input.disabled = !enabled || isSolved;
       });
     }
 
