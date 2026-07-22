@@ -357,7 +357,21 @@
     </section>
   </main>
 
+  <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
+    <div class="game-gate-card">
+      <div class="game-gate-spinner" aria-hidden="true"></div>
+      <p class="game-gate-label">Dossier II</p>
+      <h2 id="gate-title">Bericht ophalen…</h2>
+      <p class="game-gate-message" id="gate-message">Toegang wordt gecontroleerd.</p>
+      <div class="game-gate-actions">
+        <button class="game-gate-button" id="gate-start" type="button" hidden>Start spel</button>
+        <button class="game-gate-button secondary" id="gate-back" type="button" hidden>Terug naar dossier</button>
+      </div>
+    </div>
+  </section>
+
   <script src="../config.js?v=20260722-3"></script>
+  <script src="game-shell.js?v=20260722-4"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const urlParams = new URLSearchParams(window.location.search);
@@ -392,6 +406,7 @@
     const scoreText = document.getElementById("score-text");
     const hintText = document.getElementById("hint-text");
     const closeLink = document.getElementById("close-link");
+    const gameGate = createGameGate(() => closeLink.click());
 
     function sanitizeName(value) {
       return String(value || "")
@@ -685,12 +700,12 @@
       closeLink.href = "../index.html?playerName=" + encodeURIComponent(PLAYER_NAME || "");
 
       if (!isConfigValid()) {
-        showError("Apps Script URL in config.js is ongeldig.");
+        gameGate.blocked("Spel niet beschikbaar", "De verbinding met de spelserver is niet goed ingesteld.");
         return;
       }
 
       if (!PLAYER_NAME) {
-        showError("Geen spelernaam gevonden. Open dit spel via de startpagina.");
+        gameGate.blocked("Geen speler gevonden", "Open dit spel via de startpagina en vul eerst je naam in.");
         return;
       }
 
@@ -713,10 +728,11 @@
             scoreText.textContent = "Je behaalde al " + done.score + " punten in " + formatTime(Number(done.seconds) || 0) + " met " + done.attempts + " poging(en).";
             hintText.textContent = done.hint || "De volgende aanwijzing blijft nog verzegeld.";
             setFeedback("Dit spel is al voltooid.", "success");
+            gameGate.blocked("Al voltooid", "Je hebt dit bericht al ontcijferd en de aanwijzing onthuld.");
             return;
           }
 
-          showError("Dit spel is nog niet vrijgegeven of al afgesloten.");
+          gameGate.blocked("Spel afgesloten", "Dit spel is nog niet vrijgegeven of is inmiddels gesloten.");
           return;
         }
 
@@ -732,19 +748,25 @@
           }
         }, 10000);
 
-        startedAt = Date.now();
-        timerHandle = setInterval(updateTimer, 1000);
-        updateTimer();
-
-        accessAllowed = true;
-        setGameEnabled(true);
-        const firstInput = rows.querySelector("[data-answer]");
-        if (firstInput) {
-          firstInput.focus();
-        }
-        setFeedback("Speel gestart. Los de rebus op.");
+        gameGate.instructions(
+          "Ontcijfer het bericht",
+          "Lees de emoji’s van links naar rechts en vul de volledige verborgen zin in. Hoofdletters en leestekens tellen niet mee.",
+          () => {
+            gameGate.hide();
+            startedAt = Date.now();
+            timerHandle = setInterval(updateTimer, 1000);
+            updateTimer();
+            accessAllowed = true;
+            setGameEnabled(true);
+            const firstInput = rows.querySelector("[data-answer]");
+            if (firstInput) firstInput.focus();
+            setFeedback("Spel gestart. Los de rebus op.");
+          },
+          "Start met ontcijferen"
+        );
       } catch (error) {
-        showError(
+        gameGate.blocked(
+          "Geen verbinding",
           error && error.message
             ? error.message
             : "De spelstatus kon niet worden geladen."

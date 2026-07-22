@@ -6,6 +6,7 @@ const APP_SHELL = [
   './config.js',
   './manifest.webmanifest',
   './games/game-shell.css',
+  './games/game-shell.js',
   './games/code.html',
   './games/memory.html',
   './games/mozaiek.html',

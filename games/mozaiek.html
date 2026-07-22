@@ -51,7 +51,21 @@
     <div id="result" aria-live="polite"></div>
   </main>
 
+  <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
+    <div class="game-gate-card">
+      <div class="game-gate-spinner" aria-hidden="true"></div>
+      <p class="game-gate-label">Dossier I</p>
+      <h2 id="gate-title">Zegel herstellen…</h2>
+      <p class="game-gate-message" id="gate-message">Toegang wordt gecontroleerd.</p>
+      <div class="game-gate-actions">
+        <button class="game-gate-button" id="gate-start" type="button" hidden>Start spel</button>
+        <button class="game-gate-button secondary" id="gate-back" type="button" hidden>Terug naar dossier</button>
+      </div>
+    </div>
+  </section>
+
 <script src="../config.js?v=20260722-3"></script>
+<script src="game-shell.js?v=20260722-4"></script>
 <script>
   const PLAYER_KEY = 'vriendenweekend-player-name';
   const urlParams = new URLSearchParams(window.location.search);
@@ -77,6 +91,7 @@
   let puzzleState = null;
   let gameAllowed = false;
   const closeButton = document.getElementById('close-button');
+  const gameGate = createGameGate(closeGame);
   function closeGame() {
     const target = '../index.html?playerName=' + encodeURIComponent(PLAYER_NAME || '');
 
@@ -186,6 +201,7 @@
 
   function showBlocked(message) {
     gameAllowed = false;
+    gameGate.blocked('Spel niet beschikbaar', message);
     const result = document.getElementById('result');
     if (puzzleState?.timer) {
       clearInterval(puzzleState.timer);
@@ -223,6 +239,7 @@
         if (access.completed) {
           const done = access.completed;
           result.innerHTML = `<div class="hint"><strong>Al voltooid</strong><div class="muted">Je behaalde al ${escapeHtml(done.score)} punten in ${formatTime(Number(done.seconds) || 0)} met ${escapeHtml(done.attempts)} zetten.</div></div>`;
+          gameGate.blocked('Al voltooid', 'Je hebt het zegel al hersteld en de aanwijzing onthuld.');
           return;
         }
 
@@ -242,9 +259,17 @@
         }
       }, 10000);
 
-      gameAllowed = true;
-      result.innerHTML = '';
-      start();
+      gameGate.instructions(
+        'Herstel het gebroken zegel',
+        'Tik op een tegel naast het lege vak om hem te verschuiven. Zet alle delen op de juiste plek om de aanwijzing te onthullen.',
+        () => {
+          gameGate.hide();
+          gameAllowed = true;
+          result.innerHTML = '';
+          start();
+        },
+        'Start met herstellen'
+      );
     } catch (error) {
       showBlocked(error && error.message ? error.message : 'De spelstatus kon niet worden geladen.');
     }
