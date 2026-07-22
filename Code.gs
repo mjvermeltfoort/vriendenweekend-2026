@@ -567,10 +567,10 @@ function setup() {
     ['rebus', 'Het verzegelde bericht', 'Ontcijfer een cryptische rebus.', 'gesloten', '', '', 'Achter zware muren worden oude geheimen bewaakt', 800, 2],
     ['code', 'De viercijferige code', 'Vind de code met aanwijzingen uit eerdere spellen.', 'gesloten', '', '', 'De bestemming kon blijkbaar niet met één naam toe', 700, 3],
     ['memory', 'Het geheugenarchief', 'Vind alle kaartparen en onthul de verborgen aanwijzing.', 'gesloten', '', '', 'Niet alleen de antwoorden tellen; ook hun volgorde spreekt', 650, 4],
-    ['vluchtroute', 'Vluchtroute', 'Ontwijk de obstakels en bereik de finish.', 'gesloten', '', '', 'Ge bent er sneller dan ge denkt. Tis nie ver', 900, 5],
-    ['vallende-stenen', 'De Vallende Stenen', 'Plaats de vallende stenen en maak 10 volledige rijen.', 'gesloten', '', '', 'Een rivier slingert zich zwijgend langs de bestemming', 900, 6],
-    ['schaduwzoeker', 'Schaduwzoeker', 'Vind de zeven verschillen tussen het origineel en het schaduwbeeld.', 'gesloten', '', '', 'Hier waakt een abdij al eeuwen over haar omgeving', 850, 7],
-    ['tussen-de-letters', 'Tussen de Letters', 'Vind de verborgen woorden en lees de aanwijzing tussen de letters.', 'gesloten', '', '', 'Een beroemde Brabantse bouwmeester liet hier zijn sporen na', 800, 8],
+    ['vallende-stenen', 'De Vallende Stenen', 'Plaats de vallende stenen en maak 10 volledige rijen.', 'gesloten', '', '', 'Een rivier slingert zich zwijgend langs de bestemming', 900, 5],
+    ['schaduwzoeker', 'Schaduwzoeker', 'Vind de zeven verschillen tussen het origineel en het schaduwbeeld.', 'gesloten', '', '', 'Hier waakt een abdij al eeuwen over haar omgeving', 850, 6],
+    ['tussen-de-letters', 'Tussen de Letters', 'Vind de verborgen woorden en lees de aanwijzing tussen de letters.', 'gesloten', '', '', 'Een beroemde Brabantse bouwmeester liet hier zijn sporen na', 800, 7],
+    ['vluchtroute', 'Vluchtroute', 'Ontwijk de obstakels en bereik de finish.', 'gesloten', '', '', 'Ge bent er sneller dan ge denkt. Tis nie ver', 900, 8],
     ['dwaalspoor', 'Dwaalspoor', 'Volg het verborgen pad, verzamel de symbolen en open de uitgang.', 'gesloten', '', '', 'De plaats werd pas één nadat twee buren hun namen samenvoegden', 850, 9],
     ['kettingreactie', 'Kettingreactie', 'Speel kleurgroepen weg en bevrijd de zes verzegelde letters.', 'gesloten', '', '', 'Zoek tussen ’s-Hertogenbosch en onze eigen achtertuin', 900, 10]
   ]);
@@ -622,7 +622,7 @@ function addVallendeStenenGame() {
     '',
     'Een rivier slingert zich zwijgend langs de bestemming',
     900,
-    6
+    5
   ]);
   clearGamesCache_();
 }
@@ -650,7 +650,7 @@ function addSchaduwzoekerGame() {
     '',
     'Hier waakt een abdij al eeuwen over haar omgeving',
     850,
-    7
+    6
   ]);
   clearGamesCache_();
 }
@@ -678,7 +678,7 @@ function addTussenDeLettersGame() {
     '',
     'Een beroemde Brabantse bouwmeester liet hier zijn sporen na',
     800,
-    8
+    7
   ]);
   clearGamesCache_();
 }
