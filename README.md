@@ -47,8 +47,11 @@ De routes `state` en `access` lezen de spelinformatie uit het werkblad
 De Nederlandse kolomnamen in de Sheet worden op headernaam gekoppeld.
 
 Voer bij een bestaande installatie eenmalig `addSchaduwzoekerGame()` uit in
-Apps Script. Deze migratie voegt alleen de nieuwe spelregel toe en laat de
-bestaande werkbladen, spelinstellingen en scores ongemoeid.
+Apps Script als **Schaduwzoeker** nog niet geregistreerd is.
+
+Voer daarnaast eenmalig `addTussenDeLettersGame()` uit om **Tussen de Letters**
+te registreren. Deze migratiefuncties voegen alleen de ontbrekende spelregel toe
+en laten de bestaande werkbladen, spelinstellingen en scores ongemoeid.
 
 De `state`-response bevat daarnaast `activePlayers`. Een geopende spelpagina
 stuurt iedere 10 seconden een heartbeat; zonder heartbeat verdwijnt een speler

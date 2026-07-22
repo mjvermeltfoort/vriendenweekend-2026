@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v23';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v24';
 
 const APP_SHELL = [
   './',
@@ -12,6 +12,7 @@ const APP_SHELL = [
   './games/mozaiek.html',
   './games/rebus.html',
   './games/schaduwzoeker.html',
+  './games/tussen-de-letters.html',
   './games/vluchtroute.html',
   './games/vallende-stenen.html',
   './assets/schaduwzoeker-origineel.webp',
@@ -71,6 +72,8 @@ self.addEventListener('fetch', event => {
           ? './games/vallende-stenen.html'
         : url.pathname.endsWith('/games/schaduwzoeker.html')
           ? './games/schaduwzoeker.html'
+        : url.pathname.endsWith('/games/tussen-de-letters.html')
+          ? './games/tussen-de-letters.html'
         : url.pathname.endsWith('/games/rebus.html')
           ? './games/rebus.html'
         : './index.html';
