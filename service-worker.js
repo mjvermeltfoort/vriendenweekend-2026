@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v22';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v23';
 
 const APP_SHELL = [
   './',
@@ -11,8 +11,11 @@ const APP_SHELL = [
   './games/memory.html',
   './games/mozaiek.html',
   './games/rebus.html',
+  './games/schaduwzoeker.html',
   './games/vluchtroute.html',
-  './games/vallende-stenen.html'
+  './games/vallende-stenen.html',
+  './assets/schaduwzoeker-origineel.webp',
+  './assets/schaduwzoeker-verschillen.webp'
 ];
 
 self.addEventListener('install', event => {
@@ -66,6 +69,8 @@ self.addEventListener('fetch', event => {
           ? './games/vluchtroute.html'
         : url.pathname.endsWith('/games/vallende-stenen.html')
           ? './games/vallende-stenen.html'
+        : url.pathname.endsWith('/games/schaduwzoeker.html')
+          ? './games/schaduwzoeker.html'
         : url.pathname.endsWith('/games/rebus.html')
           ? './games/rebus.html'
         : './index.html';
