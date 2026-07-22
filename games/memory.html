@@ -510,35 +510,34 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="game-shell.css?v=20260722-4">
 </head>
 <body>
   <main class="game">
-    <div class="top-actions">
-      <a class="close-link" id="close-link" href="../index.html">Terug naar overzicht</a>
-    </div>
-
     <header class="game-header">
       <div class="title-block">
         <p class="eyebrow">Dossier IV</p>
         <h1 id="game-title">Het geheugenarchief</h1>
       </div>
-      <section class="stats" aria-label="Spelstatus">
-        <div class="stat">
-          <span>Tijd</span>
-          <strong id="timer">00:00</strong>
-        </div>
-        <div class="stat">
-          <span>Zetten</span>
-          <strong id="moves">0</strong>
-        </div>
-        <div class="stat">
-          <span>Paren</span>
-          <strong id="pairs">0/6</strong>
-        </div>
-      </section>
+      <a class="close-link" id="close-link" href="../index.html">Sluit spel</a>
     </header>
 
     <p class="intro" id="game-description">Open telkens twee kaarten. Vind alle zes paren om de verborgen aanwijzing te onthullen.</p>
+
+    <section class="stats" aria-label="Spelstatus">
+      <div class="stat">
+        <span>Tijd</span>
+        <strong id="timer">00:00</strong>
+      </div>
+      <div class="stat">
+        <span>Zetten</span>
+        <strong id="moves">0</strong>
+      </div>
+      <div class="stat">
+        <span>Paren</span>
+        <strong id="pairs">0/6</strong>
+      </div>
+    </section>
 
     <section class="clue-panel" aria-label="Verborgen aanwijzing">
       <p class="clue-label">Verborgen aanwijzing</p>

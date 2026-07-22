@@ -23,11 +23,12 @@
     .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:9px}.control{min-height:54px;border:1px solid var(--line);border-radius:14px;background:#1b251b;color:#f5d58c;font-size:1.5rem;font-weight:900;touch-action:manipulation}.control:active{transform:translateY(2px);background:#2b392a}
     @media(min-width:700px){.controls{width:65%;margin:9px auto 0}.stage{min-height:500px}}
   </style>
+  <link rel="stylesheet" href="game-shell.css?v=20260722-4">
 </head>
 <body>
 <main class="app">
   <header class="top"><div class="title"><small>DOSSIER V</small><h1 id="game-title">Vluchtroute</h1></div><button class="close" id="close" type="button">Sluit spel</button></header>
-  <section class="hud" aria-label="Spelstatus"><div class="stat"><span>Levens</span><b class="lives" id="lives">♥ ♥ ♥</b></div><div class="stat"><span>Afstand</span><b id="distance">0%</b></div><div class="stat"><span>Tijd</span><b id="time">0.0s</b></div><div class="stat"><span>Snelheid</span><b id="speed">1.0×</b></div></section>
+  <section class="hud stats-4" aria-label="Spelstatus"><div class="stat"><span>Tijd</span><b id="time">00:00</b></div><div class="stat"><span>Levens</span><b class="lives" id="lives">♥ ♥ ♥</b></div><div class="stat"><span>Afstand</span><b id="distance">0%</b></div><div class="stat"><span>Snelheid</span><b id="speed">1.0×</b></div></section>
   <div class="progress"><i id="progress"></i></div>
   <section class="stage" id="stage" aria-label="Speelveld"><div class="forest"></div><div class="road"></div><div class="finish" id="finish"></div><div class="car" id="car"><div class="car-body"></div></div><div class="message" id="message"></div>
     <div class="overlay" id="overlay"><div class="card" id="card"><h2>De uitweg wacht</h2><p>Wissel van rijstrook en ontwijk alles op de weg. Houd vol tot de finish.</p><div class="legend"><span>🚧 🚓 🌳 🐗<br>obstakels</span><span>🛡️ ⏳<br>bonussen</span><span>← → / A D<br>toetsen</span><span>Veeg of tik<br>op mobiel</span></div><button class="primary" id="start" type="button">Start de vlucht</button></div></div>
@@ -45,6 +46,7 @@
   const $=id=>document.getElementById(id); let state=null, raf=0, allowed=false, touchX=null, hint='';
   const hazards=[{icon:'🚧',name:'versperring',kind:'life'},{icon:'🚓',name:'politie',kind:'life'},{icon:'🟤',name:'modder',kind:'time'},{icon:'🌳',name:'boom',kind:'life'},{icon:'🐗',name:'wild zwijn',kind:'time'},{icon:'🦌',name:'hert',kind:'time'}];
   const laneX=n=>[31,50,69][n];
+  const formatTime=seconds=>String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(Math.floor(seconds%60)).padStart(2,'0');
   function close(){location.assign('../index.html?playerName='+encodeURIComponent(player||''))}
   function setCar(){car.style.left=laneX(state?.lane??1)+'%'}
   function move(d){if(!state?.running)return;state.lane=Math.max(0,Math.min(2,state.lane+d));setCar()}
@@ -66,7 +68,7 @@
     if(state.spawnIn<=0){spawn();if(active>18&&Math.random()<Math.min(.46,active/85))setTimeout(()=>state?.running&&spawn(),170);state.spawnIn=Math.max(.32,1.18-active/70)+Math.random()*.42}
     state.entities.forEach(e=>{if(e.hit)return;e.y+=velocity*dt;e.el.style.top=e.y+'px';if(e.y>stage.clientHeight-125&&e.y<stage.clientHeight-43&&e.lane===state.lane)collide(e);else if(e.y>stage.clientHeight+60){e.hit=true;e.el.remove()}});state.entities=state.entities.filter(e=>!e.hit);
     if(now>=state.shieldUntil)car.classList.remove('shielded');if(now>=state.slowUntil)stage.classList.remove('slow');
-    $('lives').textContent=('♥ '.repeat(state.lives)+'♡ '.repeat(3-state.lives)).trim();$('distance').textContent=Math.floor(state.distance)+'%';$('progress').style.width=state.distance+'%';$('time').textContent=(active+state.penalty).toFixed(1)+'s';$('speed').textContent=state.speed.toFixed(1)+'×';
+    $('lives').textContent=('♥ '.repeat(state.lives)+'♡ '.repeat(3-state.lives)).trim();$('distance').textContent=Math.floor(state.distance)+'%';$('progress').style.width=state.distance+'%';$('time').textContent=formatTime(active+state.penalty);$('speed').textContent=state.speed.toFixed(1)+'×';
     if(state.distance>=100){$('finish').classList.add('show');end(true);return}raf=requestAnimationFrame(draw)
   }
   function reset(){cancelAnimationFrame(raf);stage.querySelectorAll('.entity').forEach(e=>e.remove());$('finish').classList.remove('show');stage.classList.remove('slow');car.classList.remove('shielded');state={running:true,lane:1,lives:3,distance:0,penalty:0,hits:0,entities:[],started:performance.now(),last:performance.now(),spawnIn:.8,shieldUntil:0,slowUntil:0,invulnerableUntil:0,speed:1};setCar();raf=requestAnimationFrame(draw)}

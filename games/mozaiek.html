@@ -12,36 +12,44 @@
     .muted { color:var(--muted); }
     .top-actions { display:flex; justify-content:flex-end; margin-bottom:10px; position:sticky; top:0; z-index:5; }
     .close-button { display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:0 11px; border:1px solid var(--border); border-radius:10px; background:rgba(17,21,15,.88); color:var(--muted); text-decoration:none; font-weight:700; font-size:.9rem; backdrop-filter:blur(6px); }
-    .puzzle-wrap { display:grid; grid-template-columns:minmax(0,1fr) 170px; gap:18px; align-items:start; }
+    .game { width:min(100%,760px); margin:auto; }
+    .puzzle-wrap { display:grid; gap:12px; align-items:start; }
     .puzzle { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); width:100%; max-width:520px; aspect-ratio:1; margin:auto; overflow:hidden; border:3px solid #514934; border-radius:16px; background:#11150f; touch-action:manipulation; }
     .tile { min-width:0; min-height:0; margin:0; padding:0; border:1px solid rgba(255,255,255,.06); border-radius:0; background-image:var(--flame); background-size:400% 400%; -webkit-tap-highlight-color:transparent; }
     .tile.blank { background-image:none; background-color:#11150f; }
-    .puzzle-info { display:flex; flex-direction:column; gap:12px; }
+    .puzzle-info { display:grid; }
     .stat { padding:14px; border:1px solid var(--border); border-radius:14px; background:var(--panel); }
     .stat strong { display:block; margin-top:3px; font-size:27px; }
     button.action { min-height:48px; border:1px solid var(--border); border-radius:13px; padding:12px; background:rgba(255,255,255,.04); color:var(--text); font-weight:800; }
     .hint { margin-top:16px; padding:18px; border:1px solid rgba(209,174,98,.42); border-radius:16px; background:rgba(209,174,98,.13); }
     .hint strong { display:block; margin-bottom:8px; color:var(--accent); }
-    @media(max-width:680px){ body{padding:10px}.puzzle-wrap{grid-template-columns:1fr}.puzzle-info{display:grid;grid-template-columns:1fr 1fr}.puzzle-info button{grid-column:1/-1} }
+    @media(max-width:680px){ body{padding:10px} }
   </style>
+  <link rel="stylesheet" href="game-shell.css?v=20260722-4">
 </head>
 <body>
-  <div class="top-actions">
-    <button class="close-button" id="close-button" type="button">Sluit spel</button>
-  </div>
+  <main class="game">
+    <header class="game-header">
+      <div class="title-block">
+        <p class="eyebrow">Dossier I</p>
+        <h1 id="game-title">Het gebroken zegel</h1>
+      </div>
+      <button class="close-button" id="close-button" type="button">Sluit spel</button>
+    </header>
 
-  <p class="muted">Dossier I</p>
-  <h1 id="game-title">Het gebroken zegel</h1>
-  <p class="muted" id="game-description">Schuif de tegels naar de lege plek en herstel de afbeelding.</p>
-  <div class="puzzle-wrap">
-    <div class="puzzle" id="puzzle"></div>
-    <div class="puzzle-info">
-      <div class="stat"><span class="muted">Tijd</span><strong id="timer">0s</strong></div>
-      <div class="stat"><span class="muted">Zetten</span><strong id="moves">0</strong></div>
+    <p class="muted" id="game-description">Schuif de tegels naar de lege plek en herstel de afbeelding.</p>
+    <section class="stats stats-2" aria-label="Spelstatus">
+      <div class="stat"><span>Tijd</span><strong id="timer">00:00</strong></div>
+      <div class="stat"><span>Zetten</span><strong id="moves">0</strong></div>
+    </section>
+    <div class="puzzle-wrap">
+      <div class="puzzle" id="puzzle"></div>
+      <div class="puzzle-info">
       <button class="action" id="reshuffle" type="button">Opnieuw schudden</button>
+      </div>
     </div>
-  </div>
-  <div id="result" aria-live="polite"></div>
+    <div id="result" aria-live="polite"></div>
+  </main>
 
 <script src="../config.js?v=20260722-3"></script>
 <script>
@@ -157,14 +165,14 @@
   }
 
   function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-  function formatTime(seconds) { const m=Math.floor(seconds/60),s=seconds%60; return m?`${m}:${String(s).padStart(2,'0')}`:`${s}s`; }
+  function formatTime(seconds) { const m=Math.floor(seconds/60),s=seconds%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
   function start() {
     let tiles=Array.from({length:16},(_,i)=>i);
     do { tiles=shuffleSolvable(tiles); } while(isSolved(tiles));
     puzzleState={tiles,moves:0,started:Date.now(),timer:setInterval(updateTimer,1000),submitted:false};
     document.getElementById('result').innerHTML='';
     document.getElementById('moves').textContent='0';
-    document.getElementById('timer').textContent='0s';
+    document.getElementById('timer').textContent='00:00';
     document.getElementById('puzzle').style.setProperty('--flame', `url('${flameSvg}')`);
     render();
   }

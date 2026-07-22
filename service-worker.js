@@ -1,10 +1,11 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v20';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v21';
 
 const APP_SHELL = [
   './',
   './index.html',
   './config.js',
   './manifest.webmanifest',
+  './games/game-shell.css',
   './games/code.html',
   './games/memory.html',
   './games/mozaiek.html',

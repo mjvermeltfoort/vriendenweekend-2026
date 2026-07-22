@@ -1,0 +1,179 @@
+:root {
+  --shell-line: var(--line, var(--border, rgba(210, 184, 111, .28)));
+  --shell-panel: var(--panel, #172018);
+  --shell-gold: var(--gold-light, var(--gold, var(--accent, #f1dda4)));
+  --shell-muted: var(--muted, #b9b4a7);
+}
+
+.game,
+.app {
+  width: min(100%, 760px);
+  margin-inline: auto;
+}
+
+.game-header,
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.title-block,
+.title,
+.top > div:first-child {
+  min-width: 0;
+}
+
+.eyebrow,
+.title small,
+.top small {
+  display: block;
+  margin: 0 0 5px;
+  color: var(--gold, var(--accent, #d2b86f));
+  font-size: .7rem;
+  font-weight: 850;
+  letter-spacing: .18em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.game-header h1,
+.top h1 {
+  margin: 0;
+  font: 900 clamp(1.55rem, 6vw, 2.35rem)/1.05 Georgia, "Times New Roman", serif;
+}
+
+.close-link,
+.close-button,
+.close {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--shell-line);
+  border-radius: 11px;
+  background: var(--shell-panel);
+  color: var(--shell-muted);
+  font: 800 .86rem/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.close-link:hover,
+.close-button:hover,
+.close:hover {
+  border-color: var(--gold, var(--accent, #d2b86f));
+  color: var(--shell-gold);
+}
+
+.close-link:focus-visible,
+.close-button:focus-visible,
+.close:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--shell-gold) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.stats,
+.hud {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 14px;
+}
+
+.stats-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stats-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.game > .intro,
+.game > #game-description {
+  margin: 0 0 14px;
+  color: var(--shell-muted);
+  line-height: 1.55;
+}
+
+.stat {
+  display: grid;
+  min-width: 0;
+  min-height: 60px;
+  align-content: center;
+  padding: 9px 10px;
+  border: 1px solid var(--shell-line);
+  border-radius: 12px;
+  background: var(--shell-panel);
+  text-align: center;
+}
+
+.stat span,
+.stat .muted {
+  display: block;
+  color: var(--shell-muted);
+  font-size: .64rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.stat strong,
+.stat b {
+  display: block;
+  margin-top: 4px;
+  color: var(--shell-gold);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+@media (max-width: 600px) {
+  .game-header,
+  .top {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .game-header h1,
+  .top h1 {
+    font-size: clamp(1.35rem, 6vw, 1.8rem);
+  }
+
+  .close-link,
+  .close-button,
+  .close {
+    min-height: 40px;
+    padding-inline: 11px;
+    font-size: .8rem;
+  }
+
+  .stats,
+  .hud {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .stat {
+    min-height: 54px;
+    padding: 7px 5px;
+    border-radius: 10px;
+  }
+
+  .stat span,
+  .stat .muted {
+    font-size: .58rem;
+  }
+
+  .stat strong,
+  .stat b {
+    font-size: .92rem;
+  }
+}

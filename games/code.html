@@ -455,31 +455,30 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="game-shell.css?v=20260722-4">
 </head>
 <body>
   <main class="game">
-    <div class="top-actions">
-      <a class="close-link" id="close-link" href="../index.html">Sluit spel</a>
-    </div>
-
     <header class="game-header">
       <div class="title-block">
         <p class="eyebrow">Dossier III</p>
         <h1 id="game-title">De viercijferige code</h1>
       </div>
-      <div class="stats" aria-label="Spelstatus">
-        <div class="stat">
-          <span>Tijd</span>
-          <strong id="timer">00:00</strong>
-        </div>
-        <div class="stat">
-          <span>Pogingen</span>
-          <strong id="attempts">0</strong>
-        </div>
-      </div>
+      <a class="close-link" id="close-link" href="../index.html">Sluit spel</a>
     </header>
 
     <p class="intro" id="game-description">Vind de code met aanwijzingen uit eerdere spellen.</p>
+
+    <section class="stats stats-2" aria-label="Spelstatus">
+      <div class="stat">
+        <span>Tijd</span>
+        <strong id="timer">00:00</strong>
+      </div>
+      <div class="stat">
+        <span>Pogingen</span>
+        <strong id="attempts">0</strong>
+      </div>
+    </section>
 
     <section class="lockbox" id="lockbox">
       <div class="lock-emblem" aria-hidden="true">⚿</div>
