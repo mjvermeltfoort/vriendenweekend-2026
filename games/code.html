@@ -534,14 +534,14 @@
     </section>
   </main>
 
-  <script src="../config.js?v=20260721-23"></script>
+  <script src="../config.js?v=20260722-3"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const urlParams = new URLSearchParams(window.location.search);
     const RAW_URL_PLAYER_NAME = sanitizeName(urlParams.get("playerName") || "");
     const RAW_STORED_PLAYER_NAME = sanitizeName(localStorage.getItem(PLAYER_KEY) || "");
     const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
-    const GAME_ID = sanitizeGameId(urlParams.get("gameId") || "code");
+    const GAME_ID = "code";
     const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
 
     // Pas hier de geheime code aan.

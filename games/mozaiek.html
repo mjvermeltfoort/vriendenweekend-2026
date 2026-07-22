@@ -30,6 +30,7 @@
     <button class="close-button" id="close-button" type="button">Sluit spel</button>
   </div>
 
+  <p class="muted">Dossier I</p>
   <h1 id="game-title">Het gebroken zegel</h1>
   <p class="muted" id="game-description">Schuif de tegels naar de lege plek en herstel de afbeelding.</p>
   <div class="puzzle-wrap">
@@ -42,14 +43,14 @@
   </div>
   <div id="result" aria-live="polite"></div>
 
-<script src="../config.js?v=20260721-23"></script>
+<script src="../config.js?v=20260722-3"></script>
 <script>
   const PLAYER_KEY = 'vriendenweekend-player-name';
   const urlParams = new URLSearchParams(window.location.search);
   const RAW_URL_PLAYER_NAME = sanitizeName(urlParams.get('playerName') || '');
   const RAW_STORED_PLAYER_NAME = sanitizeName(localStorage.getItem(PLAYER_KEY) || '');
   const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
-  const GAME_ID = sanitizeGameId(urlParams.get('gameId') || 'mozaiek');
+  const GAME_ID = 'mozaiek';
   const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
   const flameSvg = `data:image/svg+xml,${encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">

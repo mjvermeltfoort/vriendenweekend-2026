@@ -519,7 +519,7 @@
 
     <header class="game-header">
       <div class="title-block">
-        <p class="eyebrow">Archief V</p>
+        <p class="eyebrow">Dossier IV</p>
         <h1 id="game-title">Het geheugenarchief</h1>
       </div>
       <section class="stats" aria-label="Spelstatus">
@@ -560,7 +560,7 @@
     </section>
   </main>
 
-  <script src="../config.js?v=20260721-23"></script>
+  <script src="../config.js?v=20260722-3"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const HIDDEN_CLUE = "MONNIK";
@@ -577,7 +577,7 @@
     const RAW_URL_PLAYER_NAME = sanitizeName(urlParams.get("playerName") || "");
     const RAW_STORED_PLAYER_NAME = sanitizeName(localStorage.getItem(PLAYER_KEY) || "");
     const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
-    const GAME_ID = sanitizeGameId(urlParams.get("gameId") || "memory");
+    const GAME_ID = "memory";
     const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
 
     const timer = document.getElementById("timer");

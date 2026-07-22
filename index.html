@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Vriendenweekend">
   <meta name="description" content="Spellen en hints voor Vriendenweekend 2026">
-  <link rel="manifest" href="manifest.webmanifest?v=20260721-23">
-  <link rel="icon" href="icons/icon-192.png?v=20260721-23">
-  <link rel="apple-touch-icon" href="icons/icon-192.png?v=20260721-23">
+  <link rel="manifest" href="manifest.webmanifest?v=20260722-3">
+  <link rel="icon" href="icons/icon-192.png?v=20260722-3">
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=20260722-3">
   <title>Vriendenweekend 2026</title>
   <style>
     :root {
@@ -556,7 +556,7 @@
       <div class="hero-content">
         <p class="eyebrow">Dossier 2026 · Alleen voor ingewijden</p>
         <h1>Het verzegelde <em>dossier</em></h1>
-        <p class="hero-lead">Er is iets achtergelaten. Vijf archiefstukken, een spoor van verborgen aanwijzingen en maar één kans om de waarheid boven tafel te krijgen. Werk samen, vertrouw niemand blindelings en kraak het dossier voor het te laat is.</p>
+        <p class="hero-lead">Er is iets achtergelaten. Zes archiefstukken, een spoor van verborgen aanwijzingen en maar één kans om de waarheid boven tafel te krijgen. Werk samen, vertrouw niemand blindelings en kraak het dossier voor het te laat is.</p>
         <div class="hero-meta" aria-label="Missiegegevens">
           <span>Meerdere opdrachten</span>
           <span>De tijd tikt…</span>
@@ -613,18 +613,18 @@
           <a class="game-link" data-link href="games/mozaiek.html" aria-disabled="true">Open spel</a>
         </article>
 
+        <article class="game-card" data-game-id="rebus" data-fallback-state="gesloten">
+          <span class="pill closed" data-state>Gesloten</span>
+          <h2>Het verzegelde bericht</h2>
+          <p data-description>Ontcijfer een cryptische rebus.</p>
+          <a class="game-link" data-link href="games/rebus.html" aria-disabled="true">Open spel</a>
+        </article>
+
         <article class="game-card" data-game-id="code" data-fallback-state="gesloten">
           <span class="pill closed" data-state>Gesloten</span>
           <h2>De viercijferige code</h2>
           <p data-description>Vind de code met aanwijzingen uit eerdere spellen.</p>
           <a class="game-link" data-link href="games/code.html" aria-disabled="true">Open spel</a>
-        </article>
-
-        <article class="game-card" data-game-id="rebus" data-fallback-state="gesloten">
-          <span class="pill closed" data-state>Gesloten</span>
-          <h2>Het verzegelde bericht</h2>
-          <p data-description>Los de rebussen op en ontgrendel de volgende aanwijzing.</p>
-          <a class="game-link" data-link href="games/rebus.html" aria-disabled="true">Open spel</a>
         </article>
 
         <article class="game-card" data-game-id="memory" data-fallback-state="gesloten">
@@ -644,7 +644,7 @@
         <article class="game-card" data-game-id="vallende-stenen" data-fallback-state="gesloten">
           <span class="pill closed" data-state>Gesloten</span>
           <h2>De Vallende Stenen</h2>
-          <p data-description>Plaats de vallende stenen en onthul de verborgen aanwijzing.</p>
+          <p data-description>Plaats de vallende stenen en maak 10 volledige rijen.</p>
           <a class="game-link" data-link href="games/vallende-stenen.html" aria-disabled="true">Open spel</a>
         </article>
       </div>
@@ -662,7 +662,7 @@
      </section>
   </main>
 
-  <script src="config.js?v=20260721-23"></script>
+  <script src="config.js?v=20260722-3"></script>
   <script>
     (() => {
       const PLAYER_KEY = 'vriendenweekend-player-name';
@@ -1016,7 +1016,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker
-            .register('./service-worker.js?v=20260721-24', {
+            .register('./service-worker.js?v=20260722-3', {
               updateViaCache: 'none'
             })
             .then(registration => registration.update())
