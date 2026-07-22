@@ -562,7 +562,7 @@ function setup() {
   games.getRange(1, 1, 1, 9).setValues([[
     'id', 'titel', 'omschrijving', 'status', 'open_vanaf', 'sluit_op', 'hint', 'max_punten', 'volgorde'
   ]]);
-  games.getRange(2, 1, 9, 9).setValues([
+  games.getRange(2, 1, 10, 9).setValues([
     ['mozaiek', 'Het gebroken zegel', 'Herstel het oude zegel en ontdek de eerste aanwijzing.', 'open', '', '', 'Waar oude muren verhalen bewaren.', 1000, 1],
     ['rebus', 'Het verzegelde bericht', 'Ontcijfer een cryptische rebus.', 'gesloten', '', '', 'Een plek waar muren verhalen bewaren.', 800, 2],
     ['code', 'De viercijferige code', 'Vind de code met aanwijzingen uit eerdere spellen.', 'gesloten', '', '', 'Twee namen, maar één bestemming.', 700, 3],
@@ -571,7 +571,8 @@ function setup() {
     ['vallende-stenen', 'De Vallende Stenen', 'Plaats de vallende stenen en maak 10 volledige rijen.', 'gesloten', '', '', 'ONDER DE OUDE BRUG', 900, 6],
     ['schaduwzoeker', 'Schaduwzoeker', 'Vind de zeven verschillen tussen het origineel en het schaduwbeeld.', 'gesloten', '', '', 'ACHTER DE ZEVENDE SCHADUW', 850, 7],
     ['tussen-de-letters', 'Tussen de Letters', 'Vind de verborgen woorden en lees de aanwijzing tussen de letters.', 'gesloten', '', '', 'ZOEK DE KIST ACHTER HET GORDIJN IN DE GROTE KAMER', 800, 8],
-    ['dwaalspoor', 'Dwaalspoor', 'Volg het verborgen pad, verzamel de symbolen en open de uitgang.', 'gesloten', '', '', 'ZOEK ONDER DE LOSSE STEEN BIJ DE OUDE POORT', 850, 9]
+    ['dwaalspoor', 'Dwaalspoor', 'Volg het verborgen pad, verzamel de symbolen en open de uitgang.', 'gesloten', '', '', 'ZOEK ONDER DE LOSSE STEEN BIJ DE OUDE POORT', 850, 9],
+    ['kettingreactie', 'Kettingreactie', 'Speel kleurgroepen weg en bevrijd de zes verzegelde letters.', 'gesloten', '', '', 'KELDER', 900, 10]
   ]);
   games.setFrozenRows(1);
   games.autoResizeColumns(1, 9);
@@ -706,6 +707,34 @@ function addDwaalspoorGame() {
     'ZOEK ONDER DE LOSSE STEEN BIJ DE OUDE POORT',
     850,
     9
+  ]);
+  clearGamesCache_();
+}
+
+/**
+ * Voegt Kettingreactie toe aan een bestaande installatie zonder scores
+ * of andere spelinstellingen te wissen. Voer deze functie één keer handmatig uit.
+ */
+function addKettingreactieGame() {
+  const ss = getSpreadsheet_();
+  const games = ss.getSheetByName(SETTINGS_SHEET);
+  if (!games) throw new Error('Voer eerst setup() uit.');
+
+  const ids = games.getLastRow() > 1
+    ? games.getRange(2, 1, games.getLastRow() - 1, 1).getDisplayValues().flat()
+    : [];
+  if (ids.some(id => String(id).trim() === 'kettingreactie')) return;
+
+  games.appendRow([
+    'kettingreactie',
+    'Kettingreactie',
+    'Speel kleurgroepen weg en bevrijd de zes verzegelde letters.',
+    'gesloten',
+    '',
+    '',
+    'KELDER',
+    900,
+    10
   ]);
   clearGamesCache_();
 }

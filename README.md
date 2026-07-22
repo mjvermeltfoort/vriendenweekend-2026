@@ -54,6 +54,10 @@ te registreren en `addDwaalspoorGame()` om **Dwaalspoor** toe te voegen. Deze
 migratiefuncties voegen alleen de ontbrekende spelregel toe
 en laten de bestaande werkbladen, spelinstellingen en scores ongemoeid.
 
+Voer voor **Kettingreactie** eenmalig `addKettingreactieGame()` uit. Ook deze
+migratie voegt uitsluitend de ontbrekende regel aan `Spellen` toe en verandert
+geen bestaande instellingen of scores.
+
 De `state`-response bevat daarnaast `activePlayers`. Een geopende spelpagina
 stuurt iedere 10 seconden een heartbeat; zonder heartbeat verdwijnt een speler
 na 30 seconden uit deze lijst. Een ingeleverde score verwijdert de speler
