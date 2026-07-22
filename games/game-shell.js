@@ -5,6 +5,7 @@
     const root = document.getElementById('game-gate');
     const title = document.getElementById('gate-title');
     const message = document.getElementById('gate-message');
+    const hint = document.getElementById('gate-hint');
     const startButton = document.getElementById('gate-start');
     const backButton = document.getElementById('gate-back');
 
@@ -15,6 +16,8 @@
       root.dataset.loading = options.loading ? 'true' : 'false';
       title.textContent = heading;
       message.textContent = copy;
+      hint.hidden = !options.hint;
+      hint.textContent = options.hint || '';
       startButton.hidden = !options.onStart;
       backButton.hidden = !options.showBack;
       startButton.textContent = options.startLabel || 'Start spel';
@@ -37,8 +40,39 @@
       blocked(heading, copy) {
         show(heading, copy, { showBack: true });
       },
+      completed(heading, copy, clue, onReplay) {
+        show(heading, copy, {
+          hint: clue,
+          onStart: onReplay,
+          startLabel: 'Opnieuw spelen',
+          showBack: true
+        });
+      },
       hide() {
         root.hidden = true;
+      }
+    };
+  };
+
+  window.createReplayHandler = function createReplayHandler(options) {
+    return async function replayGame() {
+      const confirmed = window.confirm(
+        'Als je opnieuw speelt, wordt je huidige score voor dit spel verwijderd. Wil je doorgaan?'
+      );
+      if (!confirmed) return;
+
+      options.gate.loading('Spel opnieuw klaarzetten…', 'Je huidige score wordt verwijderd.');
+      try {
+        await options.post('replay', {
+          name: options.playerName,
+          gameId: options.gameId
+        });
+        window.location.reload();
+      } catch (error) {
+        options.gate.blocked(
+          'Opnieuw spelen mislukt',
+          error && error.message ? error.message : 'De score kon niet worden verwijderd.'
+        );
       }
     };
   };

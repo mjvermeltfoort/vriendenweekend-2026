@@ -394,6 +394,28 @@
       line-height: 1.45;
     }
 
+    .game-hint {
+      padding: 10px 11px;
+      border: 1px solid rgba(212,189,120,.35);
+      border-radius: 10px;
+      background: rgba(212,189,120,.09);
+      color: var(--accent-2) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      overflow-wrap: anywhere;
+    }
+
+    .game-hint::before {
+      content: 'Aanwijzing';
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: .65rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
     .pill {
       justify-self: start;
       display: inline-flex;
@@ -738,12 +760,26 @@
           descriptionNode.textContent = game.description;
         }
 
+        let hintNode = card.querySelector('[data-completed-hint]');
+        if (isDone && game && game.hint) {
+          if (!hintNode) {
+            hintNode = document.createElement('p');
+            hintNode.className = 'game-hint';
+            hintNode.dataset.completedHint = '';
+            linkNode.before(hintNode);
+          }
+          hintNode.textContent = game.hint;
+        } else if (hintNode) {
+          hintNode.remove();
+        }
+
         if (game && Number.isFinite(Number(game.order))) {
           card.style.order = String(Number(game.order));
         }
 
-        const canOpen = Boolean(game && game.state === 'open' && !isDone);
+        const canOpen = Boolean(game && game.state === 'open');
         linkNode.setAttribute('aria-disabled', canOpen ? 'false' : 'true');
+        linkNode.textContent = isDone ? 'Bekijk hint of speel opnieuw' : 'Open spel';
 
         const query = new URLSearchParams({
           playerName,

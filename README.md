@@ -38,6 +38,7 @@ De frontend gebruikt exact deze routes:
 - `GET ?action=access&gameId=mozaiek&playerName=Mark`
 - `POST action=start + payload={...}`
 - `POST action=heartbeat + payload={...}`
+- `POST action=replay + payload={...}`
 - `POST action=score + payload={...}`
 
 De routes `state` en `access` lezen de spelinformatie uit het werkblad

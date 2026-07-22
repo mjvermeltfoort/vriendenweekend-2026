@@ -198,6 +198,21 @@
   line-height: 1.55;
 }
 
+.game-gate-hint {
+  margin: -4px 0 18px;
+  padding: 14px;
+  border: 1px solid var(--shell-line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .2);
+  color: var(--shell-gold);
+  font: 900 1.1rem/1.45 Georgia, "Times New Roman", serif;
+  overflow-wrap: anywhere;
+}
+
+.game-gate-hint[hidden] {
+  display: none;
+}
+
 .game-gate-actions {
   display: grid;
   gap: 8px;

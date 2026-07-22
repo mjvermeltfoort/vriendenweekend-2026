@@ -5,6 +5,7 @@
  * GET  ?action=access&gameId=mozaiek&playerName=Mark
  * POST action=start  + payload={...}
  * POST action=heartbeat + payload={...}
+ * POST action=replay + payload={...}
  * POST action=score  + payload={...}
  *
  * Gebruik voor POST vanuit GitHub Pages bij voorkeur URLSearchParams.
@@ -13,7 +14,7 @@
 const SETTINGS_SHEET = 'Spellen';
 const SCORES_SHEET = 'Scores';
 const STARTS_SHEET = 'Spelstarts';
-const API_VERSION = '1.4.0';
+const API_VERSION = '1.5.0';
 const ACTIVE_PLAYERS_PROPERTY = 'activePlayers';
 const ACTIVE_PLAYER_WINDOW_MS = 30 * 1000;
 const GAMES_CACHE_KEY = 'games:v1';
@@ -105,6 +106,12 @@ function handleApiRequest_(method, e) {
         data = registerGameHeartbeat(request.payload);
         break;
 
+      case 'replay':
+      case 'resetgameprogress':
+        requireMethod_(method, 'POST');
+        data = resetGameProgress(request.payload);
+        break;
+
       case 'score':
       case 'submitscore':
         requireMethod_(method, 'POST');
@@ -113,7 +120,7 @@ function handleApiRequest_(method, e) {
 
       default:
         throw new Error(
-          'Onbekende API-actie. Gebruik health, state, access, start, heartbeat of score.'
+          'Onbekende API-actie. Gebruik health, state, access, start, heartbeat, replay of score.'
         );
     }
 
@@ -486,6 +493,70 @@ function getOrCreateStartsSheet_() {
   }
 
   return sheet;
+}
+
+/**
+ * Verwijdert de bestaande score voor één speler en spel, zodat het spel
+ * opnieuw gespeeld kan worden. De leaderboardbijdrage vervalt direct.
+ */
+function resetGameProgress(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Ongeldige replay-aanvraag.');
+  }
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    throw new Error('Het spel kon niet direct worden gereset. Probeer opnieuw.');
+  }
+
+  try {
+    const name = sanitizeName_(payload.name || payload.playerName);
+    const gameId = String(payload.gameId || '').trim();
+    if (!name) throw new Error('Vul eerst je naam in.');
+    if (!gameId) throw new Error('Geen spel-id opgegeven.');
+
+    const game = readGames_().find(item => item.id === gameId);
+    if (!game) throw new Error('Onbekend spel.');
+    if (calculateState_(game) !== 'open') {
+      throw new Error('Dit spel kan nu niet opnieuw worden gestart.');
+    }
+
+    const sheet = getScoresSheet_();
+    const scoreRows = readScoreRows_();
+    const normalizedName = name.toLowerCase();
+    const rowsToDelete = [];
+    const remainingRows = [];
+
+    scoreRows.forEach((row, index) => {
+      const isTarget =
+        String(row[1] || '').trim().toLowerCase() === normalizedName &&
+        String(row[2] || '').trim() === gameId;
+
+      if (isTarget) {
+        rowsToDelete.push(index + 2);
+      } else {
+        remainingRows.push(row);
+      }
+    });
+
+    rowsToDelete
+      .sort((a, b) => b - a)
+      .forEach(rowNumber => sheet.deleteRow(rowNumber));
+
+    const completed = buildCompletedForPlayer_(name, remainingRows);
+    cacheCompletedForPlayer_(name, completed);
+    clearLeaderboardCache_();
+    removeActivePlayerUnlocked_(name);
+
+    return {
+      reset: rowsToDelete.length > 0,
+      gameId: game.id,
+      removedScores: rowsToDelete.length,
+      leaderboard: getLeaderboard_(remainingRows)
+    };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function submitScore(payload) {

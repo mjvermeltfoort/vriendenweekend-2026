@@ -510,7 +510,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="game-shell.css?v=20260722-4">
+  <link rel="stylesheet" href="game-shell.css">
 </head>
 <body>
   <main class="game">
@@ -565,6 +565,7 @@
       <p class="game-gate-label">Dossier IV</p>
       <h2 id="gate-title">Archief openen…</h2>
       <p class="game-gate-message" id="gate-message">Toegang wordt gecontroleerd.</p>
+      <div class="game-gate-hint" id="gate-hint" hidden></div>
       <div class="game-gate-actions">
         <button class="game-gate-button" id="gate-start" type="button" hidden>Start spel</button>
         <button class="game-gate-button secondary" id="gate-back" type="button" hidden>Terug naar dossier</button>
@@ -573,7 +574,7 @@
   </section>
 
   <script src="../config.js?v=20260722-3"></script>
-  <script src="game-shell.js?v=20260722-4"></script>
+  <script src="game-shell.js"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const HIDDEN_CLUE = "MONNIK";
@@ -606,6 +607,12 @@
     const resetButton = document.getElementById("reset-button");
     const closeLink = document.getElementById("close-link");
     const gameGate = createGameGate(() => closeLink.click());
+    const replayGame = createReplayHandler({
+      gate: gameGate,
+      post: apiPost,
+      playerName: PLAYER_NAME,
+      gameId: GAME_ID
+    });
 
     let accessAllowed = false;
     let saving = false;
@@ -1026,7 +1033,12 @@
             scoreText.textContent = "Je behaalde al " + done.score + " punten in " + formatTime(Number(done.seconds) || 0) + " met " + done.attempts + " zetten. Aanwijzing: " + HIDDEN_CLUE + ".";
             hintText.textContent = done.hint || "De volgende aanwijzing blijft nog verzegeld.";
             setFeedback("Dit spel is al voltooid.", "success");
-            gameGate.blocked("Al voltooid", "Je hebt alle kaartparen al gevonden en de aanwijzing onthuld.");
+            gameGate.completed(
+              "Al voltooid",
+              "Je hebt alle kaartparen al gevonden. Je kunt opnieuw spelen, maar je huidige score voor dit spel vervalt dan.",
+              access.game?.hint || "De volgende aanwijzing blijft nog verzegeld.",
+              replayGame
+            );
             return;
           }
 

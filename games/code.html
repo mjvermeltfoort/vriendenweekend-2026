@@ -455,7 +455,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="game-shell.css?v=20260722-4">
+  <link rel="stylesheet" href="game-shell.css">
 </head>
 <body>
   <main class="game">
@@ -539,6 +539,7 @@
       <p class="game-gate-label">Dossier III</p>
       <h2 id="gate-title">Code voorbereiden…</h2>
       <p class="game-gate-message" id="gate-message">Toegang wordt gecontroleerd.</p>
+      <div class="game-gate-hint" id="gate-hint" hidden></div>
       <div class="game-gate-actions">
         <button class="game-gate-button" id="gate-start" type="button" hidden>Start spel</button>
         <button class="game-gate-button secondary" id="gate-back" type="button" hidden>Terug naar dossier</button>
@@ -547,7 +548,7 @@
   </section>
 
   <script src="../config.js?v=20260722-3"></script>
-  <script src="game-shell.js?v=20260722-4"></script>
+  <script src="game-shell.js"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const urlParams = new URLSearchParams(window.location.search);
@@ -579,6 +580,12 @@
     const hintText = document.getElementById("hintText");
     const closeLink = document.getElementById("close-link");
     const gameGate = createGameGate(() => closeLink.click());
+    const replayGame = createReplayHandler({
+      gate: gameGate,
+      post: apiPost,
+      playerName: PLAYER_NAME,
+      gameId: GAME_ID
+    });
 
     function sanitizeName(value) {
       return String(value || "")
@@ -945,7 +952,12 @@
         if (!access.allowed) {
           if (access.completed) {
             showCompleted(access.completed);
-            gameGate.blocked("Al voltooid", "Je hebt deze code al gekraakt en de aanwijzing onthuld.");
+            gameGate.completed(
+              "Al voltooid",
+              "Je hebt deze code al gekraakt. Je kunt opnieuw spelen, maar je huidige score voor dit spel vervalt dan.",
+              access.game?.hint || "De volgende aanwijzing blijft nog verzegeld.",
+              replayGame
+            );
             return;
           }
 
