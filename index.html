@@ -417,6 +417,15 @@
       text-transform: uppercase;
     }
 
+    .game-card .game-open-from {
+      margin-top: auto;
+      padding: 8px 0;
+      color: var(--accent-2);
+      font-size: .88rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
     .pill {
       align-self: flex-start;
       flex: 0 0 auto;
@@ -455,6 +464,8 @@
       opacity: .56;
       filter: grayscale(.3);
     }
+
+    .game-link[hidden] { display: none; }
 
     .helper {
       margin-top: 14px;
@@ -770,6 +781,24 @@
         }, {});
       }
 
+      function formatOpenFrom(value) {
+        if (!value) return null;
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return null;
+
+        return {
+          iso: date.toISOString(),
+          label: new Intl.DateTimeFormat('nl-NL', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }).format(date)
+        };
+      }
+
       function updateCard(card, game, playerName) {
         const stateNode = card.querySelector('[data-state]');
         const titleNode = card.querySelector('h2');
@@ -791,6 +820,8 @@
           descriptionNode.textContent = game.description;
         }
 
+        const openFrom = formatOpenFrom(game && game.openFrom);
+
         let hintNode = card.querySelector('[data-completed-hint]');
         if (isDone && game && game.hint) {
           if (!hintNode) {
@@ -810,7 +841,27 @@
 
         const canOpen = Boolean(game && game.state === 'open');
         linkNode.setAttribute('aria-disabled', canOpen ? 'false' : 'true');
-        linkNode.textContent = isDone ? 'Bekijk hint of speel opnieuw' : 'Open spel';
+        if (gameState === 'gesloten' && openFrom) {
+          let openFromNode = card.querySelector('[data-open-from]');
+          if (!openFromNode) {
+            openFromNode = document.createElement('p');
+            openFromNode.className = 'game-open-from';
+            openFromNode.dataset.openFrom = '';
+          }
+
+          openFromNode.textContent = '';
+          const dateNode = document.createElement('time');
+          dateNode.dateTime = openFrom.iso;
+          dateNode.textContent = 'Open vanaf ' + openFrom.label;
+          openFromNode.append(dateNode);
+          linkNode.before(openFromNode);
+          linkNode.hidden = true;
+        } else {
+          const openFromNode = card.querySelector('[data-open-from]');
+          if (openFromNode) openFromNode.remove();
+          linkNode.hidden = false;
+          linkNode.textContent = isDone ? 'Bekijk hint of speel opnieuw' : 'Open spel';
+        }
 
         const query = new URLSearchParams({
           playerName,
