@@ -22,7 +22,7 @@
 (()=>{'use strict';
 const W=10,H=20,TARGET=10,KEY='vriendenweekend-player-name',qs=new URLSearchParams(location.search),clean=v=>String(v||'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().slice(0,40),player=clean(localStorage.getItem(KEY)||qs.get('playerName')),gameId='vallende-stenen',api=window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl||'', $=id=>document.getElementById(id);
 const SHAPES=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]],COLORS=['#53b7c6','#e2c559','#aa75ce','#e88a48','#557fd2','#67b96c','#cf5d58'];
-let s=null,timer=0,allowed=false,hint='ONDER DE OUDE BRUG',touch=null;
+let s=null,timer=0,allowed=false,hint='Een rivier slingert zich zwijgend langs de bestemming',touch=null;
 function close(){location.assign('../index.html?playerName='+encodeURIComponent(player||''))}function fmt(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
 function rotate(m){return m[0].map((_,i)=>m.map(r=>r[i]).reverse())}function piece(type){return{type,m:SHAPES[type].map(r=>r.slice()),x:Math.floor((W-SHAPES[type][0].length)/2),y:0}}
 function collision(p,dx=0,dy=0,m=p.m){for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++)if(m[y][x]){const nx=p.x+x+dx,ny=p.y+y+dy;if(nx<0||nx>=W||ny>=H||(ny>=0&&s.board[ny][nx]))return true}return false}

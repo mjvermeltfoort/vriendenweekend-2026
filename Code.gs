@@ -563,16 +563,16 @@ function setup() {
     'id', 'titel', 'omschrijving', 'status', 'open_vanaf', 'sluit_op', 'hint', 'max_punten', 'volgorde'
   ]]);
   games.getRange(2, 1, 10, 9).setValues([
-    ['mozaiek', 'Het gebroken zegel', 'Herstel het oude zegel en ontdek de eerste aanwijzing.', 'open', '', '', 'Waar oude muren verhalen bewaren.', 1000, 1],
-    ['rebus', 'Het verzegelde bericht', 'Ontcijfer een cryptische rebus.', 'gesloten', '', '', 'Een plek waar muren verhalen bewaren.', 800, 2],
-    ['code', 'De viercijferige code', 'Vind de code met aanwijzingen uit eerdere spellen.', 'gesloten', '', '', 'Twee namen, maar één bestemming.', 700, 3],
-    ['memory', 'Het geheugenarchief', 'Vind alle kaartparen en onthul de verborgen aanwijzing.', 'gesloten', '', '', 'Soms onthult volgorde wat stilte verbergt.', 650, 4],
-    ['vluchtroute', 'Vluchtroute', 'Ontwijk de obstakels en bereik de finish.', 'gesloten', '', '', 'BOSPAD', 900, 5],
-    ['vallende-stenen', 'De Vallende Stenen', 'Plaats de vallende stenen en maak 10 volledige rijen.', 'gesloten', '', '', 'ONDER DE OUDE BRUG', 900, 6],
-    ['schaduwzoeker', 'Schaduwzoeker', 'Vind de zeven verschillen tussen het origineel en het schaduwbeeld.', 'gesloten', '', '', 'ACHTER DE ZEVENDE SCHADUW', 850, 7],
-    ['tussen-de-letters', 'Tussen de Letters', 'Vind de verborgen woorden en lees de aanwijzing tussen de letters.', 'gesloten', '', '', 'ZOEK DE KIST ACHTER HET GORDIJN IN DE GROTE KAMER', 800, 8],
-    ['dwaalspoor', 'Dwaalspoor', 'Volg het verborgen pad, verzamel de symbolen en open de uitgang.', 'gesloten', '', '', 'ZOEK ONDER DE LOSSE STEEN BIJ DE OUDE POORT', 850, 9],
-    ['kettingreactie', 'Kettingreactie', 'Speel kleurgroepen weg en bevrijd de zes verzegelde letters.', 'gesloten', '', '', 'KELDER', 900, 10]
+    ['mozaiek', 'Het gebroken zegel', 'Herstel het oude zegel en ontdek de eerste aanwijzing.', 'open', '', '', 'De oudste bewoner betaalt al eeuwen geen huur', 1000, 1],
+    ['rebus', 'Het verzegelde bericht', 'Ontcijfer een cryptische rebus.', 'gesloten', '', '', 'Achter zware muren worden oude geheimen bewaakt', 800, 2],
+    ['code', 'De viercijferige code', 'Vind de code met aanwijzingen uit eerdere spellen.', 'gesloten', '', '', 'De bestemming kon blijkbaar niet met één naam toe', 700, 3],
+    ['memory', 'Het geheugenarchief', 'Vind alle kaartparen en onthul de verborgen aanwijzing.', 'gesloten', '', '', 'Niet alleen de antwoorden tellen; ook hun volgorde spreekt', 650, 4],
+    ['vluchtroute', 'Vluchtroute', 'Ontwijk de obstakels en bereik de finish.', 'gesloten', '', '', 'Ge bent er sneller dan ge denkt. Tis nie ver', 900, 5],
+    ['vallende-stenen', 'De Vallende Stenen', 'Plaats de vallende stenen en maak 10 volledige rijen.', 'gesloten', '', '', 'Een rivier slingert zich zwijgend langs de bestemming', 900, 6],
+    ['schaduwzoeker', 'Schaduwzoeker', 'Vind de zeven verschillen tussen het origineel en het schaduwbeeld.', 'gesloten', '', '', 'Hier waakt een abdij al eeuwen over haar omgeving', 850, 7],
+    ['tussen-de-letters', 'Tussen de Letters', 'Vind de verborgen woorden en lees de aanwijzing tussen de letters.', 'gesloten', '', '', 'Een beroemde Brabantse bouwmeester liet hier zijn sporen na', 800, 8],
+    ['dwaalspoor', 'Dwaalspoor', 'Volg het verborgen pad, verzamel de symbolen en open de uitgang.', 'gesloten', '', '', 'De plaats werd pas één nadat twee buren hun namen samenvoegden', 850, 9],
+    ['kettingreactie', 'Kettingreactie', 'Speel kleurgroepen weg en bevrijd de zes verzegelde letters.', 'gesloten', '', '', 'Zoek tussen ’s-Hertogenbosch en onze eigen achtertuin', 900, 10]
   ]);
   games.setFrozenRows(1);
   games.autoResizeColumns(1, 9);
@@ -620,7 +620,7 @@ function addVallendeStenenGame() {
     'gesloten',
     '',
     '',
-    'ONDER DE OUDE BRUG',
+    'Een rivier slingert zich zwijgend langs de bestemming',
     900,
     6
   ]);
@@ -648,7 +648,7 @@ function addSchaduwzoekerGame() {
     'gesloten',
     '',
     '',
-    'ACHTER DE ZEVENDE SCHADUW',
+    'Hier waakt een abdij al eeuwen over haar omgeving',
     850,
     7
   ]);
@@ -676,7 +676,7 @@ function addTussenDeLettersGame() {
     'gesloten',
     '',
     '',
-    'ZOEK DE KIST ACHTER HET GORDIJN IN DE GROTE KAMER',
+    'Een beroemde Brabantse bouwmeester liet hier zijn sporen na',
     800,
     8
   ]);
@@ -704,7 +704,7 @@ function addDwaalspoorGame() {
     'gesloten',
     '',
     '',
-    'ZOEK ONDER DE LOSSE STEEN BIJ DE OUDE POORT',
+    'De plaats werd pas één nadat twee buren hun namen samenvoegden',
     850,
     9
   ]);
@@ -732,7 +732,7 @@ function addKettingreactieGame() {
     'gesloten',
     '',
     '',
-    'KELDER',
+    'Zoek tussen ’s-Hertogenbosch en onze eigen achtertuin',
     900,
     10
   ]);
