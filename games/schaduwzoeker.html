@@ -62,14 +62,14 @@
       margin: 0;
     }
 
-    .stats {
+    .overview .stats {
       grid-template-columns: repeat(2, minmax(98px, 1fr));
       width: auto;
       min-width: 212px;
       margin: 0;
     }
 
-    .stat {
+    .overview .stat {
       min-height: 54px;
       padding-block: 7px;
     }
@@ -315,7 +315,7 @@
         gap: 10px;
       }
 
-      .stats {
+      .overview .stats {
         width: 100%;
         min-width: 0;
       }
@@ -463,6 +463,7 @@
         let completed = false;
         let completionHandled = false;
         let cleaned = false;
+        let gameHint = "De volgende aanwijzing blijft nog verzegeld.";
 
         const board = root.querySelector("#board");
         const result = root.querySelector("#result");
@@ -576,6 +577,7 @@
             root.querySelector("#game-title").textContent = game.title;
           }
           if (game.description) root.querySelector("#game-description").textContent = game.description;
+          if (game.hint) gameHint = game.hint;
         }
 
         function renderDifferenceElements() {
@@ -712,7 +714,7 @@
           const data = response && response.result ? response.result : response || {};
           const seconds = Number.isFinite(Number(data.seconds)) ? Number(data.seconds) : finalSeconds;
           const attempts = Number.isFinite(Number(data.attempts)) ? Number(data.attempts) : wrongAttempts;
-          const hint = data.hint || "De volgende aanwijzing blijft nog verzegeld.";
+          const hint = data.hint || gameHint;
 
           finalSeconds = seconds;
           wrongAttempts = attempts;
@@ -745,6 +747,7 @@
           setBoardEnabled(false);
           resultTime.textContent = formatTime(finalSeconds);
           resultAttempts.textContent = String(wrongAttempts);
+          hintText.textContent = gameHint;
           board.hidden = true;
           result.hidden = false;
           setFeedback("Alle verschillen gevonden.", "success");
