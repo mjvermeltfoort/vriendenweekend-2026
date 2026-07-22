@@ -562,7 +562,7 @@ function setup() {
   games.getRange(1, 1, 1, 9).setValues([[
     'id', 'titel', 'omschrijving', 'status', 'open_vanaf', 'sluit_op', 'hint', 'max_punten', 'volgorde'
   ]]);
-  games.getRange(2, 1, 8, 9).setValues([
+  games.getRange(2, 1, 9, 9).setValues([
     ['mozaiek', 'Het gebroken zegel', 'Herstel het oude zegel en ontdek de eerste aanwijzing.', 'open', '', '', 'Waar oude muren verhalen bewaren.', 1000, 1],
     ['rebus', 'Het verzegelde bericht', 'Ontcijfer een cryptische rebus.', 'gesloten', '', '', 'Een plek waar muren verhalen bewaren.', 800, 2],
     ['code', 'De viercijferige code', 'Vind de code met aanwijzingen uit eerdere spellen.', 'gesloten', '', '', 'Twee namen, maar één bestemming.', 700, 3],
@@ -570,7 +570,8 @@ function setup() {
     ['vluchtroute', 'Vluchtroute', 'Ontwijk de obstakels en bereik de finish.', 'gesloten', '', '', 'BOSPAD', 900, 5],
     ['vallende-stenen', 'De Vallende Stenen', 'Plaats de vallende stenen en maak 10 volledige rijen.', 'gesloten', '', '', 'ONDER DE OUDE BRUG', 900, 6],
     ['schaduwzoeker', 'Schaduwzoeker', 'Vind de zeven verschillen tussen het origineel en het schaduwbeeld.', 'gesloten', '', '', 'ACHTER DE ZEVENDE SCHADUW', 850, 7],
-    ['tussen-de-letters', 'Tussen de Letters', 'Vind de verborgen woorden en lees de aanwijzing tussen de letters.', 'gesloten', '', '', 'ZOEK DE KIST ACHTER HET GORDIJN IN DE GROTE KAMER', 800, 8]
+    ['tussen-de-letters', 'Tussen de Letters', 'Vind de verborgen woorden en lees de aanwijzing tussen de letters.', 'gesloten', '', '', 'ZOEK DE KIST ACHTER HET GORDIJN IN DE GROTE KAMER', 800, 8],
+    ['dwaalspoor', 'Dwaalspoor', 'Volg het verborgen pad, verzamel de symbolen en open de uitgang.', 'gesloten', '', '', 'ZOEK ONDER DE LOSSE STEEN BIJ DE OUDE POORT', 850, 9]
   ]);
   games.setFrozenRows(1);
   games.autoResizeColumns(1, 9);
@@ -677,6 +678,34 @@ function addTussenDeLettersGame() {
     'ZOEK DE KIST ACHTER HET GORDIJN IN DE GROTE KAMER',
     800,
     8
+  ]);
+  clearGamesCache_();
+}
+
+/**
+ * Voegt Dwaalspoor toe aan een bestaande installatie zonder scores
+ * of andere spelinstellingen te wissen. Voer deze functie één keer handmatig uit.
+ */
+function addDwaalspoorGame() {
+  const ss = getSpreadsheet_();
+  const games = ss.getSheetByName(SETTINGS_SHEET);
+  if (!games) throw new Error('Voer eerst setup() uit.');
+
+  const ids = games.getLastRow() > 1
+    ? games.getRange(2, 1, games.getLastRow() - 1, 1).getDisplayValues().flat()
+    : [];
+  if (ids.some(id => String(id).trim() === 'dwaalspoor')) return;
+
+  games.appendRow([
+    'dwaalspoor',
+    'Dwaalspoor',
+    'Volg het verborgen pad, verzamel de symbolen en open de uitgang.',
+    'gesloten',
+    '',
+    '',
+    'ZOEK ONDER DE LOSSE STEEN BIJ DE OUDE POORT',
+    850,
+    9
   ]);
   clearGamesCache_();
 }

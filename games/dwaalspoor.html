@@ -1,0 +1,1762 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#11150f">
+  <title>Dwaalspoor</title>
+  <link rel="stylesheet" href="game-shell.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0c100c;
+      --panel: #171d16;
+      --panel-deep: #0d120d;
+      --line: rgba(209, 185, 117, .25);
+      --gold: #d2b86f;
+      --gold-light: #f0d994;
+      --text: #f5f0df;
+      --muted: #bcb6a4;
+      --success: #8fc18d;
+      --danger: #e09483;
+      --move-duration: 150ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      padding:
+        max(8px, env(safe-area-inset-top))
+        max(8px, env(safe-area-inset-right))
+        max(9px, env(safe-area-inset-bottom))
+        max(8px, env(safe-area-inset-left));
+      background:
+        radial-gradient(circle at 50% -12%, rgba(190, 158, 83, .18), transparent 26rem),
+        repeating-linear-gradient(118deg, transparent 0 25px, rgba(255, 255, 255, .012) 26px 27px),
+        var(--bg);
+    }
+
+    button { font: inherit; }
+
+    .game {
+      width: min(100%, 850px);
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: clamp(6px, 1.3vh, 11px);
+      margin: 0 auto;
+    }
+
+    .game-header {
+      margin: 0;
+    }
+
+    .game-header h1 {
+      font-size: clamp(1.45rem, 5vw, 2.25rem);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: min(100%, 410px);
+    }
+
+    .maze-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(68px, 1fr));
+      gap: 6px;
+      width: 100%;
+    }
+
+    .maze-stats .stat {
+      min-height: 48px;
+      padding: 6px 8px;
+      border-color: rgba(209, 185, 117, .2);
+      background: rgba(20, 27, 20, .94);
+    }
+
+    .maze-stats .stat strong {
+      margin-top: 2px;
+      font-size: .92rem;
+    }
+
+    .close-link {
+      min-height: 48px;
+      padding-inline: 12px;
+    }
+
+    .sequence-panel {
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 2vw, 16px);
+      min-width: 0;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background:
+        linear-gradient(110deg, rgba(255, 255, 255, .035), transparent 40%),
+        rgba(20, 27, 20, .93);
+    }
+
+    .sequence-label {
+      flex: 0 0 auto;
+      margin: 0;
+      color: var(--muted);
+      font-size: .65rem;
+      font-weight: 850;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .sequence {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(42px, 1fr));
+      gap: 6px;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .sequence-item {
+      position: relative;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 27px minmax(0, 1fr);
+      align-items: center;
+      gap: 5px;
+      min-height: 36px;
+      padding: 4px 6px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 9px;
+      background: rgba(6, 9, 6, .4);
+      color: var(--muted);
+    }
+
+    .sequence-item::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      width: 6px;
+      height: 1px;
+      background: rgba(209, 185, 117, .25);
+    }
+
+    .sequence-item:last-child::after { display: none; }
+
+    .sequence-item.next {
+      border-color: var(--gold);
+      color: var(--gold-light);
+      box-shadow: 0 0 0 2px rgba(210, 184, 111, .1), 0 0 16px rgba(210, 184, 111, .12);
+    }
+
+    .sequence-item.done {
+      border-color: rgba(143, 193, 141, .45);
+      color: var(--success);
+      background: rgba(68, 112, 67, .16);
+    }
+
+    .sequence-item.done .sequence-icon { opacity: .45; }
+
+    .sequence-item.done .check { opacity: 1; transform: scale(1); }
+
+    .sequence-icon,
+    .symbol-icon {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.8;
+    }
+
+    .sequence-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: .67rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .check {
+      position: absolute;
+      inset: 50% auto auto 13px;
+      width: 17px;
+      height: 17px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #244326;
+      color: #dff1da;
+      font-size: .7rem;
+      font-weight: 950;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(.5);
+      transition: opacity .18s, transform .18s;
+    }
+
+    .play-zone {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 142px;
+      align-items: center;
+      gap: clamp(8px, 2vw, 14px);
+    }
+
+    .maze-wrap {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      display: grid;
+      place-items: center;
+    }
+
+    .maze-board {
+      position: relative;
+      isolation: isolate;
+      width: min(100%, calc(100vh - 164px), calc(100dvh - 164px), 620px);
+      max-height: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 3px solid #625943;
+      border-radius: 13px;
+      outline: none;
+      background: #070a07;
+      box-shadow:
+        0 18px 44px rgba(0, 0, 0, .46),
+        inset 0 0 0 1px rgba(237, 216, 151, .15),
+        inset 0 0 38px rgba(0, 0, 0, .55);
+      touch-action: none;
+      user-select: none;
+    }
+
+    .maze-board:focus-visible {
+      outline: 3px solid rgba(240, 217, 148, .7);
+      outline-offset: 3px;
+    }
+
+    .maze-board.invalid-move {
+      animation: wall-bump 190ms ease-out;
+    }
+
+    .maze-grid {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      display: grid;
+    }
+
+    .maze-cell {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, .16);
+      background:
+        radial-gradient(circle at 38% 34%, rgba(255, 255, 255, .055), transparent 42%),
+        #252a21;
+      transition: filter .24s, opacity .24s, background-color .24s;
+    }
+
+    .maze-cell.path::after,
+    .maze-cell.start::after {
+      content: '';
+      position: absolute;
+      z-index: 0;
+      inset: 30%;
+      border-radius: 50%;
+      background: rgba(224, 205, 149, .1);
+      opacity: 0;
+    }
+
+    .maze-cell.trail::after { opacity: 1; }
+
+    .maze-cell.wall {
+      border-color: rgba(8, 10, 8, .56);
+      background:
+        linear-gradient(90deg, transparent 47%, rgba(0, 0, 0, .28) 48% 52%, transparent 53%),
+        linear-gradient(0deg, transparent 47%, rgba(0, 0, 0, .3) 48% 52%, transparent 53%),
+        linear-gradient(145deg, #5a594d, #33362f 58%, #252a25);
+      box-shadow:
+        inset 1px 1px rgba(255, 255, 255, .1),
+        inset -2px -2px rgba(0, 0, 0, .3);
+    }
+
+    .maze-cell.start {
+      background:
+        linear-gradient(135deg, rgba(121, 166, 117, .2), transparent),
+        #222c21;
+    }
+
+    .maze-cell.start::before {
+      content: 'START';
+      position: absolute;
+      z-index: 1;
+      bottom: 5%;
+      color: #b8d5b4;
+      font-size: clamp(.25rem, .75vw, .48rem);
+      font-weight: 950;
+      letter-spacing: .06em;
+    }
+
+    .maze-cell.exit {
+      background: linear-gradient(135deg, #332e22, #1a1b17);
+    }
+
+    .exit-icon {
+      position: relative;
+      z-index: 1;
+      width: 75%;
+      height: 75%;
+      fill: rgba(105, 84, 48, .7);
+      stroke: #947a47;
+      stroke-width: 1.6;
+    }
+
+    .maze-cell.exit.open {
+      animation: exit-glow 1.25s ease-in-out infinite alternate;
+    }
+
+    .maze-cell.exit.open.fog-hidden {
+      animation: none;
+      box-shadow: inset 0 0 10px #000;
+    }
+
+    .maze-cell.exit.open .exit-icon {
+      fill: rgba(191, 155, 74, .48);
+      stroke: var(--gold-light);
+      filter: drop-shadow(0 0 5px rgba(240, 217, 148, .7));
+    }
+
+    .maze-cell.exit.opening .exit-icon {
+      animation: door-open 650ms cubic-bezier(.2, .8, .2, 1) forwards;
+      transform-origin: 16% 50%;
+    }
+
+    .cell-symbol {
+      position: relative;
+      z-index: 2;
+      width: 73%;
+      height: 73%;
+      color: var(--symbol-color, var(--gold-light));
+      filter: drop-shadow(0 0 4px rgba(236, 211, 135, .35));
+      transition: opacity .18s, transform .18s, filter .18s;
+    }
+
+    .cell-symbol.collecting {
+      animation: symbol-pulse 350ms ease-out;
+    }
+
+    .cell-symbol.collected {
+      opacity: 0;
+      transform: scale(.25);
+    }
+
+    .maze-cell.fog-hidden,
+    .maze-cell.fog-memory {
+      pointer-events: none;
+    }
+
+    .maze-cell.fog-hidden {
+      border-color: #080b08;
+      background: #080b08;
+      box-shadow: inset 0 0 10px #000;
+    }
+
+    .maze-cell.fog-hidden > * { opacity: 0; }
+
+    .maze-cell.fog-memory {
+      filter: grayscale(.5) brightness(.48);
+      opacity: .7;
+    }
+
+    .maze-cell.fog-memory > .cell-symbol:not(.collected),
+    .maze-cell.fog-memory > .exit-icon { opacity: .25; }
+
+    .maze-cell.fog-memory > .cell-symbol.collected { opacity: 0; }
+
+    .player {
+      position: absolute;
+      z-index: 5;
+      top: 0;
+      left: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      transition: transform var(--move-duration) cubic-bezier(.22, .72, .3, 1);
+      will-change: transform;
+    }
+
+    .player svg {
+      width: 78%;
+      height: 78%;
+      overflow: visible;
+      fill: #d7c27c;
+      stroke: #322916;
+      stroke-width: 1.25;
+      filter: drop-shadow(0 2px 2px #000) drop-shadow(0 0 5px rgba(241, 217, 145, .5));
+    }
+
+    .mist-vignette {
+      position: absolute;
+      z-index: 6;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      box-shadow: inset 0 0 34px 10px rgba(0, 0, 0, .54);
+    }
+
+    .controls-panel {
+      display: grid;
+      align-content: center;
+      gap: 9px;
+    }
+
+    .controls-title,
+    .controls-help {
+      margin: 0;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .controls-title {
+      font-size: .66rem;
+      font-weight: 850;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .controls-help {
+      font-size: .65rem;
+      line-height: 1.4;
+    }
+
+    .direction-pad {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, 43px);
+      gap: 4px;
+    }
+
+    .direction-button {
+      min-width: 0;
+      min-height: 43px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(210, 184, 111, .34);
+      border-radius: 10px;
+      background: linear-gradient(145deg, #222c22, #141a14);
+      color: var(--gold-light);
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: inset 1px 1px rgba(255, 255, 255, .045);
+    }
+
+    .direction-button:hover { border-color: var(--gold); }
+
+    .direction-button:active {
+      transform: translateY(1px);
+      background: #293529;
+    }
+
+    .direction-button:focus-visible {
+      outline: 3px solid rgba(240, 217, 148, .55);
+      outline-offset: 2px;
+    }
+
+    .direction-button svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2.2;
+    }
+
+    .direction-button[data-direction="up"] { grid-column: 2; grid-row: 1; }
+    .direction-button[data-direction="left"] { grid-column: 1; grid-row: 2; }
+    .direction-button[data-direction="down"] { grid-column: 2; grid-row: 2; }
+    .direction-button[data-direction="right"] { grid-column: 3; grid-row: 2; }
+
+    .compass-mark {
+      grid-column: 2;
+      grid-row: 3;
+      align-self: center;
+      justify-self: center;
+      width: 25px;
+      height: 25px;
+      color: rgba(210, 184, 111, .34);
+    }
+
+    .status-row {
+      min-height: 19px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: .72rem;
+    }
+
+    .wrong-attempts {
+      margin: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .game-message {
+      min-width: 0;
+      margin: 0;
+      overflow: hidden;
+      color: var(--gold-light);
+      font-weight: 750;
+      opacity: 0;
+      text-align: right;
+      text-overflow: ellipsis;
+      transition: opacity .18s;
+      white-space: nowrap;
+    }
+
+    .game-message.show { opacity: 1; }
+    .game-message.error { color: var(--danger); }
+    .game-message.success { color: var(--success); }
+
+    .flying-symbol {
+      position: fixed;
+      z-index: 200;
+      width: 32px;
+      height: 32px;
+      color: var(--symbol-color, var(--gold-light));
+      pointer-events: none;
+      filter: drop-shadow(0 0 7px currentColor);
+      transition:
+        transform 420ms cubic-bezier(.2, .7, .25, 1),
+        opacity 420ms ease-in;
+    }
+
+    .flying-symbol.fly {
+      opacity: .15;
+      transform: translate(var(--fly-x), var(--fly-y)) scale(.5) rotate(28deg);
+    }
+
+    .result-overlay {
+      position: fixed;
+      z-index: 150;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding:
+        max(18px, env(safe-area-inset-top))
+        max(18px, env(safe-area-inset-right))
+        max(18px, env(safe-area-inset-bottom))
+        max(18px, env(safe-area-inset-left));
+      background: rgba(6, 9, 6, .91);
+      backdrop-filter: blur(6px);
+    }
+
+    .result-overlay[hidden] { display: none; }
+
+    .result-card {
+      width: min(100%, 430px);
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, .035), transparent 46%),
+        var(--panel);
+      box-shadow: 0 24px 65px rgba(0, 0, 0, .5);
+      text-align: center;
+    }
+
+    .result-seal {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 13px;
+      border: 1px solid rgba(210, 184, 111, .5);
+      border-radius: 50%;
+      color: var(--gold-light);
+      box-shadow: 0 0 24px rgba(210, 184, 111, .18);
+    }
+
+    .result-seal svg {
+      width: 31px;
+      height: 31px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.7;
+    }
+
+    .result-card h2 {
+      margin: 0 0 10px;
+      font: 900 clamp(1.55rem, 6vw, 2rem)/1.12 Georgia, "Times New Roman", serif;
+    }
+
+    .result-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin: 17px 0;
+    }
+
+    .result-summary div {
+      padding: 9px 5px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, .17);
+    }
+
+    .result-summary span,
+    .result-summary strong { display: block; }
+
+    .result-summary span {
+      color: var(--muted);
+      font-size: .62rem;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .result-summary strong {
+      margin-top: 4px;
+      color: var(--gold-light);
+      font-size: .96rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-clue-label {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: .66rem;
+      font-weight: 850;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .result-clue {
+      margin: 0 0 13px;
+      padding: 13px;
+      border: 1px solid rgba(210, 184, 111, .34);
+      border-radius: 11px;
+      background: rgba(0, 0, 0, .2);
+      color: var(--gold-light);
+      font: 900 1.08rem/1.42 Georgia, "Times New Roman", serif;
+      overflow-wrap: anywhere;
+    }
+
+    .save-status {
+      min-height: 19px;
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: .76rem;
+    }
+
+    .save-status.error { color: var(--danger); }
+
+    .primary-action {
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      border-radius: 11px;
+      background: linear-gradient(180deg, #efd184, #b58a39);
+      color: #211b10;
+      font-weight: 950;
+      cursor: pointer;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @keyframes wall-bump {
+      35% { transform: translateX(-3px); filter: brightness(1.18); }
+      68% { transform: translateX(3px); }
+    }
+
+    @keyframes symbol-pulse {
+      45% { transform: scale(1.28); filter: drop-shadow(0 0 10px currentColor); }
+    }
+
+    @keyframes exit-glow {
+      to { box-shadow: inset 0 0 12px rgba(240, 217, 148, .3), 0 0 9px rgba(240, 217, 148, .36); }
+    }
+
+    @keyframes door-open {
+      55% { transform: perspective(80px) rotateY(-72deg); }
+      100% { transform: perspective(80px) rotateY(-86deg); opacity: .28; }
+    }
+
+    @media (max-width: 640px) {
+      .game {
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+      }
+
+      .game-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      .header-actions {
+        display: contents;
+      }
+
+      .maze-stats {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        margin-top: 5px;
+      }
+
+      .close-link {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .sequence-panel {
+        display: grid;
+        gap: 5px;
+        padding: 6px 8px;
+      }
+
+      .sequence-label { text-align: center; }
+
+      .sequence-name { display: none; }
+
+      .sequence-item {
+        grid-template-columns: 1fr;
+        min-height: 31px;
+        padding: 3px 7px;
+      }
+
+      .sequence-item .check { left: 50%; }
+
+      .play-zone {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr) auto;
+        gap: 6px;
+      }
+
+      .maze-board {
+        width: min(100%, calc(100vh - 349px), calc(100dvh - 349px), 480px);
+      }
+
+      .controls-panel { gap: 4px; }
+
+      .controls-title,
+      .controls-help { display: none; }
+
+      .direction-pad {
+        width: min(100%, 230px);
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(2, 48px);
+        gap: 5px;
+        margin: 0 auto;
+      }
+
+      .direction-button { min-height: 48px; }
+      .compass-mark { display: none; }
+    }
+
+    @media (max-height: 670px) and (max-width: 640px) {
+      .game-header h1 { font-size: 1.35rem; }
+      .eyebrow { margin-bottom: 2px; }
+      .maze-stats .stat { min-height: 42px; }
+      .direction-pad { grid-template-rows: repeat(2, 43px); }
+      .direction-button { min-height: 43px; }
+      .sequence-panel { padding-block: 4px; }
+      .sequence-item { min-height: 27px; }
+      .maze-board {
+        width: min(100%, calc(100vh - 305px), calc(100dvh - 305px), 480px);
+      }
+    }
+
+    @media (max-height: 500px) {
+      .game-header {
+        display: flex;
+        grid-template-columns: none;
+      }
+
+      .header-actions {
+        display: flex;
+        min-width: min(64%, 390px);
+      }
+
+      .maze-stats {
+        grid-column: auto;
+        grid-row: auto;
+        grid-template-columns: repeat(3, minmax(52px, 1fr));
+        margin-top: 0;
+      }
+
+      .sequence-panel {
+        display: flex;
+        padding-block: 4px;
+      }
+
+      .sequence-label { text-align: left; }
+
+      .play-zone {
+        grid-template-columns: minmax(0, 1fr) 128px;
+        grid-template-rows: minmax(0, 1fr);
+      }
+
+      .maze-board {
+        width: min(100%, calc(100vh - 150px), calc(100dvh - 150px), 480px);
+      }
+
+      .direction-pad {
+        width: 100%;
+        grid-template-rows: repeat(3, 40px);
+      }
+
+      .direction-button { min-height: 40px; }
+      .compass-mark { display: block; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root { --move-duration: 0ms; }
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game" id="game-root">
+    <header class="game-header">
+      <div class="title-block">
+        <span class="eyebrow">Archiefstuk 09</span>
+        <h1 id="game-title">Dwaalspoor</h1>
+      </div>
+      <div class="header-actions">
+        <div class="maze-stats" aria-label="Spelstatistieken">
+          <div class="stat"><span>Tijd</span><strong id="time">00:00</strong></div>
+          <div class="stat"><span>Zetten</span><strong id="moves">0</strong></div>
+          <div class="stat"><span>Symbolen</span><strong id="symbols-count">0/5</strong></div>
+        </div>
+        <a class="close-link" id="close-game" href="../index.html" aria-label="Dwaalspoor sluiten">Sluiten</a>
+      </div>
+    </header>
+
+    <section class="sequence-panel" aria-labelledby="sequence-title">
+      <p class="sequence-label" id="sequence-title">Volgorde</p>
+      <ol class="sequence" id="sequence"></ol>
+    </section>
+
+    <div class="play-zone">
+      <div class="maze-wrap">
+        <div class="maze-board" id="maze-board" role="application" tabindex="0" aria-label="Doolhof. Gebruik de pijltjestoetsen of WASD om de pion te bewegen.">
+          <div class="maze-grid" id="maze-grid" aria-hidden="true"></div>
+          <div class="player" id="player" aria-hidden="true">
+            <svg viewBox="0 0 32 32" focusable="false" aria-hidden="true">
+              <path d="M11 6a5 5 0 1 1 10 0 5 5 0 0 1-10 0Z"/>
+              <path d="M10 12h12l2.5 12H7.5L10 12Z"/>
+              <path d="M6 25h20v4H6z"/>
+            </svg>
+          </div>
+          <div class="mist-vignette" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <aside class="controls-panel" aria-label="Richtingsbediening">
+        <p class="controls-title">Beweeg de pion</p>
+        <div class="direction-pad">
+          <button class="direction-button" type="button" data-direction="up" aria-label="Omhoog">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 15 7-7 7 7"/></svg>
+          </button>
+          <button class="direction-button" type="button" data-direction="left" aria-label="Links">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+          </button>
+          <button class="direction-button" type="button" data-direction="down" aria-label="Omlaag">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 9 7 7 7-7"/></svg>
+          </button>
+          <button class="direction-button" type="button" data-direction="right" aria-label="Rechts">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+          </button>
+          <svg class="compass-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="16" cy="16" r="12"/><path d="m20 10-3 8-8 3 3-8 8-3Z"/>
+          </svg>
+        </div>
+        <p class="controls-help">Pijltjes / WASD<br>of veeg over het doolhof</p>
+      </aside>
+    </div>
+
+    <footer class="status-row">
+      <p class="wrong-attempts">Verkeerde pogingen: <strong id="wrong-attempts">0</strong></p>
+      <p class="game-message" id="game-message" aria-hidden="true"></p>
+    </footer>
+  </main>
+
+  <svg class="sr-only" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="sigil-spiral" viewBox="0 0 32 32"><path d="M16 26C8 26 5 20 7 14c2-7 12-9 17-4 4 4 2 11-3 13-5 2-10-2-8-6 1-3 6-4 8-1"/></symbol>
+      <symbol id="sigil-eye" viewBox="0 0 32 32"><path d="M3 16s5-8 13-8 13 8 13 8-5 8-13 8S3 16 3 16Z"/><circle cx="16" cy="16" r="4"/></symbol>
+      <symbol id="sigil-key" viewBox="0 0 32 32"><circle cx="10" cy="12" r="5"/><path d="m14 16 11 11m-5-6 3-3m0 6 3-3"/></symbol>
+      <symbol id="sigil-moon" viewBox="0 0 32 32"><path d="M24 23A12 12 0 0 1 12 5a11 11 0 1 0 12 18Z"/></symbol>
+      <symbol id="sigil-star" viewBox="0 0 32 32"><path d="m16 3 3.5 8.8L29 12l-7.3 6 2.7 9-8.4-5-8.4 5 2.7-9L3 12l9.5-.2L16 3Z"/></symbol>
+    </defs>
+  </svg>
+
+  <section class="result-overlay" id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
+    <div class="result-card">
+      <div class="result-seal" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M5 16.5 12.5 24 27 8"/></svg>
+      </div>
+      <h2 id="result-title">Je hebt het verborgen pad gevonden</h2>
+      <div class="result-summary">
+        <div><span>Eindtijd</span><strong id="result-time">00:00</strong></div>
+        <div><span>Zetten</span><strong id="result-moves">0</strong></div>
+        <div><span>Verkeerd</span><strong id="result-wrong">0</strong></div>
+      </div>
+      <p class="result-clue-label">Verborgen aanwijzing</p>
+      <p class="result-clue" id="result-clue"></p>
+      <p class="save-status" id="save-status" aria-live="polite">Resultaat wordt opgeslagen…</p>
+      <button class="primary-action" id="result-close" type="button">Terug naar dossier</button>
+    </div>
+  </section>
+
+  <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
+    <div class="game-gate-card">
+      <div class="game-gate-spinner" aria-hidden="true"></div>
+      <p class="game-gate-label">Het verzegelde dossier</p>
+      <h2 id="gate-title">Dwaalspoor wordt geopend…</h2>
+      <p class="game-gate-message" id="gate-message">Toegang wordt gecontroleerd.</p>
+      <div class="game-gate-hint" id="gate-hint" hidden></div>
+      <div class="game-gate-actions">
+        <button class="game-gate-button" id="gate-start" type="button" hidden>Start spel</button>
+        <button class="game-gate-button secondary" id="gate-back" type="button" hidden>Terug naar dossier</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="sr-only" id="announcer" aria-live="assertive" aria-atomic="true"></p>
+
+  <script src="../config.js"></script>
+  <script src="game-shell.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const GAME_CONFIG = Object.freeze({
+        grid: Object.freeze([
+          '#############',
+          '#S....#.....#',
+          '#####.#.###.#',
+          '#c#...#.#d..#',
+          '#.#.###.###.#',
+          '#...#.....#X#',
+          '#.#####.#.###',
+          '#.#...#b#...#',
+          '#.#.#.###.#.#',
+          '#.#.#...#e#.#',
+          '#.#.###.###.#',
+          '#...#a......#',
+          '#############'
+        ]),
+        wallToken: '#',
+        pathToken: '.',
+        startToken: 'S',
+        exitToken: 'X',
+        symbols: Object.freeze({
+          a: Object.freeze({ id: 'spiral', label: 'Spiraal', icon: 'sigil-spiral', color: '#e4c879' }),
+          b: Object.freeze({ id: 'eye', label: 'Oog', icon: 'sigil-eye', color: '#91bfd0' }),
+          c: Object.freeze({ id: 'key', label: 'Sleutel', icon: 'sigil-key', color: '#d9a96e' }),
+          d: Object.freeze({ id: 'moon', label: 'Maan', icon: 'sigil-moon', color: '#b9aad9' }),
+          e: Object.freeze({ id: 'star', label: 'Ster', icon: 'sigil-star', color: '#a9cf9f' })
+        }),
+        requiredOrder: Object.freeze(['c', 'a', 'e', 'b', 'd']),
+        visibility: Object.freeze({ enabled: true, distance: 2, keepVisitedVisible: true }),
+        hiddenClue: 'ZOEK ONDER DE LOSSE STEEN BIJ DE OUDE POORT'
+      });
+
+      const GAME_ID = 'dwaalspoor';
+      const PLAYER_KEY = 'vriendenweekend-player-name';
+      const MOVE_DURATION = 150;
+      const SWIPE_THRESHOLD = 24;
+      const apiUrl = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
+      const params = new URLSearchParams(window.location.search);
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const playerName = sanitizeName(localStorage.getItem(PLAYER_KEY) || params.get('playerName'));
+      const gate = window.createGameGate(closeGame);
+
+      const elements = {
+        board: document.getElementById('maze-board'),
+        grid: document.getElementById('maze-grid'),
+        player: document.getElementById('player'),
+        sequence: document.getElementById('sequence'),
+        time: document.getElementById('time'),
+        moves: document.getElementById('moves'),
+        symbolsCount: document.getElementById('symbols-count'),
+        wrongAttempts: document.getElementById('wrong-attempts'),
+        message: document.getElementById('game-message'),
+        announcer: document.getElementById('announcer'),
+        title: document.getElementById('game-title'),
+        close: document.getElementById('close-game'),
+        result: document.getElementById('result-overlay'),
+        resultTime: document.getElementById('result-time'),
+        resultMoves: document.getElementById('result-moves'),
+        resultWrong: document.getElementById('result-wrong'),
+        resultClue: document.getElementById('result-clue'),
+        saveStatus: document.getElementById('save-status'),
+        resultClose: document.getElementById('result-close')
+      };
+
+      const listeners = [];
+      const pendingTimeouts = new Set();
+      const pendingFrames = new Set();
+      const cellElements = new Map();
+      let heartbeatTimer = 0;
+      let messageTimer = 0;
+      let timerInterval = 0;
+      let elapsedBeforePause = 0;
+      let timerStartedAt = 0;
+      let touchStart = null;
+      let destroyed = false;
+      let clue = GAME_CONFIG.hiddenClue;
+      let state = null;
+
+      function sanitizeName(value) {
+        return String(value || '')
+          .replace(/[<>]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 40);
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[character]));
+      }
+
+      function positionKey(row, column) {
+        return row + ':' + column;
+      }
+
+      function findToken(token) {
+        const positions = [];
+        GAME_CONFIG.grid.forEach((row, rowIndex) => {
+          [...row].forEach((cell, columnIndex) => {
+            if (cell === token) positions.push({ row: rowIndex, column: columnIndex });
+          });
+        });
+        return positions;
+      }
+
+      function isWalkable(row, column) {
+        return row >= 0 &&
+          row < GAME_CONFIG.grid.length &&
+          column >= 0 &&
+          column < GAME_CONFIG.grid[0].length &&
+          GAME_CONFIG.grid[row][column] !== GAME_CONFIG.wallToken;
+      }
+
+      function canReach(from, target) {
+        const queue = [from];
+        const seen = new Set([positionKey(from.row, from.column)]);
+        const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+        while (queue.length) {
+          const current = queue.shift();
+          if (current.row === target.row && current.column === target.column) return true;
+
+          directions.forEach(([rowDelta, columnDelta]) => {
+            const row = current.row + rowDelta;
+            const column = current.column + columnDelta;
+            const key = positionKey(row, column);
+            if (isWalkable(row, column) && !seen.has(key)) {
+              seen.add(key);
+              queue.push({ row, column });
+            }
+          });
+        }
+        return false;
+      }
+
+      function validateConfig() {
+        const errors = [];
+        const rows = GAME_CONFIG.grid;
+        if (!Array.isArray(rows) || !rows.length || rows.some(row => typeof row !== 'string' || !row.length)) {
+          errors.push('Het doolhofraster moet uit niet-lege tekenreeksen bestaan.');
+          return errors;
+        }
+
+        const width = rows[0].length;
+        if (rows.some(row => row.length !== width)) {
+          errors.push('Niet alle rijen van het doolhof zijn even lang.');
+        }
+
+        const starts = findToken(GAME_CONFIG.startToken);
+        const exits = findToken(GAME_CONFIG.exitToken);
+        if (starts.length !== 1) errors.push('Het doolhof moet precies één startpunt bevatten.');
+        if (exits.length !== 1) errors.push('Het doolhof moet precies één uitgang bevatten.');
+
+        const order = GAME_CONFIG.requiredOrder;
+        if (!Array.isArray(order) || order.length !== 5 || new Set(order).size !== order.length) {
+          errors.push('De symboolvolgorde moet uit vijf unieke symbolen bestaan.');
+        }
+
+        const knownTokens = new Set([
+          GAME_CONFIG.wallToken,
+          GAME_CONFIG.pathToken,
+          GAME_CONFIG.startToken,
+          GAME_CONFIG.exitToken,
+          ...Object.keys(GAME_CONFIG.symbols)
+        ]);
+        rows.forEach((row, rowIndex) => [...row].forEach((token, columnIndex) => {
+          if (!knownTokens.has(token)) {
+            errors.push('Onbekend rasterteken "' + token + '" op rij ' + (rowIndex + 1) + ', kolom ' + (columnIndex + 1) + '.');
+          }
+        }));
+
+        const occupiedPositions = new Set();
+        order.forEach(token => {
+          if (!GAME_CONFIG.symbols[token]) {
+            errors.push('Symbool "' + token + '" heeft geen configuratie.');
+            return;
+          }
+          const positions = findToken(token);
+          if (positions.length !== 1) {
+            errors.push('Symbool "' + token + '" moet precies één keer in het raster staan.');
+            return;
+          }
+          const key = positionKey(positions[0].row, positions[0].column);
+          if (occupiedPositions.has(key)) errors.push('Twee symbolen gebruiken dezelfde positie.');
+          occupiedPositions.add(key);
+        });
+
+        if (starts.length === 1 && exits.length === 1 && !canReach(starts[0], exits[0])) {
+          errors.push('De uitgang is niet bereikbaar vanaf het startpunt.');
+        }
+
+        if (starts.length === 1) {
+          let cursor = starts[0];
+          order.forEach(token => {
+            const positions = findToken(token);
+            if (positions.length === 1) {
+              if (!canReach(cursor, positions[0])) {
+                errors.push('Symbool "' + GAME_CONFIG.symbols[token].label + '" is niet bereikbaar in de vereiste volgorde.');
+              }
+              cursor = positions[0];
+            }
+          });
+          if (exits.length === 1 && !canReach(cursor, exits[0])) {
+            errors.push('De uitgang is na het laatste symbool niet bereikbaar.');
+          }
+        }
+
+        if (!Number.isInteger(GAME_CONFIG.visibility.distance) || GAME_CONFIG.visibility.distance < 0) {
+          errors.push('De zichtafstand moet een geheel getal van nul of hoger zijn.');
+        }
+        return [...new Set(errors)];
+      }
+
+      function symbolSvg(symbol, className = 'symbol-icon') {
+        return '<svg class="' + className + '" viewBox="0 0 32 32" focusable="false" aria-hidden="true">' +
+          '<use href="#' + symbol.icon + '"></use></svg>';
+      }
+
+      function renderBoard() {
+        const rows = GAME_CONFIG.grid.length;
+        const columns = GAME_CONFIG.grid[0].length;
+        elements.grid.style.gridTemplateColumns = 'repeat(' + columns + ', 1fr)';
+        elements.grid.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
+        elements.player.style.width = (100 / columns) + '%';
+        elements.player.style.height = (100 / rows) + '%';
+        elements.grid.replaceChildren();
+        cellElements.clear();
+
+        GAME_CONFIG.grid.forEach((rowText, row) => {
+          [...rowText].forEach((token, column) => {
+            const cell = document.createElement('div');
+            const key = positionKey(row, column);
+            cell.className = 'maze-cell';
+            cell.dataset.row = String(row);
+            cell.dataset.column = String(column);
+
+            if (token === GAME_CONFIG.wallToken) {
+              cell.classList.add('wall');
+            } else {
+              cell.classList.add('path');
+              if (token === GAME_CONFIG.startToken) cell.classList.add('start');
+              if (token === GAME_CONFIG.exitToken) {
+                cell.classList.add('exit');
+                cell.innerHTML = '<svg class="exit-icon" viewBox="0 0 32 32" aria-hidden="true">' +
+                  '<path d="M7 28V5h18v23M11 28V9h10v19M18 18h.1"/>' +
+                  '<path d="M4 28h24"/></svg>';
+              }
+              if (GAME_CONFIG.symbols[token]) {
+                const symbol = GAME_CONFIG.symbols[token];
+                cell.dataset.symbol = token;
+                cell.style.setProperty('--symbol-color', symbol.color);
+                cell.innerHTML = '<span class="cell-symbol" title="' + escapeHtml(symbol.label) + '">' +
+                  symbolSvg(symbol) + '</span>';
+              }
+            }
+
+            cellElements.set(key, cell);
+            elements.grid.append(cell);
+          });
+        });
+      }
+
+      function renderSequence() {
+        elements.sequence.innerHTML = GAME_CONFIG.requiredOrder.map((token, index) => {
+          const symbol = GAME_CONFIG.symbols[token];
+          return '<li class="sequence-item" data-sequence-index="' + index + '" style="--symbol-color:' + symbol.color + '">' +
+            '<span class="sequence-icon">' + symbolSvg(symbol) + '</span>' +
+            '<span class="sequence-name">' + escapeHtml(symbol.label) + '</span>' +
+            '<span class="check" aria-hidden="true">✓</span>' +
+            '<span class="sr-only">' + (index + 1) + '. ' + escapeHtml(symbol.label) + '</span>' +
+          '</li>';
+        }).join('');
+      }
+
+      function resetGame() {
+        stopGameTimer();
+        clearPendingTimeouts();
+        document.querySelectorAll('.flying-symbol').forEach(node => node.remove());
+        const start = findToken(GAME_CONFIG.startToken)[0];
+        state = {
+          row: start.row,
+          column: start.column,
+          moves: 0,
+          wrongAttempts: 0,
+          collected: [],
+          visited: new Set([positionKey(start.row, start.column)]),
+          playing: true,
+          animating: false,
+          completed: false,
+          finishStarted: false,
+          finalSeconds: 0
+        };
+        elements.result.hidden = true;
+        elements.board.classList.remove('invalid-move');
+        cellElements.forEach(cell => {
+          cell.classList.remove('trail', 'fog-hidden', 'fog-memory', 'open', 'opening');
+          const symbol = cell.querySelector('.cell-symbol');
+          if (symbol) symbol.classList.remove('collecting', 'collected');
+        });
+        updateHud();
+        updatePlayer(false);
+        updateVisibility();
+        startGameTimer();
+        requestFrame(() => elements.board.focus());
+      }
+
+      function updateHud() {
+        elements.moves.textContent = String(state?.moves || 0);
+        elements.wrongAttempts.textContent = String(state?.wrongAttempts || 0);
+        elements.symbolsCount.textContent = (state?.collected.length || 0) + '/' + GAME_CONFIG.requiredOrder.length;
+        [...elements.sequence.children].forEach((item, index) => {
+          item.classList.toggle('done', index < (state?.collected.length || 0));
+          item.classList.toggle('next', index === (state?.collected.length || 0));
+        });
+      }
+
+      function updatePlayer(animate = true) {
+        const columns = GAME_CONFIG.grid[0].length;
+        const rows = GAME_CONFIG.grid.length;
+        if (!animate) elements.player.style.transition = 'none';
+        elements.player.style.transform = 'translate(' + (state.column * 100) + '%, ' + (state.row * 100) + '%)';
+        elements.player.style.width = (100 / columns) + '%';
+        elements.player.style.height = (100 / rows) + '%';
+        if (!animate) {
+          void elements.player.offsetWidth;
+          elements.player.style.transition = '';
+        }
+      }
+
+      function updateVisibility() {
+        if (!state) return;
+        const visibility = GAME_CONFIG.visibility;
+        cellElements.forEach((cell, key) => {
+          const row = Number(cell.dataset.row);
+          const column = Number(cell.dataset.column);
+          const distance = Math.abs(row - state.row) + Math.abs(column - state.column);
+          const visible = !visibility.enabled || distance <= visibility.distance;
+          const visited = state.visited.has(key) && !cell.classList.contains('wall');
+          cell.classList.toggle('trail', visited);
+          cell.classList.toggle('fog-hidden', !visible && !(visibility.keepVisitedVisible && visited));
+          cell.classList.toggle('fog-memory', !visible && visibility.keepVisitedVisible && visited);
+        });
+      }
+
+      function directionDelta(direction) {
+        return ({
+          up: [-1, 0],
+          down: [1, 0],
+          left: [0, -1],
+          right: [0, 1]
+        })[direction];
+      }
+
+      function move(direction) {
+        if (!state?.playing || state.completed || state.animating) return;
+        const delta = directionDelta(direction);
+        if (!delta) return;
+        const row = state.row + delta[0];
+        const column = state.column + delta[1];
+        if (!isWalkable(row, column)) {
+          showInvalidMove();
+          return;
+        }
+
+        state.animating = true;
+        state.row = row;
+        state.column = column;
+        state.moves += 1;
+        state.visited.add(positionKey(row, column));
+        updatePlayer(true);
+        updateVisibility();
+        updateHud();
+        inspectCurrentCell();
+
+        schedule(() => {
+          if (state && !state.completed) state.animating = false;
+        }, reduceMotion ? 0 : MOVE_DURATION);
+      }
+
+      function inspectCurrentCell() {
+        const token = GAME_CONFIG.grid[state.row][state.column];
+        if (GAME_CONFIG.symbols[token] && !state.collected.includes(token)) {
+          const expected = GAME_CONFIG.requiredOrder[state.collected.length];
+          if (token === expected) collectSymbol(token);
+          else rejectSymbol(token, expected);
+        }
+
+        if (token === GAME_CONFIG.exitToken) {
+          if (state.collected.length === GAME_CONFIG.requiredOrder.length) finishGame();
+          else {
+            announce('De uitgang is nog verzegeld.');
+            flashMessage('De uitgang is nog verzegeld.');
+          }
+        }
+      }
+
+      function collectSymbol(token) {
+        const symbol = GAME_CONFIG.symbols[token];
+        const sequenceIndex = state.collected.length;
+        state.collected.push(token);
+        updateHud();
+        announce(symbol.label + ' verzameld.');
+        flashMessage(symbol.label + ' verzameld.', 'success');
+        animateSymbol(token, sequenceIndex);
+
+        if (state.collected.length === GAME_CONFIG.requiredOrder.length) {
+          const exitCell = cellElements.get(positionKey(findToken(GAME_CONFIG.exitToken)[0].row, findToken(GAME_CONFIG.exitToken)[0].column));
+          exitCell?.classList.add('open');
+          schedule(() => {
+            announce('Alle symbolen zijn verzameld. De uitgang gaat open.');
+            flashMessage('Alle symbolen gevonden — de uitgang is open.', 'success');
+          }, reduceMotion ? 0 : 230);
+        }
+      }
+
+      function rejectSymbol(token, expectedToken) {
+        state.wrongAttempts += 1;
+        updateHud();
+        const expected = GAME_CONFIG.symbols[expectedToken];
+        const reached = GAME_CONFIG.symbols[token];
+        announce(reached.label + ' is nog niet het juiste symbool. Zoek eerst ' + expected.label + '.');
+        flashMessage('Dit symbool is nog niet aan de beurt.', 'error');
+      }
+
+      function animateSymbol(token, sequenceIndex) {
+        const sourceCell = cellElements.get(positionKey(state.row, state.column));
+        const source = sourceCell?.querySelector('.cell-symbol');
+        const target = elements.sequence.querySelector('[data-sequence-index="' + sequenceIndex + '"] .sequence-icon');
+        if (!source) return;
+        source.classList.add('collecting');
+
+        if (reduceMotion || !target) {
+          source.classList.add('collected');
+          return;
+        }
+
+        const sourceRect = source.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const clone = source.cloneNode(true);
+        clone.className = 'flying-symbol';
+        clone.style.left = sourceRect.left + 'px';
+        clone.style.top = sourceRect.top + 'px';
+        clone.style.width = sourceRect.width + 'px';
+        clone.style.height = sourceRect.height + 'px';
+        clone.style.setProperty('--symbol-color', GAME_CONFIG.symbols[token].color);
+        clone.style.setProperty('--fly-x', (targetRect.left + targetRect.width / 2 - sourceRect.left - sourceRect.width / 2) + 'px');
+        clone.style.setProperty('--fly-y', (targetRect.top + targetRect.height / 2 - sourceRect.top - sourceRect.height / 2) + 'px');
+        document.body.append(clone);
+        requestFrame(() => clone.classList.add('fly'));
+        schedule(() => {
+          source.classList.add('collected');
+          clone.remove();
+        }, 440);
+      }
+
+      function showInvalidMove() {
+        elements.board.classList.remove('invalid-move');
+        void elements.board.offsetWidth;
+        elements.board.classList.add('invalid-move');
+        schedule(() => elements.board.classList.remove('invalid-move'), 210);
+      }
+
+      function flashMessage(text, type = '') {
+        window.clearTimeout(messageTimer);
+        elements.message.textContent = text;
+        elements.message.className = 'game-message show' + (type ? ' ' + type : '');
+        messageTimer = window.setTimeout(() => {
+          elements.message.className = 'game-message';
+        }, 1900);
+      }
+
+      function announce(text) {
+        elements.announcer.textContent = '';
+        schedule(() => { elements.announcer.textContent = text; }, 20);
+      }
+
+      function schedule(callback, delay) {
+        const timeout = window.setTimeout(() => {
+          pendingTimeouts.delete(timeout);
+          if (!destroyed) callback();
+        }, delay);
+        pendingTimeouts.add(timeout);
+        return timeout;
+      }
+
+      function requestFrame(callback) {
+        const frame = window.requestAnimationFrame(() => {
+          pendingFrames.delete(frame);
+          if (!destroyed) callback();
+        });
+        pendingFrames.add(frame);
+        return frame;
+      }
+
+      function clearPendingTimeouts() {
+        pendingTimeouts.forEach(timeout => window.clearTimeout(timeout));
+        pendingTimeouts.clear();
+        pendingFrames.forEach(frame => window.cancelAnimationFrame(frame));
+        pendingFrames.clear();
+        window.clearTimeout(messageTimer);
+        messageTimer = 0;
+      }
+
+      function elapsedMilliseconds() {
+        return elapsedBeforePause + (timerStartedAt ? performance.now() - timerStartedAt : 0);
+      }
+
+      function startGameTimer() {
+        elapsedBeforePause = 0;
+        timerStartedAt = performance.now();
+        updateTimer();
+        timerInterval = window.setInterval(updateTimer, 250);
+      }
+
+      function pauseGameTimer() {
+        if (timerStartedAt) {
+          elapsedBeforePause += performance.now() - timerStartedAt;
+          timerStartedAt = 0;
+        }
+        window.clearInterval(timerInterval);
+        timerInterval = 0;
+        updateTimer();
+      }
+
+      function resumeGameTimer() {
+        if (!state?.playing || state.completed || timerStartedAt) return;
+        timerStartedAt = performance.now();
+        timerInterval = window.setInterval(updateTimer, 250);
+      }
+
+      function stopGameTimer() {
+        pauseGameTimer();
+      }
+
+      function updateTimer() {
+        const seconds = state?.completed ? state.finalSeconds : Math.floor(elapsedMilliseconds() / 1000);
+        elements.time.textContent = formatTime(seconds);
+      }
+
+      function formatTime(seconds) {
+        const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+        return String(Math.floor(safeSeconds / 60)).padStart(2, '0') + ':' + String(safeSeconds % 60).padStart(2, '0');
+      }
+
+      function finishGame() {
+        if (!state || state.finishStarted || state.collected.length !== GAME_CONFIG.requiredOrder.length) return;
+        state.finishStarted = true;
+        state.completed = true;
+        state.playing = false;
+        state.finalSeconds = Math.floor(elapsedMilliseconds() / 1000);
+        stopGameTimer();
+        updateTimer();
+        const exitCell = cellElements.get(positionKey(state.row, state.column));
+        exitCell?.classList.remove('open');
+        exitCell?.classList.add('opening');
+        announce('De uitgang opent. Je hebt het verborgen pad gevonden.');
+        flashMessage('De uitgang opent…', 'success');
+
+        schedule(() => showResultAndSave(), reduceMotion ? 40 : 720);
+      }
+
+      async function showResultAndSave() {
+        elements.resultTime.textContent = formatTime(state.finalSeconds);
+        elements.resultMoves.textContent = String(state.moves);
+        elements.resultWrong.textContent = String(state.wrongAttempts);
+        elements.resultClue.textContent = clue;
+        elements.saveStatus.textContent = 'Resultaat wordt opgeslagen…';
+        elements.saveStatus.className = 'save-status';
+        elements.result.hidden = false;
+        requestFrame(() => elements.resultClose.focus());
+
+        try {
+          const data = await apiPost('score', {
+            name: playerName,
+            gameId: GAME_ID,
+            seconds: state.finalSeconds,
+            attempts: state.wrongAttempts + 1,
+            detail: {
+              version: 1,
+              moves: state.moves,
+              wrongAttempts: state.wrongAttempts,
+              symbols: state.collected.slice()
+            }
+          });
+          const saved = data.result || data;
+          const scoreText = saved.score === null || saved.score === undefined ? 'Resultaat opgeslagen.' : saved.score + ' punten opgeslagen.';
+          elements.saveStatus.textContent = data.alreadySubmitted ? 'Dit resultaat was al opgeslagen.' : scoreText;
+          if (saved.hint) {
+            clue = saved.hint;
+            elements.resultClue.textContent = clue;
+          }
+        } catch (error) {
+          elements.saveStatus.textContent = 'Opslaan mislukt: ' + (error?.message || 'onbekende fout');
+          elements.saveStatus.className = 'save-status error';
+        }
+      }
+
+      async function apiGet(action, parameters = {}) {
+        const query = new URLSearchParams({ action, ...parameters });
+        const response = await fetch(apiUrl + '?' + query.toString(), {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store'
+        });
+        const body = await response.json();
+        if (!response.ok || !body.success) throw new Error(body.error || 'Verbinding mislukt.');
+        return body.data;
+      }
+
+      async function apiPost(action, payload) {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          body: new URLSearchParams({ action, payload: JSON.stringify(payload) }),
+          cache: 'no-store'
+        });
+        const body = await response.json();
+        if (!response.ok || !body.success) throw new Error(body.error || 'Verbinding mislukt.');
+        return body.data;
+      }
+
+      function addListener(target, type, handler, options) {
+        target.addEventListener(type, handler, options);
+        listeners.push(() => target.removeEventListener(type, handler, options));
+      }
+
+      function handleKeydown(event) {
+        if (!state?.playing || elements.result.hidden === false) return;
+        const direction = ({
+          ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+          w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right'
+        })[event.key];
+        if (!direction) return;
+        event.preventDefault();
+        move(direction);
+      }
+
+      function handlePointerDown(event) {
+        if (!state?.playing || event.pointerType === 'mouse' && event.button !== 0) return;
+        touchStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+        elements.board.setPointerCapture?.(event.pointerId);
+      }
+
+      function handlePointerMove(event) {
+        if (touchStart && touchStart.id === event.pointerId) event.preventDefault();
+      }
+
+      function handlePointerUp(event) {
+        if (!touchStart || touchStart.id !== event.pointerId) return;
+        event.preventDefault();
+        const deltaX = event.clientX - touchStart.x;
+        const deltaY = event.clientY - touchStart.y;
+        touchStart = null;
+        if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < SWIPE_THRESHOLD) return;
+        move(Math.abs(deltaX) > Math.abs(deltaY) ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up'));
+      }
+
+      function handlePointerCancel() {
+        touchStart = null;
+      }
+
+      function handleVisibilityChange() {
+        if (document.hidden) pauseGameTimer();
+        else resumeGameTimer();
+      }
+
+      function bindControls() {
+        addListener(document, 'keydown', handleKeydown);
+        addListener(elements.board, 'pointerdown', handlePointerDown);
+        addListener(elements.board, 'pointermove', handlePointerMove, { passive: false });
+        addListener(elements.board, 'pointerup', handlePointerUp, { passive: false });
+        addListener(elements.board, 'pointercancel', handlePointerCancel);
+        addListener(document, 'visibilitychange', handleVisibilityChange);
+        addListener(window, 'pagehide', cleanup);
+        addListener(elements.close, 'click', cleanup);
+        addListener(elements.resultClose, 'click', closeGame);
+        document.querySelectorAll('[data-direction]').forEach(button => {
+          addListener(button, 'click', () => move(button.dataset.direction));
+        });
+      }
+
+      function cleanup() {
+        if (destroyed) return;
+        destroyed = true;
+        state && (state.playing = false);
+        stopGameTimer();
+        window.clearInterval(heartbeatTimer);
+        heartbeatTimer = 0;
+        clearPendingTimeouts();
+        touchStart = null;
+        listeners.splice(0).forEach(remove => remove());
+        document.querySelectorAll('.flying-symbol').forEach(node => node.remove());
+      }
+
+      function closeGame(event) {
+        event?.preventDefault?.();
+        cleanup();
+        window.location.href = '../index.html';
+      }
+
+      function startHeartbeat() {
+        window.clearInterval(heartbeatTimer);
+        heartbeatTimer = window.setInterval(() => {
+          if (!document.hidden && !destroyed) apiPost('heartbeat', { name: playerName, gameId: GAME_ID }).catch(() => {});
+        }, 10000);
+      }
+
+      async function boot() {
+        const configErrors = validateConfig();
+        if (configErrors.length) {
+          console.error('Ongeldige Dwaalspoor-configuratie:', configErrors);
+          gate.blocked('Doolhof niet beschikbaar', 'De configuratie van dit doolhof is ongeldig. Meld dit bij de spelbeheerder.');
+          return;
+        }
+
+        renderSequence();
+        renderBoard();
+        const start = findToken(GAME_CONFIG.startToken)[0];
+        state = {
+          row: start.row, column: start.column, moves: 0, wrongAttempts: 0,
+          collected: [], visited: new Set([positionKey(start.row, start.column)]),
+          playing: false, animating: false, completed: false, finishStarted: false, finalSeconds: 0
+        };
+        updateHud();
+        updatePlayer(false);
+        updateVisibility();
+        bindControls();
+
+        if (!playerName || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(apiUrl)) {
+          gate.blocked('Spel niet beschikbaar', 'Open Dwaalspoor via de startpagina nadat je jouw naam hebt opgeslagen.');
+          return;
+        }
+
+        localStorage.setItem(PLAYER_KEY, playerName);
+        try {
+          const access = await apiGet('access', { gameId: GAME_ID, playerName });
+          if (access.game?.title) {
+            elements.title.textContent = access.game.title;
+            document.title = access.game.title;
+          }
+          clue = access.game?.hint || GAME_CONFIG.hiddenClue;
+
+          if (!access.allowed) {
+            if (access.completed) {
+              const replay = window.createReplayHandler({
+                gate,
+                post: apiPost,
+                playerName,
+                gameId: GAME_ID
+              });
+              gate.completed(
+                'Dwaalspoor al voltooid',
+                'Je hebt het verborgen pad al gevonden. Je kunt opnieuw spelen, maar je huidige score vervalt dan.',
+                clue,
+                replay
+              );
+            } else {
+              gate.blocked('Dwaalspoor is verzegeld', 'Dit spel is nog niet vrijgegeven.');
+            }
+            return;
+          }
+
+          await apiPost('start', {
+            name: playerName,
+            gameId: GAME_ID,
+            source: 'github-pages',
+            userAgent: navigator.userAgent
+          });
+          startHeartbeat();
+          gate.instructions(
+            'Vind het verborgen pad',
+            'Verzamel de vijf symbolen in de getoonde volgorde en bereik daarna de uitgang. Gebruik pijltjes, WASD, de knoppen of een veegbeweging.',
+            () => {
+              gate.hide();
+              resetGame();
+            },
+            'Betreed het doolhof'
+          );
+        } catch (error) {
+          gate.blocked('Geen verbinding', error?.message || 'Dwaalspoor kon niet worden geopend.');
+        }
+      }
+
+      boot();
+    })();
+  </script>
+</body>
+</html>

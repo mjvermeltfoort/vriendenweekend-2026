@@ -95,6 +95,16 @@
 
     .board-panel { padding: clamp(8px, 2vw, 15px); }
 
+    .touch-note {
+      display: none;
+      margin: 9px 4px 1px;
+      color: var(--muted);
+      font-size: .73rem;
+      line-height: 1.4;
+      text-align: center;
+      touch-action: pan-y;
+    }
+
     .letter-grid {
       --grid-columns: 10;
       display: grid;
@@ -467,6 +477,10 @@
       .word-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
+    @media (hover: none) and (pointer: coarse) {
+      .touch-note { display: block; }
+    }
+
     @media (max-width: 620px) {
       .game-header { flex-wrap: wrap; }
       .game-header-actions { width: 100%; }
@@ -528,6 +542,7 @@
           aria-label="Letterraster. Gebruik de pijltjestoetsen om te bewegen en Enter of de spatiebalk om een begin- en eindpunt te kiezen."
           aria-disabled="true"
         ></div>
+        <p class="touch-note">Veeg direct omhoog of omlaag om te scrollen. Houd een letter kort vast en sleep daarna om een woord te kiezen.</p>
       </div>
 
       <aside class="word-panel" aria-labelledby="word-list-title">
@@ -674,6 +689,8 @@
         let heartbeatHandle = null;
         let activePointerId = null;
         let pointerCaptureTarget = null;
+        let touchGesture = null;
+        let touchHoldTimer = null;
         let selectionStart = null;
         let selectionEnd = null;
         let selectedPath = [];
@@ -1012,6 +1029,83 @@
           return cell && grid.contains(cell) ? Number(cell.dataset.index) : null;
         }
 
+        function clearTouchHoldTimer() {
+          if (touchHoldTimer !== null) {
+            window.clearTimeout(touchHoldTimer);
+            touchHoldTimer = null;
+          }
+        }
+
+        function beginTouchGesture(index, clientX, clientY) {
+          clearTouchHoldTimer();
+          touchGesture = {
+            mode: "pending",
+            startIndex: index,
+            startX: clientX,
+            startY: clientY,
+            lastY: clientY
+          };
+          touchHoldTimer = window.setTimeout(() => {
+            touchHoldTimer = null;
+            if (cleaned || !touchGesture || touchGesture.mode !== "pending") return;
+            touchGesture.mode = "select";
+            startSelection(touchGesture.startIndex);
+          }, 190);
+        }
+
+        function moveTouchGesture(index, clientX, clientY) {
+          if (!touchGesture) return;
+          const horizontalDistance = clientX - touchGesture.startX;
+          const verticalDistance = clientY - touchGesture.startY;
+
+          if (touchGesture.mode === "pending") {
+            const distance = Math.hypot(horizontalDistance, verticalDistance);
+            if (distance < 9) return;
+            clearTouchHoldTimer();
+
+            if (Math.abs(verticalDistance) > Math.abs(horizontalDistance)) {
+              touchGesture.mode = "scroll";
+              clearPreview();
+            } else {
+              touchGesture.mode = "select";
+              startSelection(touchGesture.startIndex);
+            }
+          }
+
+          if (touchGesture.mode === "scroll") {
+            const scrollDistance = touchGesture.lastY - clientY;
+            touchGesture.lastY = clientY;
+            window.scrollBy(0, scrollDistance);
+            return;
+          }
+
+          if (touchGesture.mode === "select" && Number.isInteger(index)) {
+            moveSelection(index);
+          }
+        }
+
+        function endTouchGesture(index) {
+          if (!touchGesture) return;
+          clearTouchHoldTimer();
+          const mode = touchGesture.mode;
+          touchGesture = null;
+
+          if (mode === "select") {
+            finishSelection(index);
+          } else {
+            clearPreview();
+            if (mode === "pending") {
+              setFeedback("Houd op mobiel een letter kort vast en sleep daarna naar de laatste letter.");
+            }
+          }
+        }
+
+        function cancelTouchGesture() {
+          clearTouchHoldTimer();
+          touchGesture = null;
+          clearPreview();
+        }
+
         function startSelection(index) {
           if (!accessAllowed || completed || !Number.isInteger(index)) return;
           keyboardStart = null;
@@ -1038,13 +1132,24 @@
           activePointerId = event.pointerId;
           pointerCaptureTarget = cell;
           try { cell.setPointerCapture(event.pointerId); } catch (error) { /* Capture is optional. */ }
+          if (event.pointerType === "touch") {
+            beginTouchGesture(Number(cell.dataset.index), event.clientX, event.clientY);
+            return;
+          }
           startSelection(Number(cell.dataset.index));
         }
 
         function handlePointerMove(event) {
-          if (activePointerId !== event.pointerId || selectionStart === null) return;
+          if (
+            activePointerId !== event.pointerId ||
+            (event.pointerType === "touch" ? !touchGesture : selectionStart === null)
+          ) return;
           event.preventDefault();
           const index = cellIndexAtPoint(event.clientX, event.clientY);
+          if (event.pointerType === "touch") {
+            moveTouchGesture(index, event.clientX, event.clientY);
+            return;
+          }
           if (Number.isInteger(index)) moveSelection(index);
         }
 
@@ -1059,12 +1164,17 @@
           } catch (error) { /* Pointer may already be released. */ }
           activePointerId = null;
           pointerCaptureTarget = null;
+          if (event.pointerType === "touch") {
+            endTouchGesture(index);
+            return;
+          }
           finishSelection(index);
         }
 
         function cancelPointerSelection() {
           activePointerId = null;
           pointerCaptureTarget = null;
+          cancelTouchGesture();
           clearPreview();
         }
 
@@ -1095,22 +1205,22 @@
             const index = touch ? cellIndexAtPoint(touch.clientX, touch.clientY) : null;
             if (!Number.isInteger(index) || !accessAllowed || completed) return;
             event.preventDefault();
-            startSelection(index);
+            beginTouchGesture(index, touch.clientX, touch.clientY);
           }, { passive: false, signal });
           grid.addEventListener("touchmove", event => {
-            if (selectionStart === null) return;
+            if (!touchGesture) return;
             const touch = event.changedTouches[0];
             event.preventDefault();
             const index = touch ? cellIndexAtPoint(touch.clientX, touch.clientY) : null;
-            if (Number.isInteger(index)) moveSelection(index);
+            if (touch) moveTouchGesture(index, touch.clientX, touch.clientY);
           }, { passive: false, signal });
           grid.addEventListener("touchend", event => {
-            if (selectionStart === null) return;
+            if (!touchGesture) return;
             const touch = event.changedTouches[0];
             event.preventDefault();
-            finishSelection(touch ? cellIndexAtPoint(touch.clientX, touch.clientY) : selectionEnd);
+            endTouchGesture(touch ? cellIndexAtPoint(touch.clientX, touch.clientY) : selectionEnd);
           }, { passive: false, signal });
-          grid.addEventListener("touchcancel", cancelPointerSelection, { signal });
+          grid.addEventListener("touchcancel", cancelTouchGesture, { signal });
         }
 
         function moveKeyboardFocus(key) {
@@ -1417,7 +1527,7 @@
 
             gameGate.instructions(
               "Lees tussen de letters",
-              "Vind de tien woorden door in een rechte lijn van de eerste naar de laatste letter te slepen. De woorden kunnen ook achterstevoren staan.",
+              "Vind de tien woorden door in een rechte lijn van de eerste naar de laatste letter te slepen. Op mobiel houd je de eerste letter kort vast; direct omhoog of omlaag vegen scrolt de pagina.",
               startPlayableGame,
               "Start met zoeken"
             );

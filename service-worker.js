@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v24';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v25';
 
 const APP_SHELL = [
   './',
@@ -8,6 +8,7 @@ const APP_SHELL = [
   './games/game-shell.css',
   './games/game-shell.js',
   './games/code.html',
+  './games/dwaalspoor.html',
   './games/memory.html',
   './games/mozaiek.html',
   './games/rebus.html',
@@ -62,6 +63,8 @@ self.addEventListener('fetch', event => {
   if (event.request.mode === 'navigate') {
     const fallbackPath = url.pathname.endsWith('/games/code.html')
       ? './games/code.html'
+      : url.pathname.endsWith('/games/dwaalspoor.html')
+        ? './games/dwaalspoor.html'
       : url.pathname.endsWith('/games/mozaiek.html')
         ? './games/mozaiek.html'
         : url.pathname.endsWith('/games/memory.html')

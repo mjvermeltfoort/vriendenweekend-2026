@@ -50,7 +50,8 @@ Voer bij een bestaande installatie eenmalig `addSchaduwzoekerGame()` uit in
 Apps Script als **Schaduwzoeker** nog niet geregistreerd is.
 
 Voer daarnaast eenmalig `addTussenDeLettersGame()` uit om **Tussen de Letters**
-te registreren. Deze migratiefuncties voegen alleen de ontbrekende spelregel toe
+te registreren en `addDwaalspoorGame()` om **Dwaalspoor** toe te voegen. Deze
+migratiefuncties voegen alleen de ontbrekende spelregel toe
 en laten de bestaande werkbladen, spelinstellingen en scores ongemoeid.
 
 De `state`-response bevat daarnaast `activePlayers`. Een geopende spelpagina
