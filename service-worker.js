@@ -1,8 +1,9 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v29';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v30';
 
 const APP_SHELL = [
   './',
   './index.html',
+  './app-update.js',
   './config.js',
   './manifest.webmanifest',
   './games/game-shell.css',
@@ -25,8 +26,12 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
   );
+});
 
-  self.skipWaiting();
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    event.waitUntil(self.skipWaiting());
+  }
 });
 
 self.addEventListener('activate', event => {

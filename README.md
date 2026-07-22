@@ -102,3 +102,12 @@ De PWA gebruikt `100dvh`, safe areas op iPhone en directe navigatie naar de stat
 
 De app shell en spelpagina's worden gecachet.
 API-calls naar Apps Script en score-opslag vereisen internet.
+
+## 7. Nieuwe versie publiceren
+
+Verhoog bij iedere nieuwe publicatie het versienummer in `CACHE_NAME` bovenaan
+`service-worker.js` (bijvoorbeeld van `v30` naar `v31`). Zodra de nieuwe versie
+online staat, controleert de app hier iedere minuut op en opnieuw wanneer iemand
+de app opent of naar de app terugkeert. Er verschijnt dan op iedere pagina een
+melding met de knop **Vernieuwen**. De nieuwe versie wordt pas geactiveerd nadat
+de gebruiker op die knop drukt.

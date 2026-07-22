@@ -93,5 +93,6 @@
   $('close').onclick=close;$('left').onclick=()=>move(-1);$('right').onclick=()=>move(1);addEventListener('keydown',e=>{if(['ArrowLeft','a','A'].includes(e.key)){e.preventDefault();move(-1)}if(['ArrowRight','d','D'].includes(e.key)){e.preventDefault();move(1)}});stage.addEventListener('touchstart',e=>touchX=e.changedTouches[0].clientX,{passive:true});stage.addEventListener('touchend',e=>{const x=e.changedTouches[0].clientX,d=x-touchX;if(Math.abs(d)>28)move(d>0?1:-1);else move(x<innerWidth/2?-1:1)},{passive:true});boot();
 })();
 </script>
+<script src="../app-update.js"></script>
 </body>
 </html>
