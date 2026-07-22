@@ -1,21 +1,31 @@
 /**
  * Vriendenweekend 2026 - Google Apps Script JSON API
  *
- * GET  ?action=state&playerName=Mark
- * GET  ?action=access&gameId=mozaiek&playerName=Mark
- * POST action=start  + payload={...}
- * POST action=heartbeat + payload={...}
- * POST action=replay + payload={...}
- * POST action=score  + payload={...}
+ * POST action=session + payload={name, accessCode}
+ * POST action=state + payload={name, token}
+ * POST action=access + payload={name, gameId, token}
+ * POST action=start  + payload={name, gameId, token, ...}
+ * POST action=heartbeat + payload={name, gameId, token, ...}
+ * POST action=replay + payload={name, gameId, token, ...}
+ * POST action=score  + payload={name, gameId, token, ...}
  *
  * Gebruik voor POST vanuit GitHub Pages bij voorkeur URLSearchParams.
+ *
+ * Authenticatie wordt actief zodra in de Apps Script-projectinstellingen de
+ * Script Property API_ACCESS_CODE is ingesteld. Gebruik een willekeurige code
+ * van minimaal 10 tekens en zet deze nooit in de repository of frontend.
  */
 
 const SETTINGS_SHEET = 'Spellen';
 const SCORES_SHEET = 'Scores';
 const STARTS_SHEET = 'Spelstarts';
-const API_VERSION = '1.5.0';
+const API_VERSION = '1.6.0';
 const ACTIVE_PLAYERS_PROPERTY = 'activePlayers';
+const API_ACCESS_CODE_PROPERTY = 'API_ACCESS_CODE';
+const API_TOKEN_SECRET_PROPERTY = 'API_TOKEN_SECRET';
+const API_TOKEN_TTL_SECONDS = 6 * 60 * 60;
+const RATE_LIMIT_PREFIX = 'rate:v1:';
+const MAX_CACHE_SECONDS = 6 * 60 * 60;
 const ACTIVE_PLAYER_WINDOW_MS = 30 * 1000;
 const GAMES_CACHE_KEY = 'games:v1';
 const LEADERBOARD_CACHE_KEY = 'leaderboard:v1';
@@ -56,6 +66,7 @@ function handleApiRequest_(method, e) {
   try {
     const request = parseApiRequest_(e);
     const action = normalizeAction_(request.action);
+    enforceRequestRateLimit_(action, request);
     let data;
 
     switch (action) {
@@ -63,34 +74,44 @@ function handleApiRequest_(method, e) {
         data = {
           status: 'ok',
           version: API_VERSION,
-          webAppUrl: getWebAppUrl()
+          webAppUrl: getWebAppUrl(),
+          authenticationRequired: isAuthenticationEnabled_()
         };
+        break;
+
+      case 'session':
+      case 'authenticate':
+      case 'createsession':
+        requireMethod_(method, 'POST');
+        data = createPlayerSession_(request.payload);
         break;
 
       case 'state':
       case 'publicstate':
       case 'getpublicstate':
-        requireMethod_(method, 'GET');
+        requireReadMethod_(method);
         data = getPublicState(
           request.params.playerName ||
           request.params.name ||
           request.payload.playerName ||
           request.payload.name ||
-          ''
+          '',
+          request.params.token || request.payload.token || ''
         );
         break;
 
       case 'access':
       case 'gameaccess':
       case 'getgameaccess':
-        requireMethod_(method, 'GET');
+        requireReadMethod_(method);
         data = getGameAccess(
           String(request.params.gameId || request.payload.gameId || '').trim(),
           request.params.playerName ||
           request.params.name ||
           request.payload.playerName ||
           request.payload.name ||
-          ''
+          '',
+          request.params.token || request.payload.token || ''
         );
         break;
 
@@ -120,7 +141,7 @@ function handleApiRequest_(method, e) {
 
       default:
         throw new Error(
-          'Onbekende API-actie. Gebruik health, state, access, start, heartbeat, replay of score.'
+          'Onbekende API-actie. Gebruik health, session, state, access, start, heartbeat, replay of score.'
         );
     }
 
@@ -206,6 +227,16 @@ function requireMethod_(actualMethod, expectedMethod) {
   }
 }
 
+function requireReadMethod_(actualMethod) {
+  if (isAuthenticationEnabled_()) {
+    requireMethod_(actualMethod, 'POST');
+    return;
+  }
+  if (actualMethod !== 'GET' && actualMethod !== 'POST') {
+    throw new Error('Deze actie vereist een GET- of POST-verzoek.');
+  }
+}
+
 function jsonResponse_(response) {
   return ContentService
     .createTextOutput(JSON.stringify(response))
@@ -217,6 +248,306 @@ function jsonResponse_(response) {
  */
 function getWebAppUrl() {
   return ScriptApp.getService().getUrl();
+}
+
+/**
+ * Wisselt de niet-publieke evenementcode om voor een tijdelijk, aan de
+ * spelersnaam gekoppeld token. Het token bevat geen toegangscode.
+ */
+function createPlayerSession_(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Ongeldige sessieaanvraag.');
+  }
+
+  const name = sanitizeName_(payload.name || payload.playerName);
+  if (!name) throw new Error('Vul eerst je naam in.');
+
+  const accessCode = getApiAccessCode_();
+  if (!accessCode) {
+    return {
+      authenticationRequired: false,
+      playerName: name,
+      token: '',
+      expiresAt: ''
+    };
+  }
+  if (accessCode.length < 10) {
+    throw new Error('API_ACCESS_CODE moet minimaal 10 tekens bevatten.');
+  }
+
+  const suppliedCode = String(payload.accessCode || '');
+  if (!constantTimeEquals_(suppliedCode, accessCode)) {
+    throw new Error('Naam of toegangscode is ongeldig.');
+  }
+
+  const expiresAt = Date.now() + API_TOKEN_TTL_SECONDS * 1000;
+  const claims = {
+    version: 1,
+    name: name,
+    expiresAt: expiresAt,
+    accessVersion: accessCodeFingerprint_(accessCode)
+  };
+
+  return {
+    authenticationRequired: true,
+    playerName: name,
+    token: signTokenClaims_(claims),
+    expiresAt: new Date(expiresAt).toISOString()
+  };
+}
+
+function isAuthenticationEnabled_() {
+  return Boolean(getApiAccessCode_());
+}
+
+function getApiAccessCode_() {
+  return String(
+    PropertiesService.getScriptProperties().getProperty(API_ACCESS_CODE_PROPERTY) || ''
+  );
+}
+
+/**
+ * Valideert bij ingeschakelde authenticatie het token en bindt het verzoek aan
+ * de naam in dat token. Zonder API_ACCESS_CODE blijft de bestaande API werken.
+ */
+function requireAuthenticatedPlayer_(playerName, token) {
+  const requestedName = sanitizeName_(playerName);
+  if (!requestedName) throw new Error('Vul eerst je naam in.');
+
+  if (!isAuthenticationEnabled_()) {
+    return { name: requestedName, authenticated: false };
+  }
+
+  const claims = verifyPlayerToken_(token);
+  if (claims.name.toLowerCase() !== requestedName.toLowerCase()) {
+    throw new Error('Dit sessietoken hoort bij een andere speler.');
+  }
+
+  return { name: claims.name, authenticated: true };
+}
+
+function signTokenClaims_(claims) {
+  const encodedClaims = base64WebSafeEncode_(JSON.stringify(claims));
+  const signature = createTokenSignature_(encodedClaims);
+  return encodedClaims + '.' + signature;
+}
+
+function verifyPlayerToken_(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error('Je sessie ontbreekt of is ongeldig. Meld je opnieuw aan.');
+  }
+
+  const expectedSignature = createTokenSignature_(parts[0]);
+  if (!constantTimeEquals_(parts[1], expectedSignature)) {
+    throw new Error('Je sessie ontbreekt of is ongeldig. Meld je opnieuw aan.');
+  }
+
+  let claims;
+  try {
+    claims = JSON.parse(base64WebSafeDecode_(parts[0]));
+  } catch (error) {
+    throw new Error('Je sessie ontbreekt of is ongeldig. Meld je opnieuw aan.');
+  }
+
+  if (
+    !claims ||
+    claims.version !== 1 ||
+    !claims.name ||
+    !Number.isFinite(Number(claims.expiresAt)) ||
+    Number(claims.expiresAt) <= Date.now()
+  ) {
+    throw new Error('Je sessie is verlopen. Meld je opnieuw aan.');
+  }
+
+  const accessCode = getApiAccessCode_();
+  if (
+    !accessCode ||
+    !constantTimeEquals_(
+      String(claims.accessVersion || ''),
+      accessCodeFingerprint_(accessCode)
+    )
+  ) {
+    throw new Error('Je sessie is verlopen. Meld je opnieuw aan.');
+  }
+
+  return {
+    name: sanitizeName_(claims.name),
+    expiresAt: Number(claims.expiresAt)
+  };
+}
+
+function createTokenSignature_(encodedClaims) {
+  const bytes = Utilities.computeHmacSha256Signature(
+    encodedClaims,
+    getOrCreateTokenSecret_(),
+    Utilities.Charset.UTF_8
+  );
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/g, '');
+}
+
+function getOrCreateTokenSecret_() {
+  const properties = PropertiesService.getScriptProperties();
+  let secret = properties.getProperty(API_TOKEN_SECRET_PROPERTY);
+  if (secret) return secret;
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    throw new Error('De sessiebeveiliging is tijdelijk bezet. Probeer opnieuw.');
+  }
+  try {
+    secret = properties.getProperty(API_TOKEN_SECRET_PROPERTY);
+    if (!secret) {
+      secret = Utilities.getUuid() + Utilities.getUuid();
+      properties.setProperty(API_TOKEN_SECRET_PROPERTY, secret);
+    }
+    return secret;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function accessCodeFingerprint_(accessCode) {
+  return digestText_(String(accessCode || '')).slice(0, 24);
+}
+
+function base64WebSafeEncode_(value) {
+  return Utilities.base64EncodeWebSafe(
+    String(value || ''),
+    Utilities.Charset.UTF_8
+  ).replace(/=+$/g, '');
+}
+
+function base64WebSafeDecode_(value) {
+  let padded = String(value || '');
+  while (padded.length % 4) padded += '=';
+  return Utilities.newBlob(
+    Utilities.base64DecodeWebSafe(padded)
+  ).getDataAsString('UTF-8');
+}
+
+function constantTimeEquals_(left, right) {
+  const a = String(left || '');
+  const b = String(right || '');
+  const length = Math.max(a.length, b.length);
+  let difference = a.length ^ b.length;
+
+  for (let index = 0; index < length; index += 1) {
+    difference |= (a.charCodeAt(index) || 0) ^ (b.charCodeAt(index) || 0);
+  }
+  return difference === 0;
+}
+
+/**
+ * Apps Script stelt geen betrouwbaar client-IP-adres beschikbaar. Daarom
+ * begrenzen we zowel globaal als per token/naam. Dit voorkomt geen gerichte
+ * DDoS, maar remt misbruik en beschermt de dagelijkse Apps Script-quota.
+ */
+function enforceRequestRateLimit_(action, request) {
+  const rateAction = canonicalRateLimitAction_(action);
+  const limits = getRateLimits_(rateAction);
+  const identity = getRequestIdentity_(request);
+  const cache = CacheService.getScriptCache();
+  const lock = LockService.getScriptLock();
+
+  if (!lock.tryLock(1000)) {
+    throw new Error('De API is tijdelijk druk. Probeer over enkele seconden opnieuw.');
+  }
+
+  try {
+    consumeRateLimitBucket_(
+      cache,
+      RATE_LIMIT_PREFIX + 'global:' + rateAction,
+      limits.global,
+      limits.windowSeconds
+    );
+    consumeRateLimitBucket_(
+      cache,
+      RATE_LIMIT_PREFIX + rateAction + ':' + identity,
+      limits.perIdentity,
+      limits.windowSeconds
+    );
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function canonicalRateLimitAction_(action) {
+  const aliases = {
+    authenticate: 'session',
+    createsession: 'session',
+    publicstate: 'state',
+    getpublicstate: 'state',
+    gameaccess: 'access',
+    getgameaccess: 'access',
+    registergamestart: 'start',
+    gameheartbeat: 'heartbeat',
+    resetgameprogress: 'replay',
+    submitscore: 'score'
+  };
+  return aliases[action] || action || 'unknown';
+}
+
+function getRateLimits_(action) {
+  const limits = {
+    health: { perIdentity: 60, global: 120, windowSeconds: 60 },
+    session: { perIdentity: 10, global: 60, windowSeconds: 300 },
+    state: { perIdentity: 120, global: 600, windowSeconds: 60 },
+    access: { perIdentity: 60, global: 300, windowSeconds: 60 },
+    start: { perIdentity: 20, global: 120, windowSeconds: 60 },
+    heartbeat: { perIdentity: 30, global: 600, windowSeconds: 60 },
+    replay: { perIdentity: 5, global: 60, windowSeconds: 300 },
+    score: { perIdentity: 10, global: 100, windowSeconds: 300 }
+  };
+
+  return limits[action] || { perIdentity: 20, global: 100, windowSeconds: 60 };
+}
+
+function getRequestIdentity_(request) {
+  const params = (request && request.params) || {};
+  const payload = (request && request.payload) || {};
+  const value =
+    params.token || payload.token ||
+    params.playerName || params.name ||
+    payload.playerName || payload.name ||
+    'anonymous';
+  return digestText_(String(value)).slice(0, 24);
+}
+
+function consumeRateLimitBucket_(cache, key, limit, windowSeconds) {
+  const now = Date.now();
+  let bucket = null;
+  const raw = cache.get(key);
+
+  if (raw) {
+    try {
+      bucket = JSON.parse(raw);
+    } catch (error) {
+      bucket = null;
+    }
+  }
+  if (!bucket || Number(bucket.expiresAt) <= now) {
+    bucket = { count: 0, expiresAt: now + windowSeconds * 1000 };
+  }
+  if (Number(bucket.count) >= limit) {
+    throw new Error('Te veel API-verzoeken. Wacht even en probeer opnieuw.');
+  }
+
+  bucket.count = Number(bucket.count) + 1;
+  const remainingSeconds = Math.max(
+    1,
+    Math.min(MAX_CACHE_SECONDS, Math.ceil((bucket.expiresAt - now) / 1000))
+  );
+  cache.put(key, JSON.stringify(bucket), remainingSeconds);
+}
+
+function digestText_(value) {
+  const bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    String(value || ''),
+    Utilities.Charset.UTF_8
+  );
+  return bytes.map(byte => ('0' + (byte & 0xff).toString(16)).slice(-2)).join('');
 }
 
 /**
@@ -350,12 +681,26 @@ function addTussenDeLettersGame() {
   clearGamesCache_();
 }
 
-function getPublicState(playerName) {
+function getPublicState(playerName, token) {
   const games = readGames_();
-  const scoreSnapshot = getScoreSnapshot_(playerName || '');
+  let authorizedName = '';
+
+  if (playerName) {
+    if (isAuthenticationEnabled_()) {
+      authorizedName = requireAuthenticatedPlayer_(playerName, token).name;
+    } else {
+      authorizedName = sanitizeName_(playerName);
+    }
+  }
+
+  const scoreSnapshot = getScoreSnapshot_(authorizedName);
 
   return {
-    games: games.map(game => serializeGame_(game, scoreSnapshot.completed[game.id] || null)),
+    authenticationRequired: isAuthenticationEnabled_(),
+    games: games.map(game => {
+      const completed = scoreSnapshot.completed[game.id] || null;
+      return serializeGame_(game, completed, Boolean(completed));
+    }),
     leaderboard: scoreSnapshot.leaderboard,
     activePlayers: getActivePlayers_()
   };
@@ -379,20 +724,25 @@ function getActivePlayers_() {
     }));
 }
 
-function getGameAccess(gameId, playerName) {
+function getGameAccess(gameId, playerName, token) {
   if (!gameId) throw new Error('Geen spel-id opgegeven.');
+
+  const identity = requireAuthenticatedPlayer_(playerName, token);
 
   const game = readGames_().find(item => item.id === gameId);
   if (!game) throw new Error('Onbekend spel.');
 
+  const authenticationRequired = isAuthenticationEnabled_();
   const state = calculateState_(game);
-  const completed = getCompletedForPlayer_(playerName || '')[gameId] || null;
+  const completed = getCompletedForPlayer_(identity.name)[gameId] || null;
 
   return {
+    authenticationRequired: authenticationRequired,
     allowed: state === 'open' && !completed,
     state: state,
     completed: completed,
-    game: serializeGame_(game, completed)
+    // Houd de bestaande frontend werkend totdat API_ACCESS_CODE wordt ingesteld.
+    game: serializeGame_(game, completed, Boolean(completed) || !authenticationRequired)
   };
 }
 
@@ -400,7 +750,7 @@ function getGameAccess(gameId, playerName) {
  * Zet een rij uit Spellen om naar het publieke API-formaat.
  * Alle ingestelde Sheet-velden zijn hierdoor beschikbaar via state en access.
  */
-function serializeGame_(game, completed) {
+function serializeGame_(game, completed, includeHint) {
   return {
     id: game.id,
     title: game.title,
@@ -409,7 +759,7 @@ function serializeGame_(game, completed) {
     state: calculateState_(game),
     openFrom: dateToIso_(game.openFrom),
     closeAt: dateToIso_(game.closeAt),
-    hint: game.hint,
+    hint: includeHint ? game.hint : '',
     maxPoints: game.maxPoints,
     order: game.order,
     completed: completed || null
@@ -421,7 +771,11 @@ function registerGameStart(payload) {
     throw new Error('Ongeldige startregistratie.');
   }
 
-  const name = sanitizeName_(payload.name || payload.playerName);
+  const identity = requireAuthenticatedPlayer_(
+    payload.name || payload.playerName,
+    payload.token
+  );
+  const name = identity.name;
   const gameId = String(payload.gameId || '').trim();
   if (!name) throw new Error('Vul eerst je naam in.');
   if (!gameId) throw new Error('Geen spel-id opgegeven.');
@@ -444,8 +798,8 @@ function registerGameStart(payload) {
     game.id,
     game.title,
     'gestart',
-    sanitizeText_(payload.source || 'github-pages', 100),
-    sanitizeText_(payload.userAgent || '', 250)
+    sanitizeSpreadsheetText_(payload.source || 'github-pages', 100),
+    sanitizeSpreadsheetText_(payload.userAgent || '', 250)
   ]);
 
   setActivePlayer_(name, game);
@@ -458,7 +812,11 @@ function registerGameHeartbeat(payload) {
     throw new Error('Ongeldige heartbeat.');
   }
 
-  const name = sanitizeName_(payload.name || payload.playerName);
+  const identity = requireAuthenticatedPlayer_(
+    payload.name || payload.playerName,
+    payload.token
+  );
+  const name = identity.name;
   const gameId = String(payload.gameId || '').trim();
   if (!name || !gameId) throw new Error('Naam of spel-id ontbreekt.');
 
@@ -562,13 +920,18 @@ function resetGameProgress(payload) {
     throw new Error('Ongeldige replay-aanvraag.');
   }
 
+  const identity = requireAuthenticatedPlayer_(
+    payload.name || payload.playerName,
+    payload.token
+  );
+  const name = identity.name;
+
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) {
     throw new Error('Het spel kon niet direct worden gereset. Probeer opnieuw.');
   }
 
   try {
-    const name = sanitizeName_(payload.name || payload.playerName);
     const gameId = String(payload.gameId || '').trim();
     if (!name) throw new Error('Vul eerst je naam in.');
     if (!gameId) throw new Error('Geen spel-id opgegeven.');
@@ -622,13 +985,18 @@ function submitScore(payload) {
     throw new Error('Ongeldige inzending.');
   }
 
+  const identity = requireAuthenticatedPlayer_(
+    payload.name || payload.playerName,
+    payload.token
+  );
+  const name = identity.name;
+
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) {
     throw new Error('De score kon niet direct worden opgeslagen. Probeer opnieuw.');
   }
 
   try {
-    const name = sanitizeName_(payload.name || payload.playerName);
     const gameId = String(payload.gameId || '').trim();
     const seconds = clampNumber_(payload.seconds, 0, 86400);
     const attempts = clampNumber_(payload.attempts, 0, 10000);
@@ -650,7 +1018,7 @@ function submitScore(payload) {
       removeActivePlayerUnlocked_(name);
       return {
         alreadySubmitted: true,
-        result: existing,
+        result: Object.assign({}, existing, { hint: game.hint }),
         leaderboard: getLeaderboard_(scoreRows)
       };
     }
@@ -974,7 +1342,11 @@ function getScoresSheet_() {
 }
 
 function sanitizeName_(value) {
-  return sanitizeText_(value, 40);
+  const name = sanitizeText_(value, 40);
+  if (/^[=+\-@]/.test(name)) {
+    throw new Error('Een spelersnaam mag niet beginnen met =, +, - of @.');
+  }
+  return name;
 }
 
 function sanitizeText_(value, maxLength) {
@@ -984,6 +1356,15 @@ function sanitizeText_(value, maxLength) {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLength);
+}
+
+/**
+ * Voorkomt dat door een gebruiker aangeleverde tekst bij appendRow als een
+ * spreadsheetformule wordt geïnterpreteerd.
+ */
+function sanitizeSpreadsheetText_(value, maxLength) {
+  const text = sanitizeText_(value, maxLength);
+  return /^[=+\-@]/.test(text) ? "'" + text : text;
 }
 
 function clampNumber_(value, min, max) {
