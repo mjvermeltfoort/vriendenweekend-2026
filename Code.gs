@@ -13,9 +13,24 @@
 const SETTINGS_SHEET = 'Spellen';
 const SCORES_SHEET = 'Scores';
 const STARTS_SHEET = 'Spelstarts';
-const API_VERSION = '1.3.0';
+const API_VERSION = '1.4.0';
 const ACTIVE_PLAYERS_PROPERTY = 'activePlayers';
 const ACTIVE_PLAYER_WINDOW_MS = 30 * 1000;
+const GAMES_CACHE_KEY = 'games:v1';
+const LEADERBOARD_CACHE_KEY = 'leaderboard:v1';
+const COMPLETED_CACHE_PREFIX = 'completed:v1:';
+const GAMES_CACHE_SECONDS = 60;
+const LEADERBOARD_CACHE_SECONDS = 30;
+const COMPLETED_CACHE_SECONDS = 60;
+
+let spreadsheetInstance_ = null;
+
+function getSpreadsheet_() {
+  if (!spreadsheetInstance_) {
+    spreadsheetInstance_ = SpreadsheetApp.getActiveSpreadsheet();
+  }
+  return spreadsheetInstance_;
+}
 
 /**
  * Publieke GET-ingang van de web-app.
@@ -201,7 +216,7 @@ function getWebAppUrl() {
  * Maakt of reset de benodigde werkbladen.
  */
 function setup() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
 
   let games = ss.getSheetByName(SETTINGS_SHEET);
   if (!games) games = ss.insertSheet(SETTINGS_SHEET);
@@ -237,6 +252,8 @@ function setup() {
   starts.setFrozenRows(1);
   starts.autoResizeColumns(1, 7);
 
+  clearDataCaches_();
+
   return 'Installatie voltooid. Publiceer het script opnieuw als web-app.';
 }
 
@@ -245,7 +262,7 @@ function setup() {
  * of andere spelinstellingen te wissen. Voer deze functie één keer handmatig uit.
  */
 function addVallendeStenenGame() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
   const games = ss.getSheetByName(SETTINGS_SHEET);
   if (!games) throw new Error('Voer eerst setup() uit.');
 
@@ -265,15 +282,16 @@ function addVallendeStenenGame() {
     900,
     6
   ]);
+  clearGamesCache_();
 }
 
 function getPublicState(playerName) {
   const games = readGames_();
-  const completed = getCompletedForPlayer_(playerName || '');
+  const scoreSnapshot = getScoreSnapshot_(playerName || '');
 
   return {
-    games: games.map(game => serializeGame_(game, completed[game.id] || null)),
-    leaderboard: getLeaderboard_(),
+    games: games.map(game => serializeGame_(game, scoreSnapshot.completed[game.id] || null)),
+    leaderboard: scoreSnapshot.leaderboard,
     activePlayers: getActivePlayers_()
   };
 }
@@ -405,7 +423,7 @@ function readActivePlayers_() {
 
 function setActivePlayer_(name, game) {
   const lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) return;
+  if (!lock.tryLock(1000)) return;
   try {
     const active = readActivePlayers_();
     const key = name.toLowerCase();
@@ -437,7 +455,7 @@ function setActivePlayer_(name, game) {
 
 function removeActivePlayer_(name) {
   const lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) return;
+  if (!lock.tryLock(1000)) return;
   try {
     removeActivePlayerUnlocked_(name);
   } finally {
@@ -455,7 +473,7 @@ function removeActivePlayerUnlocked_(name) {
 }
 
 function getOrCreateStartsSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
   let sheet = ss.getSheetByName(STARTS_SHEET);
 
   if (!sheet) {
@@ -495,13 +513,16 @@ function submitScore(payload) {
       throw new Error('Dit spel is niet vrijgegeven.');
     }
 
-    const existing = getCompletedForPlayer_(name)[gameId];
+    const scoreRows = readScoreRows_();
+    const completed = buildCompletedForPlayer_(name, scoreRows);
+    cacheCompletedForPlayer_(name, completed);
+    const existing = completed[gameId];
     if (existing) {
       removeActivePlayerUnlocked_(name);
       return {
         alreadySubmitted: true,
         result: existing,
-        leaderboard: getLeaderboard_()
+        leaderboard: getLeaderboard_(scoreRows)
       };
     }
 
@@ -509,7 +530,7 @@ function submitScore(payload) {
     const detail = serializeDetail_(payload.detail || {});
     const sheet = getScoresSheet_();
 
-    sheet.appendRow([
+    const scoreRow = [
       new Date(),
       name,
       game.id,
@@ -518,8 +539,19 @@ function submitScore(payload) {
       seconds,
       attempts,
       detail
-    ]);
+    ];
+    sheet.appendRow(scoreRow);
     removeActivePlayerUnlocked_(name);
+    completed[game.id] = {
+      gameId: game.id,
+      title: game.title,
+      score: score,
+      seconds: seconds,
+      attempts: attempts,
+      hint: game.hint
+    };
+    cacheCompletedForPlayer_(name, completed);
+    clearLeaderboardCache_();
 
     return {
       alreadySubmitted: false,
@@ -531,7 +563,7 @@ function submitScore(payload) {
         attempts: attempts,
         hint: game.hint
       },
-      leaderboard: getLeaderboard_()
+      leaderboard: getLeaderboard_(scoreRows.concat([scoreRow]))
     };
   } finally {
     lock.releaseLock();
@@ -539,9 +571,21 @@ function submitScore(payload) {
 }
 
 function readGames_() {
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName(SETTINGS_SHEET);
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(GAMES_CACHE_KEY);
+  if (cached) {
+    try {
+      return JSON.parse(cached).map(game => ({
+        ...game,
+        openFrom: game.openFrom ? new Date(game.openFrom) : '',
+        closeAt: game.closeAt ? new Date(game.closeAt) : ''
+      }));
+    } catch (error) {
+      cache.remove(GAMES_CACHE_KEY);
+    }
+  }
+
+  const sheet = getSpreadsheet_().getSheetByName(SETTINGS_SHEET);
 
   if (!sheet) throw new Error('Voer eerst setup() uit.');
 
@@ -563,7 +607,7 @@ function readGames_() {
     throw new Error('Ontbrekende kolommen in Spellen: ' + missingHeaders.join(', ') + '.');
   }
 
-  return values.slice(1)
+  const games = values.slice(1)
     .filter(row => row[headers.id])
     .map(row => ({
       id: String(row[headers.id]).trim(),
@@ -577,6 +621,9 @@ function readGames_() {
       order: Number(row[headers.volgorde]) || 999
     }))
     .sort((a, b) => a.order - b.order);
+
+  cache.put(GAMES_CACHE_KEY, JSON.stringify(games), GAMES_CACHE_SECONDS);
+  return games;
 }
 
 function calculateState_(game) {
@@ -604,19 +651,61 @@ function calculateState_(game) {
   return 'open';
 }
 
-function getCompletedForPlayer_(playerName) {
+function getScoreSnapshot_(playerName) {
+  const name = sanitizeName_(playerName);
+  let completed = name ? readCompletedCache_(name) : {};
+  let leaderboard = readLeaderboardCache_();
+
+  if (completed === null || leaderboard === null) {
+    const rows = readScoreRows_();
+
+    if (completed === null) {
+      completed = buildCompletedForPlayer_(name, rows);
+      cacheCompletedForPlayer_(name, completed);
+    }
+
+    if (leaderboard === null) {
+      leaderboard = buildLeaderboard_(rows);
+      cacheLeaderboard_(leaderboard);
+    }
+  }
+
+  return {
+    completed: completed || {},
+    leaderboard: leaderboard || []
+  };
+}
+
+function readScoreRows_() {
+  const sheet = getSpreadsheet_().getSheetByName(SCORES_SHEET);
+  if (!sheet) return [];
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  return sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+}
+
+function getCompletedForPlayer_(playerName, scoreRows) {
   const name = sanitizeName_(playerName);
   if (!name) return {};
 
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName(SCORES_SHEET);
+  if (!scoreRows) {
+    const cached = readCompletedCache_(name);
+    if (cached !== null) return cached;
+  }
 
-  if (!sheet || sheet.getLastRow() < 2) return {};
+  const completed = buildCompletedForPlayer_(
+    name,
+    scoreRows || readScoreRows_()
+  );
+  cacheCompletedForPlayer_(name, completed);
+  return completed;
+}
 
-  const rows = sheet
-    .getRange(2, 1, sheet.getLastRow() - 1, 8)
-    .getValues();
+function buildCompletedForPlayer_(playerName, rows) {
+  const name = sanitizeName_(playerName);
+  if (!name) return {};
 
   return rows.reduce((result, row) => {
     if (String(row[1]).toLowerCase() === name.toLowerCase()) {
@@ -632,16 +721,18 @@ function getCompletedForPlayer_(playerName) {
   }, {});
 }
 
-function getLeaderboard_() {
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName(SCORES_SHEET);
+function getLeaderboard_(scoreRows) {
+  if (!scoreRows) {
+    const cached = readLeaderboardCache_();
+    if (cached !== null) return cached;
+  }
 
-  if (!sheet || sheet.getLastRow() < 2) return [];
+  const leaderboard = buildLeaderboard_(scoreRows || readScoreRows_());
+  cacheLeaderboard_(leaderboard);
+  return leaderboard;
+}
 
-  const rows = sheet
-    .getRange(2, 1, sheet.getLastRow() - 1, 8)
-    .getValues();
+function buildLeaderboard_(rows) {
   const totals = {};
 
   rows.forEach(row => {
@@ -672,6 +763,61 @@ function getLeaderboard_() {
     .slice(0, 50);
 }
 
+function readCompletedCache_(name) {
+  return readJsonCache_(completedCacheKey_(name));
+}
+
+function cacheCompletedForPlayer_(name, completed) {
+  if (!name) return;
+  CacheService.getScriptCache().put(
+    completedCacheKey_(name),
+    JSON.stringify(completed || {}),
+    COMPLETED_CACHE_SECONDS
+  );
+}
+
+function completedCacheKey_(name) {
+  return COMPLETED_CACHE_PREFIX + String(name || '').toLowerCase();
+}
+
+function readLeaderboardCache_() {
+  return readJsonCache_(LEADERBOARD_CACHE_KEY);
+}
+
+function cacheLeaderboard_(leaderboard) {
+  CacheService.getScriptCache().put(
+    LEADERBOARD_CACHE_KEY,
+    JSON.stringify(leaderboard || []),
+    LEADERBOARD_CACHE_SECONDS
+  );
+}
+
+function readJsonCache_(key) {
+  const cache = CacheService.getScriptCache();
+  const raw = cache.get(key);
+  if (raw === null) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    cache.remove(key);
+    return null;
+  }
+}
+
+function clearGamesCache_() {
+  CacheService.getScriptCache().remove(GAMES_CACHE_KEY);
+}
+
+function clearLeaderboardCache_() {
+  CacheService.getScriptCache().remove(LEADERBOARD_CACHE_KEY);
+}
+
+function clearDataCaches_() {
+  const cache = CacheService.getScriptCache();
+  cache.removeAll([GAMES_CACHE_KEY, LEADERBOARD_CACHE_KEY]);
+}
+
 function calculateScore_(gameId, maxPoints, seconds, attempts) {
   if (gameId === 'mozaiek') {
     const timePenalty = Math.min(500, Math.floor(seconds * 2));
@@ -692,9 +838,7 @@ function calculateScore_(gameId, maxPoints, seconds, attempts) {
 }
 
 function getScoresSheet_() {
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName(SCORES_SHEET);
+  const sheet = getSpreadsheet_().getSheetByName(SCORES_SHEET);
 
   if (!sheet) throw new Error('Voer eerst setup() uit.');
   return sheet;
