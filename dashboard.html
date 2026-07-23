@@ -230,6 +230,41 @@
       z-index: 1;
     }
 
+    .sort-button {
+      width: 100%;
+      border: 0;
+      padding: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      font-weight: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .sort-button[data-align="right"] {
+      justify-content: flex-end;
+      text-align: right;
+    }
+
+    .sort-button::after {
+      content: '↕';
+      opacity: 0.45;
+      font-size: 0.92em;
+    }
+
+    .sort-button[data-direction="asc"]::after,
+    .sort-button[data-direction="desc"]::after {
+      opacity: 1;
+    }
+
+    .sort-button[data-direction="asc"]::after { content: '↑'; }
+    .sort-button[data-direction="desc"]::after { content: '↓'; }
+
     td:last-child,
     th:last-child { text-align: right; }
 
@@ -411,7 +446,7 @@
       <article class="panel">
         <div class="panel-head">
           <h2>Spelersoverzicht</h2>
-          <p>Klik op een speler voor details</p>
+          <p>Klik op een kolomtitel om te sorteren of op een speler voor details</p>
         </div>
         <div class="table-wrap" id="players-table-wrap"></div>
       </article>
@@ -446,6 +481,23 @@
       const MAX_RECENT_ACTIVITY = 50;
       const AUTO_REFRESH_INTERVAL_MS = 30000;
       const DASHBOARD_RPC = 'get_dashboard_activity';
+      const DEFAULT_PLAYER_SORT = { key: 'name', direction: 'asc' };
+      const PLAYER_SORT_DEFAULT_DIRECTIONS = {
+        name: 'asc',
+        started: 'desc',
+        completed: 'desc',
+        totalScore: 'desc',
+        totalSeconds: 'desc',
+        lastActivity: 'desc'
+      };
+      const PLAYER_SORT_COLUMNS = [
+        { key: 'name', label: 'Speler' },
+        { key: 'started', label: 'Gestarte spellen', alignRight: true },
+        { key: 'completed', label: 'Afgeronde spellen', alignRight: true },
+        { key: 'totalScore', label: 'Totale score', alignRight: true },
+        { key: 'totalSeconds', label: 'Totale speeltijd', alignRight: true },
+        { key: 'lastActivity', label: 'Laatste activiteit', alignRight: true }
+      ];
       const NUMBER_FORMAT = new Intl.NumberFormat('nl-NL');
       const DATE_FORMAT = new Intl.DateTimeFormat('nl-NL', { dateStyle: 'short' });
       const DATE_TIME_FORMAT = new Intl.DateTimeFormat('nl-NL', {
@@ -471,6 +523,7 @@
           players: [],
           activity: []
         },
+        playerSort: { ...DEFAULT_PLAYER_SORT },
         selectedPlayerKey: null,
         refreshInFlight: false,
         refreshQueued: false,
@@ -1090,16 +1143,26 @@
         const thead = document.createElement('thead');
         const tbody = document.createElement('tbody');
 
-        const headers = ['Speler', 'Gestarte spellen', 'Afgeronde spellen', 'Totale score', 'Totale speeltijd', 'Laatste activiteit'];
         const headerRow = document.createElement('tr');
-        headers.forEach((header) => {
+        PLAYER_SORT_COLUMNS.forEach((column) => {
           const th = document.createElement('th');
-          th.textContent = header;
+          const isActive = state.playerSort.key === column.key;
+          th.setAttribute('aria-sort', isActive ? (state.playerSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'sort-button';
+          button.textContent = column.label;
+          button.dataset.direction = isActive ? state.playerSort.direction : 'none';
+          button.dataset.align = column.alignRight ? 'right' : 'left';
+          button.addEventListener('click', () => togglePlayerSort(column.key));
+
+          th.appendChild(button);
           headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
 
-        players.forEach((player) => {
+        sortPlayers(players).forEach((player) => {
           const tr = document.createElement('tr');
 
           const nameCell = document.createElement('td');
@@ -1124,6 +1187,68 @@
         table.appendChild(thead);
         table.appendChild(tbody);
         ui.playersWrap.appendChild(table);
+      }
+
+      function togglePlayerSort(columnKey) {
+        const activeKey = state.playerSort.key;
+        const activeDirection = state.playerSort.direction;
+        state.playerSort = {
+          key: columnKey,
+          direction: activeKey === columnKey
+            ? (activeDirection === 'asc' ? 'desc' : 'asc')
+            : (PLAYER_SORT_DEFAULT_DIRECTIONS[columnKey] || 'asc')
+        };
+        renderPlayersTable(state.calculated.players);
+      }
+
+      function sortPlayers(players) {
+        return players.slice().sort((a, b) => comparePlayers(a, b, state.playerSort));
+      }
+
+      function comparePlayers(a, b, sort) {
+        if (sort.key === 'name') {
+          return comparePlayerNames(a, b, sort.direction);
+        }
+
+        let result = 0;
+        if (sort.key === 'lastActivity') {
+          result = compareNullableNumbers(timestampOf(a.lastActivity), timestampOf(b.lastActivity));
+        } else {
+          result = compareNullableNumbers(a[sort.key], b[sort.key]);
+        }
+
+        if (result !== 0) {
+          return sort.direction === 'desc' ? -result : result;
+        }
+
+        return comparePlayerNames(a, b, DEFAULT_PLAYER_SORT.direction);
+      }
+
+      function comparePlayerNames(a, b, direction) {
+        if (a.name === UNKNOWN_PLAYER && b.name !== UNKNOWN_PLAYER) return 1;
+        if (a.name !== UNKNOWN_PLAYER && b.name === UNKNOWN_PLAYER) return -1;
+
+        const byName = a.name.localeCompare(b.name, 'nl');
+        if (byName !== 0) {
+          return direction === 'desc' ? -byName : byName;
+        }
+
+        return compareNullableNumbers(timestampOf(b.lastActivity), timestampOf(a.lastActivity));
+      }
+
+      function compareNullableNumbers(a, b) {
+        const aMissing = a === null || a === undefined || Number.isNaN(a);
+        const bMissing = b === null || b === undefined || Number.isNaN(b);
+        if (aMissing && bMissing) return 0;
+        if (aMissing) return 1;
+        if (bMissing) return -1;
+        return a - b;
+      }
+
+      function timestampOf(value) {
+        if (!value) return null;
+        const timestamp = new Date(value).getTime();
+        return Number.isNaN(timestamp) ? null : timestamp;
       }
 
       function renderPlayerDetails(playerKey) {
