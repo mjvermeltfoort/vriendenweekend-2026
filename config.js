@@ -1,4 +1,4 @@
 window.VRIENDENWEEKEND_CONFIG = {
-  // Vervang onderstaande URL door jouw gepubliceerde Apps Script /exec-link.
-  appsScriptUrl: 'https://script.google.com/macros/s/AKfycbxKNjaFYzRW7PKPx3CmuknC5PA324Tk1KEFLtybeDe3H3TBCNA501UORjqKpIUZorMjdA/exec'
+  supabaseUrl: 'https://dvzpnpwfrnoagzrojbbu.supabase.co',
+  supabasePublishableKey: 'sb_publishable_GVbf5H9HupNbAyAJj3lfrQ_lD-aCXyB'
 };

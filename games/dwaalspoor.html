@@ -965,7 +965,9 @@
 
   <p class="sr-only" id="announcer" aria-live="assertive" aria-atomic="true"></p>
 
-  <script src="../config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js?v=20260723-1"></script>
+  <script src="../supabase-api.js?v=20260723-1"></script>
   <script src="game-shell.js"></script>
   <script>
     (() => {
@@ -1007,7 +1009,6 @@
       const PLAYER_KEY = 'vriendenweekend-player-name';
       const MOVE_DURATION = 150;
       const SWIPE_THRESHOLD = 24;
-      const apiUrl = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
       const params = new URLSearchParams(window.location.search);
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const playerName = sanitizeName(localStorage.getItem(PLAYER_KEY) || params.get('playerName'));
@@ -1569,29 +1570,9 @@
         }
       }
 
-      async function apiGet(action, parameters = {}) {
-        const query = new URLSearchParams({ action, ...parameters });
-        const response = await fetch(apiUrl + '?' + query.toString(), {
-          method: 'GET',
-          mode: 'cors',
-          credentials: 'omit',
-          cache: 'no-store'
-        });
-        const body = await response.json();
-        if (!response.ok || !body.success) throw new Error(body.error || 'Verbinding mislukt.');
-        return body.data;
-      }
+      async function apiGet(action, params) { return window.VriendenweekendApi.get(action, params || {}); }
 
-      async function apiPost(action, payload) {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          body: new URLSearchParams({ action, payload: JSON.stringify(payload) }),
-          cache: 'no-store'
-        });
-        const body = await response.json();
-        if (!response.ok || !body.success) throw new Error(body.error || 'Verbinding mislukt.');
-        return body.data;
-      }
+      async function apiPost(action, payload) { const result = await window.VriendenweekendApi.post(action, payload || {}); if (action === 'score' && heartbeatTimer) { window.clearInterval(heartbeatTimer); heartbeatTimer = 0; } return result; }
 
       function addListener(target, type, handler, options) {
         target.addEventListener(type, handler, options);
@@ -1700,7 +1681,7 @@
         updateVisibility();
         bindControls();
 
-        if (!playerName || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(apiUrl)) {
+        if (!playerName || !window.VriendenweekendApi.isConfigured()) {
           gate.blocked('Spel niet beschikbaar', 'Open Dwaalspoor via de startpagina nadat je jouw naam hebt opgeslagen.');
           return;
         }

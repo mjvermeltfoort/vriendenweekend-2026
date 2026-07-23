@@ -493,7 +493,9 @@
     </div>
   </section>
 
-  <script src="../config.js?v=20260722-4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js?v=20260723-1"></script>
+  <script src="../supabase-api.js?v=20260723-1"></script>
   <script src="game-shell.js"></script>
   <script>
     (() => {
@@ -555,7 +557,6 @@
 
         const PLAYER_KEY = "vriendenweekend-player-name";
         const GAME_ID = "kettingreactie";
-        const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
         const params = new URLSearchParams(window.location.search);
         const storedPlayer = sanitizeName(localStorage.getItem(PLAYER_KEY) || "");
         const urlPlayer = sanitizeName(params.get("playerName") || "");
@@ -611,10 +612,7 @@
         function sanitizeName(value) {
           return String(value || "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 40);
         }
-
-        function isConfigValid() {
-          return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(APP_URL);
-        }
+    function isConfigValid() { return window.VriendenweekendApi.isConfigured(); }
 
         function formatTime(totalSeconds) {
           const safe = Math.max(0, Math.floor(Number(totalSeconds) || 0));
@@ -798,23 +796,9 @@
           return freed.size === GAME_CONFIG.letterBubbles.length;
         }
 
-        async function apiGet(action, values) {
-          const query = new URLSearchParams(Object.assign({ action }, values || {}));
-          const response = await fetch(APP_URL + "?" + query.toString(), { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", signal });
-          if (!response.ok) throw new Error("API-verzoek mislukt met status " + response.status + ".");
-          const body = await response.json();
-          if (!body.success) throw new Error(body.error || "De API gaf een fout terug.");
-          return body.data;
-        }
+        async function apiGet(action, params) { return window.VriendenweekendApi.get(action, params || {}); }
 
-        async function apiPost(action, payload) {
-          const body = new URLSearchParams({ action, payload: JSON.stringify(payload || {}) });
-          const response = await fetch(APP_URL, { method: "POST", mode: "cors", credentials: "omit", cache: "no-store", body, signal });
-          if (!response.ok) throw new Error("API-verzoek mislukt met status " + response.status + ".");
-          const data = await response.json();
-          if (!data.success) throw new Error(data.error || "De API gaf een fout terug.");
-          return data.data;
-        }
+        async function apiPost(action, payload) { const result = await window.VriendenweekendApi.post(action, payload || {}); if (action === 'score' && heartbeatHandle !== null) { window.clearInterval(heartbeatHandle); heartbeatHandle = null; } return result; }
 
         function applyGameInfo(game) {
           if (!game) return;

@@ -371,7 +371,9 @@
     </div>
   </section>
 
-  <script src="../config.js?v=20260722-3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js?v=20260723-1"></script>
+  <script src="../supabase-api.js?v=20260723-1"></script>
   <script src="game-shell.js"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
@@ -380,7 +382,6 @@
     const RAW_STORED_PLAYER_NAME = sanitizeName(localStorage.getItem(PLAYER_KEY) || "");
     const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
     const GAME_ID = "rebus";
-    const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
 
     const REBUS_ITEMS = [
       {
@@ -394,6 +395,7 @@
     let attempts = 0;
     let completed = false;
     let saving = false;
+    let heartbeatHandle = null;
     let timerHandle = null;
     let accessAllowed = false;
 
@@ -427,31 +429,9 @@
       const candidate = String(value || "").trim().toLowerCase();
       return candidate === "rebus" ? "rebus" : "rebus";
     }
+    function isConfigValid() { return window.VriendenweekendApi.isConfigured(); }
 
-    function isConfigValid() {
-      return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(APP_URL);
-    }
-
-    async function apiGet(action, params) {
-      const query = new URLSearchParams(Object.assign({ action }, params || {}));
-      const response = await fetch(APP_URL + "?" + query.toString(), {
-        method: "GET",
-        mode: "cors",
-        credentials: "omit",
-        cache: "no-store"
-      });
-
-      if (!response.ok) {
-        throw new Error("API-verzoek mislukt met status " + response.status + ".");
-      }
-
-      const body = await response.json();
-      if (!body.success) {
-        throw new Error(body.error || "De API gaf een fout terug.");
-      }
-
-      return body.data;
-    }
+    async function apiGet(action, params) { return window.VriendenweekendApi.get(action, params || {}); }
 
     function applyGameInfo(game) {
       if (!game) return;
@@ -464,31 +444,7 @@
       }
     }
 
-    async function apiPost(action, payload) {
-      const body = new URLSearchParams({
-        action,
-        payload: JSON.stringify(payload || {})
-      });
-
-      const response = await fetch(APP_URL, {
-        method: "POST",
-        mode: "cors",
-        credentials: "omit",
-        cache: "no-store",
-        body
-      });
-
-      if (!response.ok) {
-        throw new Error("API-verzoek mislukt met status " + response.status + ".");
-      }
-
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || "De API gaf een fout terug.");
-      }
-
-      return data.data;
-    }
+    async function apiPost(action, payload) { const result = await window.VriendenweekendApi.post(action, payload || {}); if (action === 'score' && heartbeatHandle !== null) { window.clearInterval(heartbeatHandle); heartbeatHandle = null; } return result; }
 
     function elapsedSeconds() {
       return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
@@ -754,7 +710,7 @@
           source: "github-pages",
           userAgent: navigator.userAgent
         });
-        window.setInterval(() => {
+        heartbeatHandle = window.setInterval(() => {
           if (!document.hidden) {
             apiPost("heartbeat", { name: PLAYER_NAME, gameId: GAME_ID }).catch(() => {});
           }
@@ -787,7 +743,8 @@
     }
 
     checkButton.addEventListener("click", evaluateBoard);
-    bootstrap();
+    window.addEventListener('pagehide', () => { if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle); }, { once: true });
+  bootstrap();
   </script>
   <script src="../app-update.js"></script>
 </body>

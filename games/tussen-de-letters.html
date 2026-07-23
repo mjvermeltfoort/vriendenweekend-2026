@@ -597,7 +597,9 @@
     </div>
   </section>
 
-  <script src="../config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js?v=20260723-1"></script>
+  <script src="../supabase-api.js?v=20260723-1"></script>
   <script src="game-shell.js"></script>
   <script>
     (() => {
@@ -644,7 +646,6 @@
           "#e6bd61", "#76c7a0", "#de8f78", "#8faee8", "#c79be5",
           "#e2a8c2", "#85c8d8", "#b6ce72", "#ef9e62", "#a4b5ef"
         ];
-        const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || "";
         const params = new URLSearchParams(window.location.search);
         const storedPlayer = sanitizeName(localStorage.getItem(PLAYER_KEY) || "");
         const urlPlayer = sanitizeName(params.get("playerName") || "");
@@ -720,9 +721,7 @@
             .toUpperCase();
         }
 
-        function isAppConfigValid() {
-          return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(APP_URL);
-        }
+        function isAppConfigValid() { return window.VriendenweekendApi.isConfigured(); }
 
         function coordinatesToIndex(row, column) {
           return row * GAME_CONFIG.grid[0].length + column;
@@ -1284,36 +1283,9 @@
           }
         }
 
-        async function apiGet(action, values) {
-          const query = new URLSearchParams(Object.assign({ action }, values || {}));
-          const response = await fetch(APP_URL + "?" + query.toString(), {
-            method: "GET",
-            mode: "cors",
-            credentials: "omit",
-            cache: "no-store",
-            signal
-          });
-          if (!response.ok) throw new Error("API-verzoek mislukt met status " + response.status + ".");
-          const body = await response.json();
-          if (!body.success) throw new Error(body.error || "De API gaf een fout terug.");
-          return body.data;
-        }
+        async function apiGet(action, params) { return window.VriendenweekendApi.get(action, params || {}); }
 
-        async function apiPost(action, payload) {
-          const body = new URLSearchParams({ action, payload: JSON.stringify(payload || {}) });
-          const response = await fetch(APP_URL, {
-            method: "POST",
-            mode: "cors",
-            credentials: "omit",
-            cache: "no-store",
-            body,
-            signal
-          });
-          if (!response.ok) throw new Error("API-verzoek mislukt met status " + response.status + ".");
-          const data = await response.json();
-          if (!data.success) throw new Error(data.error || "De API gaf een fout terug.");
-          return data.data;
-        }
+        async function apiPost(action, payload) { const result = await window.VriendenweekendApi.post(action, payload || {}); if (action === 'score' && heartbeatHandle !== null) { window.clearInterval(heartbeatHandle); heartbeatHandle = null; } return result; }
 
         function applyGameInfo(game) {
           if (!game) return;

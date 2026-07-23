@@ -35,15 +35,18 @@
   </section>
   <div class="controls"><button class="control" id="left" aria-label="Naar links">←</button><button class="control" id="right" aria-label="Naar rechts">→</button></div>
 </main>
-<script src="../config.js?v=20260722-3"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js?v=20260723-1"></script>
+  <script src="../supabase-api.js?v=20260723-1"></script>
+<script src="game-shell.js"></script>
 <script>
 (() => {
   'use strict';
   const PLAYER_KEY='vriendenweekend-player-name', params=new URLSearchParams(location.search);
   const clean=v=>String(v||'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().slice(0,40);
   const player=clean(localStorage.getItem(PLAYER_KEY)||params.get('playerName')), gameId='vluchtroute';
-  const api=window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl||'', stage=document.getElementById('stage'), car=document.getElementById('car');
-  const $=id=>document.getElementById(id); let state=null, raf=0, allowed=false, touchX=null, hint='';
+  const stage=document.getElementById('stage'), car=document.getElementById('car');
+  const $=id=>document.getElementById(id); let state=null, raf=0, heartbeat=0, allowed=false, touchX=null, hint='';
   const hazards=[{icon:'🚧',name:'versperring',kind:'life'},{icon:'🚓',name:'politie',kind:'life'},{icon:'🟤',name:'modder',kind:'time'},{icon:'🌳',name:'boom',kind:'life'},{icon:'🐗',name:'wild zwijn',kind:'time'},{icon:'🦌',name:'hert',kind:'time'}];
   const laneX=n=>[31,50,69][n];
   const formatTime=seconds=>String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(Math.floor(seconds%60)).padStart(2,'0');
@@ -72,25 +75,25 @@
     if(state.distance>=100){$('finish').classList.add('show');end(true);return}raf=requestAnimationFrame(draw)
   }
   function reset(){cancelAnimationFrame(raf);stage.querySelectorAll('.entity').forEach(e=>e.remove());$('finish').classList.remove('show');stage.classList.remove('slow');car.classList.remove('shielded');state={running:true,lane:1,lives:3,distance:0,penalty:0,hits:0,entities:[],started:performance.now(),last:performance.now(),spawnIn:.8,shieldUntil:0,slowUntil:0,invulnerableUntil:0,speed:1};setCar();raf=requestAnimationFrame(draw)}
-  async function end(won){if(!state?.running)return;state.running=false;cancelAnimationFrame(raf);const seconds=Math.round((performance.now()-state.started)/1000+state.penalty);if(!won){showCard('<h2>De vlucht strandde</h2><p>De wagen kan niet verder. Kies een beter spoor en probeer opnieuw.</p><button class="primary" id="again">Opnieuw proberen</button>');$('again').onclick=reset;return}
+  async function end(won){if(!state?.running)return;state.running=false;cancelAnimationFrame(raf);clearInterval(heartbeat);const seconds=Math.round((performance.now()-state.started)/1000+state.penalty);if(!won){showCard('<h2>De vlucht strandde</h2><p>De wagen kan niet verder. Kies een beter spoor en probeer opnieuw.</p><button class="primary" id="again">Opnieuw proberen</button>');$('again').onclick=reset;return}
     const clue=hint||'De volgende aanwijzing blijft nog verzegeld.';showCard('<h2>Finish bereikt!</h2><p>De verborgen aanwijzing:</p><div class="revealed-clue">'+escapeHtml(clue)+'</div><div class="save" id="save">Score opslaan…</div><button class="primary" id="done">Terug naar dossier</button>');$('done').onclick=close;
     try{const data=await post('score',{name:player,gameId,seconds,attempts:Math.max(1,state.hits),detail:{version:1,lives:state.lives,penalty:state.penalty}});const saved=data.result||data;$('save').textContent=(saved.score||0)+' punten · '+seconds+' seconden'}catch(e){$('save').textContent='Score kon niet worden opgeslagen: '+e.message}
   }
   function showCard(html){$('card').innerHTML=html;$('overlay').style.display='grid'}
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
-  async function get(action,p={}){const r=await fetch(api+'?'+new URLSearchParams({action,...p}),{cache:'no-store'}),b=await r.json();if(!r.ok||!b.success)throw Error(b.error||'Verbinding mislukt');return b.data}
-  async function post(action,p){const r=await fetch(api,{method:'POST',body:new URLSearchParams({action,payload:JSON.stringify(p)}),cache:'no-store'}),b=await r.json();if(!r.ok||!b.success)throw Error(b.error||'Verbinding mislukt');return b.data}
+  async function get(action, params = {}) { return window.VriendenweekendApi.get(action, params); }
+  async function post(action, payload) { const result = await window.VriendenweekendApi.post(action, payload || {}); if (action === 'score' && heartbeat) { clearInterval(heartbeat); heartbeat = 0; } return result; }
   async function replay(){
     if(!confirm('Als je opnieuw speelt, wordt je huidige score voor dit spel verwijderd. Wil je doorgaan?'))return;
     showCard('<h2>Spel opnieuw klaarzetten…</h2><p>Je huidige score wordt verwijderd.</p>');
     try{await post('replay',{name:player,gameId});location.reload()}catch(e){showCard('<h2>Opnieuw spelen mislukt</h2><p>'+escapeHtml(e.message)+'</p><button class="secondary-action" id="back">Terug naar dossier</button>');$('back').onclick=close}
   }
   async function boot(){
-    if(!player||!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(api)){showCard('<h2>Spel niet beschikbaar</h2><p>Open Vluchtroute via de startpagina met een opgeslagen spelernaam.</p><button class="primary" id="back">Terug</button>');$('back').onclick=close;return}
+    if(!player||!window.VriendenweekendApi.isConfigured()){showCard('<h2>Spel niet beschikbaar</h2><p>Open Vluchtroute via de startpagina met een opgeslagen spelernaam.</p><button class="primary" id="back">Terug</button>');$('back').onclick=close;return}
     localStorage.setItem(PLAYER_KEY,player);showCard('<h2>Route verkennen…</h2><p>Toegang wordt gecontroleerd.</p>');
-    try{const access=await get('access',{gameId,playerName:player});if(access.game?.title){$('game-title').textContent=access.game.title;document.title=access.game.title}hint=access.game?.hint||'';if(!access.allowed){if(access.completed){showCard('<h2>Al voltooid</h2><p>Je hebt deze vluchtroute al gereden. Je kunt opnieuw spelen, maar je huidige score vervalt dan.</p><div class="revealed-clue">'+escapeHtml(hint||'De volgende aanwijzing blijft nog verzegeld.')+'</div><button class="primary" id="replay">Opnieuw spelen</button><button class="secondary-action" id="back">Terug naar dossier</button>');$('replay').onclick=replay;$('back').onclick=close}else{showCard('<h2>Route afgesloten</h2><p>Dit spel is nog niet vrijgegeven.</p><button class="secondary-action" id="back">Terug naar dossier</button>');$('back').onclick=close}return}await post('start',{name:player,gameId,source:'github-pages',userAgent:navigator.userAgent});setInterval(()=>{if(!document.hidden)post('heartbeat',{name:player,gameId}).catch(()=>{})},10000);allowed=true;showCard('<h2>De uitweg wacht</h2><p>Wissel van rijstrook en ontwijk alles op de weg. Houd vol tot de finish.</p><div class="legend"><span>🚧 🚓 🌳 🐗<br>obstakels</span><span>🛡️ ⏳<br>bonussen</span><span>← → / A D<br>toetsen</span><span>Veeg of tik<br>op mobiel</span></div><button class="primary" id="go">Start de vlucht</button>');$('go').onclick=()=>{$('overlay').style.display='none';reset()}}catch(e){showCard('<h2>Geen verbinding</h2><p>'+escapeHtml(e.message)+'</p><button class="secondary-action" id="back">Terug naar dossier</button>');$('back').onclick=close}
+    try{const access=await get('access',{gameId,playerName:player});if(access.game?.title){$('game-title').textContent=access.game.title;document.title=access.game.title}hint=access.game?.hint||'';if(!access.allowed){if(access.completed){showCard('<h2>Al voltooid</h2><p>Je hebt deze vluchtroute al gereden. Je kunt opnieuw spelen, maar je huidige score vervalt dan.</p><div class="revealed-clue">'+escapeHtml(hint||'De volgende aanwijzing blijft nog verzegeld.')+'</div><button class="primary" id="replay">Opnieuw spelen</button><button class="secondary-action" id="back">Terug naar dossier</button>');$('replay').onclick=replay;$('back').onclick=close}else{showCard('<h2>Route afgesloten</h2><p>Dit spel is nog niet vrijgegeven.</p><button class="secondary-action" id="back">Terug naar dossier</button>');$('back').onclick=close}return}await post('start',{name:player,gameId,source:'github-pages',userAgent:navigator.userAgent});heartbeat=setInterval(()=>{if(!document.hidden)post('heartbeat',{name:player,gameId}).catch(()=>{})},10000);allowed=true;showCard('<h2>De uitweg wacht</h2><p>Wissel van rijstrook en ontwijk alles op de weg. Houd vol tot de finish.</p><div class="legend"><span>🚧 🚓 🌳 🐗<br>obstakels</span><span>🛡️ ⏳<br>bonussen</span><span>← → / A D<br>toetsen</span><span>Veeg of tik<br>op mobiel</span></div><button class="primary" id="go">Start de vlucht</button>');$('go').onclick=()=>{$('overlay').style.display='none';reset()}}catch(e){showCard('<h2>Geen verbinding</h2><p>'+escapeHtml(e.message)+'</p><button class="secondary-action" id="back">Terug naar dossier</button>');$('back').onclick=close}
   }
-  $('close').onclick=close;$('left').onclick=()=>move(-1);$('right').onclick=()=>move(1);addEventListener('keydown',e=>{if(['ArrowLeft','a','A'].includes(e.key)){e.preventDefault();move(-1)}if(['ArrowRight','d','D'].includes(e.key)){e.preventDefault();move(1)}});stage.addEventListener('touchstart',e=>touchX=e.changedTouches[0].clientX,{passive:true});stage.addEventListener('touchend',e=>{const x=e.changedTouches[0].clientX,d=x-touchX;if(Math.abs(d)>28)move(d>0?1:-1);else move(x<innerWidth/2?-1:1)},{passive:true});boot();
+  $('close').onclick=close;$('left').onclick=()=>move(-1);$('right').onclick=()=>move(1);addEventListener('keydown',e=>{if(['ArrowLeft','a','A'].includes(e.key)){e.preventDefault();move(-1)}if(['ArrowRight','d','D'].includes(e.key)){e.preventDefault();move(1)}});stage.addEventListener('touchstart',e=>touchX=e.changedTouches[0].clientX,{passive:true});stage.addEventListener('touchend',e=>{const x=e.changedTouches[0].clientX,d=x-touchX;if(Math.abs(d)>28)move(d>0?1:-1);else move(x<innerWidth/2?-1:1)},{passive:true});addEventListener('pagehide',()=>clearInterval(heartbeat),{once:true});boot();
 })();
 </script>
 <script src="../app-update.js"></script>

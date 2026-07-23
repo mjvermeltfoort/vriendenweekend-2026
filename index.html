@@ -726,7 +726,9 @@
      </section>
   </main>
 
-  <script src="config.js?v=20260722-3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js?v=20260723-1"></script>
+  <script src="supabase-api.js?v=20260723-1"></script>
   <script>
     (() => {
       const PLAYER_KEY = 'vriendenweekend-player-name';
@@ -748,7 +750,6 @@
       const leaderboardWrap = document.getElementById('leaderboard-wrap');
       const installButton = document.getElementById('install-button');
       const activePlayersRoot = document.getElementById('active-players');
-      const appUrl = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
       let deferredPrompt = null;
       let activePlayerName = '';
       let activePlayersSignature = '';
@@ -952,24 +953,7 @@
       }
 
       async function apiGet(action, params) {
-        const query = new URLSearchParams(Object.assign({ action }, params || {}));
-        const response = await fetch(appUrl + '?' + query.toString(), {
-          method: 'GET',
-          mode: 'cors',
-          credentials: 'omit',
-          cache: 'no-store'
-        });
-
-        if (!response.ok) {
-          throw new Error('API-verzoek mislukt met status ' + response.status + '.');
-        }
-
-        const body = await response.json();
-        if (!body.success) {
-          throw new Error(body.error || 'De API gaf een fout terug.');
-        }
-
-        return body.data;
+        return window.VriendenweekendApi.get(action, params || {});
       }
 
       async function loadStateForPlayer(playerName) {
@@ -1027,14 +1011,14 @@
       }
 
       function isConfigValid() {
-        return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:[?#].*)?$/.test(appUrl);
+        return window.VriendenweekendApi.isConfigured();
       }
 
       form.addEventListener('submit', async event => {
         event.preventDefault();
 
         if (!isConfigValid()) {
-          setStatus('Apps Script URL in config.js is ongeldig.', 'error');
+          setStatus('Supabase is nog niet ingesteld in config.js.', 'error');
           return;
         }
 
@@ -1051,15 +1035,16 @@
           return;
         }
 
-        nameInput.value = playerName;
-        localStorage.setItem(PLAYER_KEY, playerName);
-        activePlayerName = playerName;
-        setNameLocked(true);
-
         try {
+          await window.VriendenweekendApi.register(playerName);
+          nameInput.value = playerName;
+          localStorage.setItem(PLAYER_KEY, playerName);
+          activePlayerName = playerName;
+          setNameLocked(true);
           await loadStateForPlayer(playerName);
         } catch (error) {
           refreshButton.disabled = false;
+          setNameLocked(false);
           setStatus(error && error.message ? error.message : 'Status laden is mislukt.', 'error');
         }
       });
