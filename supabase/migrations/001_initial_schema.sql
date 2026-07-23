@@ -1,13 +1,5 @@
-create extension if not exists pgcrypto with schema extensions;
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
-
-create table if not exists private.app_settings (
-  singleton boolean primary key default true check (singleton),
-  access_code_hash text,
-  updated_at timestamptz not null default now()
-);
-insert into private.app_settings (singleton) values (true) on conflict do nothing;
 
 create table if not exists private.players (
   user_id uuid primary key references auth.users(id) on update cascade on delete cascade,
@@ -47,7 +39,6 @@ create index if not exists scores_game_user_idx on private.scores (game_id, user
 create index if not exists scores_leaderboard_idx on private.scores (user_id, score desc, seconds asc);
 create index if not exists active_players_seen_idx on private.active_players (last_seen_at desc);
 
-alter table private.app_settings enable row level security;
 alter table private.players enable row level security;
 alter table private.games enable row level security;
 alter table private.game_starts enable row level security;
@@ -74,21 +65,14 @@ returns integer language sql immutable security definer set search_path = '' as 
   end
 $$;
 
-create or replace function public.get_public_config()
-returns jsonb language sql security definer set search_path = '' as $$
-  select jsonb_build_object('authenticationRequired', exists(select 1 from private.app_settings where singleton and access_code_hash is not null))
-$$;
-
-create or replace function public.register_player(p_name text, p_access_code text default '')
+create or replace function public.register_player(p_name text)
 returns jsonb language plpgsql security definer set search_path = '' as $$
-declare v_uid uuid := auth.uid(); v_name text; v_normalized text; v_hash text; v_existing uuid;
+declare v_uid uuid := auth.uid(); v_name text; v_normalized text; v_existing uuid;
 begin
   if v_uid is null then raise exception 'Je sessie ontbreekt. Probeer opnieuw.'; end if;
   v_name := btrim(regexp_replace(regexp_replace(coalesce(p_name,''), '[<>[:cntrl:]]', '', 'g'), '\\s+', ' ', 'g'));
   if char_length(v_name) not between 1 and 40 then raise exception 'Vul een naam van maximaal 40 tekens in.'; end if;
   v_normalized := lower(v_name);
-  select access_code_hash into v_hash from private.app_settings where singleton;
-  if v_hash is not null and (coalesce(p_access_code,'') = '' or extensions.crypt(p_access_code, v_hash) <> v_hash) then raise exception 'Naam of toegangscode is ongeldig.'; end if;
   select user_id into v_existing from private.players where normalized_name = v_normalized for update;
   if v_existing is not null and v_existing <> v_uid then
     update private.players set user_id = v_uid, name = v_name, last_seen_at = now() where user_id = v_existing;
@@ -97,7 +81,7 @@ begin
   else
     update private.players set name = v_name, last_seen_at = now() where user_id = v_uid;
   end if;
-  return jsonb_build_object('authenticationRequired', v_hash is not null, 'playerName', v_name);
+  return jsonb_build_object('playerName', v_name);
 end $$;
 
 create or replace function public.get_app_state()
@@ -107,7 +91,6 @@ begin
   if v_uid is null then raise exception 'Je sessie ontbreekt. Probeer opnieuw.'; end if;
   update private.players set last_seen_at = now() where user_id = v_uid;
   return jsonb_build_object(
-    'authenticationRequired', exists(select 1 from private.app_settings where singleton and access_code_hash is not null),
     'games', coalesce((select jsonb_agg(jsonb_build_object('id', g.id, 'title', g.title, 'description', g.description, 'status', g.status, 'state', private.game_state(g), 'openFrom', g.open_from, 'closeAt', g.close_at, 'hint', case when s.id is null then '' else g.hint end, 'maxPoints', g.max_points, 'order', g.display_order, 'completed', case when s.id is null then null else jsonb_build_object('gameId',s.game_id,'title',g.title,'score',s.score,'seconds',s.seconds,'attempts',s.attempts) end) order by g.display_order) from private.games g left join private.scores s on s.game_id=g.id and s.user_id=v_uid), '[]'::jsonb),
     'leaderboard', coalesce((select jsonb_agg(jsonb_build_object('name', x.name, 'score', x.score, 'games', x.games, 'seconds', x.seconds) order by x.score desc, x.seconds asc, x.name asc) from (select min(player_name) name, sum(score)::integer score, count(*)::integer games, sum(seconds)::integer seconds from private.scores group by user_id order by sum(score) desc, sum(seconds), min(player_name) limit 50) x), '[]'::jsonb),
     'activePlayers', coalesce((select jsonb_agg(jsonb_build_object('name',p.name,'gameId',a.game_id,'gameTitle',g.title,'startedAt',a.started_at) order by a.last_seen_at desc) from private.active_players a join private.players p on p.user_id=a.user_id join private.games g on g.id=a.game_id where a.last_seen_at >= now() - interval '30 seconds'), '[]'::jsonb)
@@ -172,9 +155,5 @@ begin
 end $$;
 
 revoke all on function private.game_state(private.games), private.score_for(text,integer,integer,integer) from public;
-revoke all on function public.get_public_config(), public.register_player(text,text), public.get_app_state(), public.get_game_access(text), public.register_game_start(text,text,text), public.register_game_heartbeat(text), public.reset_game_progress(text), public.submit_score(text,integer,integer,jsonb) from public;
-grant execute on function public.get_public_config(), public.register_player(text,text), public.get_app_state(), public.get_game_access(text), public.register_game_start(text,text,text), public.register_game_heartbeat(text), public.reset_game_progress(text), public.submit_score(text,integer,integer,jsonb) to authenticated;
-
--- Optional access code, run manually in the SQL editor (replace the placeholder):
--- update private.app_settings set access_code_hash = extensions.crypt('KIES_EEN_LANGE_CODE', extensions.gen_salt('bf')), updated_at = now() where singleton;
--- Disable it again with: update private.app_settings set access_code_hash = null, updated_at = now() where singleton;
+revoke all on function public.register_player(text), public.get_app_state(), public.get_game_access(text), public.register_game_start(text,text,text), public.register_game_heartbeat(text), public.reset_game_progress(text), public.submit_score(text,integer,integer,jsonb) from public;
+grant execute on function public.register_player(text), public.get_app_state(), public.get_game_access(text), public.register_game_start(text,text,text), public.register_game_heartbeat(text), public.reset_game_progress(text), public.submit_score(text,integer,integer,jsonb) to authenticated;
