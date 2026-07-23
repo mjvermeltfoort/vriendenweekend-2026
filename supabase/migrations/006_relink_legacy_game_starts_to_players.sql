@@ -4,10 +4,10 @@ alter table private.players drop constraint if exists players_user_id_fkey;
 
 with normalized as (
   select
-    btrim(regexp_replace(regexp_replace(naam, '[<>[:cntrl:]]', '', 'g'), '\\s+', ' ', 'g')) as player_name,
+    btrim(regexp_replace(regexp_replace(naam, '[<>[:cntrl:]]', '', 'g'), '\s+', ' ', 'g')) as player_name,
     tijdstip::timestamptz as started_at
   from private.legacy_game_starts_staging
-  where tijdstip ~ '^\\d{4}-\\d{2}-\\d{2}T'
+  where tijdstip ~ '^\d{4}-\d{2}-\d{2}T'
 ), grouped_players as (
   select player_name, lower(player_name) as normalized_name,
     min(started_at) as created_at, max(started_at) as last_seen_at

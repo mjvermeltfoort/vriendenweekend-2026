@@ -1,5 +1,5 @@
--- Voer deze migratie één keer uit. Daarna kan de import na een CSV-upload
--- veilig opnieuw worden gestart met:
+-- Herstelmigratie voor de te sterk ge-escapete reguliere expressies in 007.
+-- Voer hierna de import opnieuw uit met:
 -- select private.import_legacy_game_starts_from_staging();
 
 create or replace function private.import_legacy_game_starts_from_staging()

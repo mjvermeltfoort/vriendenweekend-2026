@@ -28,14 +28,14 @@ revoke all on sequence private.legacy_game_starts_staging_import_row_id_seq from
 
 with normalized as (
   select
-    btrim(regexp_replace(regexp_replace(naam, '[<>[:cntrl:]]', '', 'g'), '\\s+', ' ', 'g')) as player_name,
+    btrim(regexp_replace(regexp_replace(naam, '[<>[:cntrl:]]', '', 'g'), '\s+', ' ', 'g')) as player_name,
     btrim(spel_id) as game_id,
     nullif(btrim(status), '') as start_status,
     left(coalesce(bron, ''), 100) as source,
     left(coalesce(apparaat, ''), 250) as user_agent,
     tijdstip::timestamptz as started_at
   from private.legacy_game_starts_staging
-  where tijdstip ~ '^\\d{4}-\\d{2}-\\d{2}T'
+  where tijdstip ~ '^\d{4}-\d{2}-\d{2}T'
 ), valid_rows as (
   select n.*
   from normalized n
@@ -78,14 +78,14 @@ where legacy_start.user_id is null
 
 with normalized as (
   select
-    btrim(regexp_replace(regexp_replace(naam, '[<>[:cntrl:]]', '', 'g'), '\\s+', ' ', 'g')) as player_name,
+    btrim(regexp_replace(regexp_replace(naam, '[<>[:cntrl:]]', '', 'g'), '\s+', ' ', 'g')) as player_name,
     btrim(spel_id) as game_id,
     nullif(btrim(status), '') as start_status,
     left(coalesce(bron, ''), 100) as source,
     left(coalesce(apparaat, ''), 250) as user_agent,
     tijdstip::timestamptz as started_at
   from private.legacy_game_starts_staging
-  where tijdstip ~ '^\\d{4}-\\d{2}-\\d{2}T'
+  where tijdstip ~ '^\d{4}-\d{2}-\d{2}T'
 ), valid_rows as (
   select n.*, p.user_id
   from normalized n

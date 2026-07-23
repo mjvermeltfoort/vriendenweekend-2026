@@ -57,3 +57,6 @@ Wanneer 005 al zonder CSV is uitgevoerd, voer vervolgens
 stagingtabel en voer uit: `select private.import_legacy_game_starts_from_staging();`.
 De response moet voor de aangeleverde export `{"stagedRows": 46,
 "importedStarts": 46}` tonen; een tweede run importeert nul extra starts.
+Kreeg je met versie 007 `importedStarts: 0` terwijl de stagingtabel 48 regels
+bevat? Voer dan eerst `008_fix_legacy_game_start_import_regex.sql` uit en roep
+daarna dezelfde importfunctie opnieuw aan.
