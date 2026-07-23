@@ -4,7 +4,6 @@
   const CONFIG = window.VRIENDENWEEKEND_CONFIG || {};
   const TIMEOUT_MS = 12000;
   let client = null;
-  let authPromise = null;
 
   function configured() {
     return /^https:\/\//.test(CONFIG.supabaseUrl || '') &&
@@ -33,53 +32,29 @@
     if (client) return client;
     if (!configured()) throw new Error('Vul eerst de Supabase URL en publishable key in config.js in.');
     if (!window.supabase || !window.supabase.createClient) throw new Error('De Supabase-client kon niet worden geladen.');
-    client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
-    });
+    client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
     return client;
   }
 
-  async function ensureAuth() {
-    if (authPromise) return authPromise;
-    authPromise = (async () => {
-      const api = getClient();
-      const { data, error } = await withTimeout(api.auth.getSession());
-      if (error) throw error;
-      if (data.session) return data.session;
-      const signedIn = await withTimeout(api.auth.signInAnonymously());
-      if (signedIn.error) throw signedIn.error;
-      return signedIn.data.session;
-    })().catch(error => {
-      authPromise = null;
-      throw new Error(message(error));
-    });
-    return authPromise;
-  }
-
   async function rpc(name, params) {
-    await ensureAuth();
     const result = await withTimeout(getClient().rpc(name, params || {}));
     if (result.error) {
-      if (/JWT|session|not authenticated/i.test(result.error.message || '')) {
-        authPromise = null;
-      }
       throw new Error(message(result.error));
     }
     return result.data;
   }
 
   const actionMap = {
-    state: ['get_app_state', () => ({})],
-    access: ['get_game_access', p => ({ p_game_id: p.gameId })],
-    start: ['register_game_start', p => ({ p_game_id: p.gameId, p_source: p.source || '', p_user_agent: p.userAgent || '' })],
-    heartbeat: ['register_game_heartbeat', p => ({ p_game_id: p.gameId })],
-    replay: ['reset_game_progress', p => ({ p_game_id: p.gameId })],
-    score: ['submit_score', p => ({ p_game_id: p.gameId, p_seconds: p.seconds, p_attempts: p.attempts, p_detail: p.detail || {} })]
+    state: ['get_app_state', p => ({ p_player_name: p.playerName || '' })],
+    access: ['get_game_access', p => ({ p_game_id: p.gameId, p_player_name: p.playerName || '' })],
+    start: ['register_game_start', p => ({ p_game_id: p.gameId, p_player_name: p.name || p.playerName || '', p_source: p.source || '', p_user_agent: p.userAgent || '' })],
+    heartbeat: ['register_game_heartbeat', p => ({ p_game_id: p.gameId, p_player_name: p.name || p.playerName || '' })],
+    replay: ['reset_game_progress', p => ({ p_game_id: p.gameId, p_player_name: p.name || p.playerName || '' })],
+    score: ['submit_score', p => ({ p_game_id: p.gameId, p_player_name: p.name || p.playerName || '', p_seconds: p.seconds, p_attempts: p.attempts, p_detail: p.detail || {} })]
   };
 
   window.VriendenweekendApi = {
     isConfigured: configured,
-    ensureAuth,
     async register(name) { return rpc('register_player', { p_name: name }); },
     async get(action, params = {}) {
       const item = actionMap[action];

@@ -20,7 +20,7 @@
   <div class="controls"><button class="control" id="left" aria-label="Links">←</button><button class="control" id="right" aria-label="Rechts">→</button><button class="control" id="rotate" aria-label="Draaien">↻</button><button class="control" id="down" aria-label="Omlaag">↓</button><button class="control" id="drop" aria-label="Laten vallen">⤓</button></div>
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../config.js?v=20260723-1"></script>
-  <script src="../supabase-api.js?v=20260723-1"></script><script src="game-shell.js"></script>
+  <script src="../supabase-api.js?v=20260723-2"></script><script src="game-shell.js"></script>
 <script>
 (()=>{'use strict';
 const W=10,H=20,TARGET=10,KEY='vriendenweekend-player-name',qs=new URLSearchParams(location.search),clean=v=>String(v||'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().slice(0,40),player=clean(localStorage.getItem(KEY)||qs.get('playerName')),gameId='vallende-stenen', $=id=>document.getElementById(id);
