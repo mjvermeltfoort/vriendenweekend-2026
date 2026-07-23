@@ -93,3 +93,23 @@ begin
     )
   );
 end $$;
+
+-- Herbereken bestaande mozaïek-scores met de nieuwe spelstart-straf.
+-- Elke extra spelstart (na de eerste) kost 100 punten, max 300.
+-- De max_points voor mozaïek is 1000 (zie private.games).
+update private.scores s
+set score = private.score_for(
+  'mozaiek',
+  g.max_points,
+  s.seconds,
+  s.attempts,
+  greatest(1, (
+    select count(*)::integer
+      from private.game_starts gs
+      where gs.user_id = s.user_id
+        and gs.game_id = 'mozaiek'
+  ))
+)
+from private.games g
+where s.game_id = 'mozaiek'
+  and g.id      = 'mozaiek';
