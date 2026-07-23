@@ -1078,7 +1078,8 @@
         nameInput.value = rememberedName;
         activePlayerName = rememberedName;
         setNameLocked(true);
-        loadStateForPlayer(rememberedName)
+        window.VriendenweekendApi.register(rememberedName)
+          .then(() => loadStateForPlayer(rememberedName))
           .catch(error => {
             refreshButton.disabled = false;
             setStatus(error && error.message ? error.message : 'Status laden is mislukt.', 'error');
