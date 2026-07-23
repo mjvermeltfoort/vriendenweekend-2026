@@ -444,6 +444,7 @@
 
       const UNKNOWN_PLAYER = 'Onbekende speler';
       const MAX_RECENT_ACTIVITY = 50;
+      const AUTO_REFRESH_INTERVAL_MS = 30000;
       const DASHBOARD_RPC = 'get_dashboard_activity';
       const NUMBER_FORMAT = new Intl.NumberFormat('nl-NL');
       const DATE_FORMAT = new Intl.DateTimeFormat('nl-NL', { dateStyle: 'short' });
@@ -469,7 +470,11 @@
           games: [],
           players: [],
           activity: []
-        }
+        },
+        selectedPlayerKey: null,
+        refreshInFlight: false,
+        refreshQueued: false,
+        refreshTimerId: null
       };
 
       const ui = {
@@ -494,37 +499,87 @@
         if (event.key === 'Escape' && ui.modal.dataset.open === 'true') closePlayerDetails();
       });
 
-      initializeDashboard().catch((error) => {
+      scheduleAutoRefresh();
+      refreshDashboard().catch((error) => {
         showError(error && error.message ? error.message : 'Onbekende fout bij initialiseren.');
       });
 
-      async function initializeDashboard() {
-        showLoading(true);
+      function scheduleAutoRefresh() {
+        if (state.refreshTimerId) window.clearInterval(state.refreshTimerId);
+        state.refreshTimerId = window.setInterval(() => {
+          if (document.hidden) return;
+          refreshDashboard({ background: true }).catch((error) => {
+            showError(error && error.message ? error.message : 'Dashboarddata ophalen mislukt.');
+          });
+        }, AUTO_REFRESH_INTERVAL_MS);
+
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) {
+            refreshDashboard({ background: true }).catch((error) => {
+              showError(error && error.message ? error.message : 'Dashboarddata ophalen mislukt.');
+            });
+          }
+        });
+
+        window.addEventListener('focus', () => {
+          refreshDashboard({ background: true }).catch((error) => {
+            showError(error && error.message ? error.message : 'Dashboarddata ophalen mislukt.');
+          });
+        });
+      }
+
+      async function refreshDashboard(options = {}) {
+        const background = options.background === true;
+        if (state.refreshInFlight) {
+          state.refreshQueued = true;
+          return;
+        }
+
+        state.refreshInFlight = true;
+
+        if (!background) showLoading(true);
         hideError();
-        const data = await loadDashboardData();
-        state.raw = data;
 
-        loadGames(data.games);
-        const starts = loadGameStarts(data.starts);
-        const scores = loadScores(data.scores);
+        try {
+          const data = await loadDashboardData();
+          state.raw = data;
 
-        const summary = calculateStatistics(starts, scores, data.players);
-        const gameStats = calculateGameStatistics(starts, scores);
-        const playerStats = calculatePlayerStatistics(starts, scores, data.players);
-        const activity = combineActivity(starts, scores);
+          loadGames(data.games);
+          const starts = loadGameStarts(data.starts);
+          const scores = loadScores(data.scores);
 
-        state.calculated.summary = summary;
-        state.calculated.games = gameStats;
-        state.calculated.players = playerStats;
-        state.calculated.activity = activity;
+          const summary = calculateStatistics(starts, scores, data.players);
+          const gameStats = calculateGameStatistics(starts, scores);
+          const playerStats = calculatePlayerStatistics(starts, scores, data.players);
+          const activity = combineActivity(starts, scores);
 
-        renderSummaryCards(summary);
-        renderGamesTable(gameStats);
-        renderPlayersTable(playerStats);
-        renderRecentActivity(activity);
+          state.calculated.summary = summary;
+          state.calculated.games = gameStats;
+          state.calculated.players = playerStats;
+          state.calculated.activity = activity;
 
-        ui.refreshed.textContent = 'Bijgewerkt: ' + formatDateTime(new Date().toISOString());
-        showLoading(false);
+          renderSummaryCards(summary);
+          renderGamesTable(gameStats);
+          renderPlayersTable(playerStats);
+          renderRecentActivity(activity);
+
+          if (state.selectedPlayerKey && state.maps.playersByKey.has(state.selectedPlayerKey)) {
+            renderPlayerDetails(state.selectedPlayerKey);
+          } else if (state.selectedPlayerKey) {
+            closePlayerDetails();
+          }
+
+          ui.refreshed.textContent = 'Bijgewerkt: ' + formatDateTime(new Date().toISOString());
+        } finally {
+          showLoading(false);
+          state.refreshInFlight = false;
+          if (state.refreshQueued) {
+            state.refreshQueued = false;
+            refreshDashboard({ background: true }).catch((error) => {
+              showError(error && error.message ? error.message : 'Dashboarddata ophalen mislukt.');
+            });
+          }
+        }
       }
 
       async function loadDashboardData() {
@@ -1074,6 +1129,7 @@
       function renderPlayerDetails(playerKey) {
         const player = state.maps.playersByKey.get(playerKey);
         if (!player) return;
+        state.selectedPlayerKey = playerKey;
 
         ui.modalTitle.textContent = 'Spelerdetails - ' + player.name;
         ui.modalBody.textContent = '';
@@ -1109,7 +1165,7 @@
           const tbody = document.createElement('tbody');
           const hr = document.createElement('tr');
           ['Spel', 'Aantal starts', 'Eerste start', 'Laatste start'].forEach((text) => {
-          appendCell(tr, game.openFrom ? formatDate(game.openFrom) : '-');
+            const th = document.createElement('th');
             th.textContent = text;
             hr.appendChild(th);
           });
@@ -1191,6 +1247,7 @@
       }
 
       function closePlayerDetails() {
+        state.selectedPlayerKey = null;
         ui.modal.dataset.open = 'false';
       }
 
