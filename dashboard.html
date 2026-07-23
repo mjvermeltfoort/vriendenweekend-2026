@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#22313a">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Vriendenweekend 2026 - Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #12171a;
+      --bg-soft: #1b242a;
+      --card: #1f2c33;
+      --card-strong: #263841;
+      --line: rgba(255, 255, 255, 0.14);
+      --text: #edf3f6;
+      --muted: #b6c6cd;
+      --accent: #7ec3a5;
+      --accent-strong: #4fb487;
+      --warn: #d9a96c;
+      --danger: #d6847e;
+      --ok: #7cc796;
+      --chip: #2c414a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      color: var(--text);
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+      background:
+        radial-gradient(circle at 15% -10%, rgba(126, 195, 165, 0.18), transparent 32rem),
+        radial-gradient(circle at 95% 15%, rgba(107, 165, 196, 0.14), transparent 30rem),
+        var(--bg);
+    }
+
+    .shell {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      padding:
+        max(14px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(22px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+    }
+
+    .header {
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(140deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      padding: 16px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .label {
+      margin: 0;
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+
+    h1 {
+      margin: 6px 0 0;
+      font: 700 clamp(1.6rem, 4.2vw, 2.5rem)/1.08 Georgia, "Times New Roman", serif;
+    }
+
+    .stamp {
+      border: 1px solid rgba(126, 195, 165, 0.5);
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+      background: rgba(126, 195, 165, 0.08);
+    }
+
+    .subline {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.95rem;
+    }
+
+    .loading {
+      display: none;
+      margin: 14px 0;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+    }
+
+    .loading[data-visible="true"] { display: flex; align-items: center; gap: 10px; }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex: 0 0 auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error {
+      display: none;
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border: 1px solid rgba(214, 132, 126, 0.55);
+      border-radius: 12px;
+      color: #ffd9d5;
+      background: rgba(214, 132, 126, 0.12);
+    }
+
+    .error[data-visible="true"] { display: block; }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+      padding: 12px;
+      min-height: 92px;
+      display: grid;
+      align-content: center;
+      gap: 6px;
+    }
+
+    .card span {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .card strong {
+      color: var(--text);
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .layout {
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(31, 44, 51, 0.86);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 1.02rem;
+    }
+
+    .panel-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.93rem;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.74rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td:last-child,
+    th:last-child { text-align: right; }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .align-right { text-align: right; }
+
+    .empty {
+      padding: 14px;
+      color: var(--muted);
+    }
+
+    .player-link {
+      border: 0;
+      padding: 0;
+      background: none;
+      color: #cde8f4;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .player-link:hover { color: #e9f7ff; }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: var(--chip);
+      white-space: nowrap;
+    }
+
+    .status-tag.started {
+      color: #ffe2b9;
+      border-color: rgba(217, 169, 108, 0.45);
+      background: rgba(217, 169, 108, 0.15);
+    }
+
+    .status-tag.completed {
+      color: #d7f6e4;
+      border-color: rgba(124, 199, 150, 0.45);
+      background: rgba(124, 199, 150, 0.16);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(9, 13, 15, 0.76);
+      padding: 14px;
+      z-index: 20;
+    }
+
+    .modal[data-open="true"] { display: flex; }
+
+    .modal-card {
+      width: min(980px, 100%);
+      max-height: 90vh;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--bg-soft);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .modal-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .modal-head h3 { margin: 0; font-size: 1.06rem; }
+
+    .modal-close {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      min-height: 34px;
+      padding: 0 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      overflow: auto;
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .modal-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .modal-stat {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--card);
+      padding: 10px;
+    }
+
+    .modal-stat span {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+
+    .modal-stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.05rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted { color: var(--muted); }
+
+    @media (max-width: 800px) {
+      table { min-width: 680px; }
+      .header-top { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (max-width: 560px) {
+      .grid-cards { grid-template-columns: 1fr 1fr; }
+      .card strong { font-size: 1.15rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation-duration: 1.5s; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div class="header-top">
+        <div>
+          <p class="label">Vriendenweekend 2026</p>
+          <h1>Activiteitendashboard</h1>
+        </div>
+        <span class="stamp" id="last-refreshed">Nog niet geladen</span>
+      </div>
+      <p class="subline">Overzicht van spelersactiviteit, spelstarts en afrondingen. Gegevens worden direct opgehaald uit Supabase.</p>
+      <div class="loading" id="loading" data-visible="true" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Dashboardgegevens worden opgehaald...</span>
+      </div>
+      <p class="error" id="error" data-visible="false" aria-live="assertive"></p>
+    </header>
+
+    <section class="grid-cards" id="summary-cards" aria-label="Samenvatting"></section>
+
+    <section class="layout">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Overzicht per spel</h2>
+          <p>Gesorteerd op beschikbaarheidsdatum</p>
+        </div>
+        <div class="table-wrap" id="games-table-wrap"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Spelersoverzicht</h2>
+          <p>Klik op een speler voor details</p>
+        </div>
+        <div class="table-wrap" id="players-table-wrap"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Recente activiteit</h2>
+          <p>Laatste 50 gebeurtenissen</p>
+        </div>
+        <div class="table-wrap" id="activity-table-wrap"></div>
+      </article>
+    </section>
+  </main>
+
+  <div class="modal" id="player-modal" data-open="false" role="dialog" aria-modal="true" aria-labelledby="player-modal-title">
+    <div class="modal-card">
+      <header class="modal-head">
+        <h3 id="player-modal-title">Spelerdetails</h3>
+        <button class="modal-close" type="button" id="player-modal-close">Sluiten</button>
+      </header>
+      <div class="modal-body" id="player-modal-body"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const UNKNOWN_PLAYER = 'Onbekende speler';
+      const MAX_RECENT_ACTIVITY = 50;
+      const DASHBOARD_RPC = 'get_dashboard_activity';
+      const NUMBER_FORMAT = new Intl.NumberFormat('nl-NL');
+      const DATE_FORMAT = new Intl.DateTimeFormat('nl-NL', { dateStyle: 'short' });
+      const DATE_TIME_FORMAT = new Intl.DateTimeFormat('nl-NL', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+        hour12: false
+      });
+
+      const state = {
+        raw: {
+          games: [],
+          players: [],
+          starts: [],
+          scores: []
+        },
+        maps: {
+          gameById: new Map(),
+          playersByKey: new Map()
+        },
+        calculated: {
+          summary: null,
+          games: [],
+          players: [],
+          activity: []
+        }
+      };
+
+      const ui = {
+        loading: document.getElementById('loading'),
+        error: document.getElementById('error'),
+        refreshed: document.getElementById('last-refreshed'),
+        summaryCards: document.getElementById('summary-cards'),
+        gamesWrap: document.getElementById('games-table-wrap'),
+        playersWrap: document.getElementById('players-table-wrap'),
+        activityWrap: document.getElementById('activity-table-wrap'),
+        modal: document.getElementById('player-modal'),
+        modalBody: document.getElementById('player-modal-body'),
+        modalTitle: document.getElementById('player-modal-title'),
+        modalClose: document.getElementById('player-modal-close')
+      };
+
+      ui.modalClose.addEventListener('click', closePlayerDetails);
+      ui.modal.addEventListener('click', (event) => {
+        if (event.target === ui.modal) closePlayerDetails();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && ui.modal.dataset.open === 'true') closePlayerDetails();
+      });
+
+      initializeDashboard().catch((error) => {
+        showError(error && error.message ? error.message : 'Onbekende fout bij initialiseren.');
+      });
+
+      async function initializeDashboard() {
+        showLoading(true);
+        hideError();
+        const data = await loadDashboardData();
+        state.raw = data;
+
+        loadGames(data.games);
+        const starts = loadGameStarts(data.starts);
+        const scores = loadScores(data.scores);
+
+        const summary = calculateStatistics(starts, scores, data.players);
+        const gameStats = calculateGameStatistics(starts, scores);
+        const playerStats = calculatePlayerStatistics(starts, scores, data.players);
+        const activity = combineActivity(starts, scores);
+
+        state.calculated.summary = summary;
+        state.calculated.games = gameStats;
+        state.calculated.players = playerStats;
+        state.calculated.activity = activity;
+
+        renderSummaryCards(summary);
+        renderGamesTable(gameStats);
+        renderPlayersTable(playerStats);
+        renderRecentActivity(activity);
+
+        ui.refreshed.textContent = 'Bijgewerkt: ' + formatDateTime(new Date().toISOString());
+        showLoading(false);
+      }
+
+      async function loadDashboardData() {
+        const config = window.VRIENDENWEEKEND_CONFIG || {};
+        if (!/^https:\/\//.test(config.supabaseUrl || '') || !config.supabasePublishableKey) {
+          throw new Error('Supabase-configuratie ontbreekt in config.js.');
+        }
+        if (!window.supabase || !window.supabase.createClient) {
+          throw new Error('Supabase-client kon niet worden geladen.');
+        }
+
+        const client = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey, {
+          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+        });
+
+        const sessionResult = await client.auth.getSession();
+        if (sessionResult.error) {
+          throw new Error(sessionResult.error.message || 'Sessie ophalen mislukt.');
+        }
+        if (!sessionResult.data.session) {
+          const signInResult = await client.auth.signInAnonymously();
+          if (signInResult.error) {
+            throw new Error(signInResult.error.message || 'Anonieme login mislukt.');
+          }
+        }
+
+        const rpcResult = await client.rpc(DASHBOARD_RPC);
+        if (rpcResult.error) {
+          throw new Error(rpcResult.error.message || 'Dashboarddata ophalen mislukt.');
+        }
+
+        const payload = rpcResult.data && typeof rpcResult.data === 'object' ? rpcResult.data : {};
+        return {
+          games: Array.isArray(payload.games) ? payload.games : [],
+          players: Array.isArray(payload.players) ? payload.players : [],
+          starts: Array.isArray(payload.starts) ? payload.starts : [],
+          scores: Array.isArray(payload.scores) ? payload.scores : []
+        };
+      }
+
+      function loadGames(games) {
+        state.maps.gameById.clear();
+        games.forEach((game) => {
+          const id = safeText(game.id);
+          if (!id) return;
+          state.maps.gameById.set(id, {
+            id,
+            title: safeText(game.title) || id,
+            openFrom: safeDate(game.openFrom),
+            displayOrder: safeNumber(game.displayOrder),
+            status: safeText(game.status) || 'onbekend'
+          });
+        });
+      }
+
+      function loadGameStarts(starts) {
+        const mapped = [];
+        starts.forEach((item) => {
+          const gameId = safeText(item.gameId);
+          const startedAt = safeDate(item.startedAt);
+          if (!gameId || !startedAt) return;
+          const rawName = safeText(item.playerName, true);
+          mapped.push({
+            userId: safeText(item.userId, true),
+            playerName: rawName,
+            normalizedPlayerName: normalizePlayerName(rawName),
+            gameId,
+            status: safeText(item.status) || 'gestart',
+            startedAt
+          });
+        });
+        return mapped;
+      }
+
+      function loadScores(scores) {
+        const mapped = [];
+        scores.forEach((item) => {
+          const gameId = safeText(item.gameId);
+          const createdAt = safeDate(item.createdAt);
+          if (!gameId || !createdAt) return;
+          const rawName = safeText(item.playerName, true);
+          const score = safeNumber(item.score);
+          const seconds = safeNumber(item.seconds);
+          const attempts = safeNumber(item.attempts);
+
+          mapped.push({
+            userId: safeText(item.userId, true),
+            playerName: rawName,
+            normalizedPlayerName: normalizePlayerName(rawName),
+            gameId,
+            score,
+            seconds,
+            attempts,
+            createdAt
+          });
+        });
+        return mapped;
+      }
+
+      function combineActivity(starts, scores) {
+        const events = [];
+
+        starts.forEach((start) => {
+          const game = state.maps.gameById.get(start.gameId);
+          events.push({
+            playerName: displayPlayerName(start.playerName),
+            gameTitle: game ? game.title : start.gameId,
+            status: 'gestart',
+            score: null,
+            seconds: null,
+            attempts: null,
+            eventAt: start.startedAt
+          });
+        });
+
+        scores.forEach((score) => {
+          const game = state.maps.gameById.get(score.gameId);
+          events.push({
+            playerName: displayPlayerName(score.playerName),
+            gameTitle: game ? game.title : score.gameId,
+            status: 'afgerond',
+            score: score.score,
+            seconds: score.seconds,
+            attempts: score.attempts,
+            eventAt: score.createdAt
+          });
+        });
+
+        events.sort((a, b) => new Date(b.eventAt).getTime() - new Date(a.eventAt).getTime());
+        return events.slice(0, MAX_RECENT_ACTIVITY);
+      }
+
+      function calculateStatistics(starts, scores, players) {
+        const uniquePlayers = new Set();
+        const now = Date.now();
+        const dayAgo = now - (24 * 60 * 60 * 1000);
+        let starts24h = 0;
+        let completions24h = 0;
+        let totalSeconds = 0;
+        let totalAttempts = 0;
+        let latest = null;
+
+        starts.forEach((start) => {
+          uniquePlayers.add(start.normalizedPlayerName);
+          const startTime = new Date(start.startedAt).getTime();
+          if (startTime >= dayAgo) starts24h += 1;
+          if (!latest || startTime > latest) latest = startTime;
+        });
+
+        scores.forEach((score) => {
+          uniquePlayers.add(score.normalizedPlayerName);
+          const endTime = new Date(score.createdAt).getTime();
+          if (endTime >= dayAgo) completions24h += 1;
+          if (!latest || endTime > latest) latest = endTime;
+          if (isFiniteNumber(score.seconds)) totalSeconds += score.seconds;
+          if (isFiniteNumber(score.attempts)) totalAttempts += score.attempts;
+        });
+
+        players.forEach((player) => {
+          const name = safeText(player.name, true);
+          uniquePlayers.add(normalizePlayerName(name));
+          const seen = safeDate(player.lastSeenAt);
+          if (!seen) return;
+          const seenTime = new Date(seen).getTime();
+          if (!latest || seenTime > latest) latest = seenTime;
+        });
+
+        return {
+          uniquePlayers: uniquePlayers.size,
+          totalStarts: starts.length,
+          totalCompletions: scores.length,
+          starts24h,
+          completions24h,
+          avgPlaytime: scores.length ? totalSeconds / scores.length : null,
+          avgAttempts: scores.length ? totalAttempts / scores.length : null,
+          lastActivityAt: latest ? new Date(latest).toISOString() : null
+        };
+      }
+
+      function calculateGameStatistics(starts, scores) {
+        const byGame = new Map();
+
+        state.maps.gameById.forEach((game, gameId) => {
+          byGame.set(gameId, {
+            gameId,
+            gameTitle: game.title,
+            openFrom: game.openFrom,
+            uniqueStarted: new Set(),
+            uniqueCompleted: new Set(),
+            totalSeconds: 0,
+            totalAttempts: 0,
+            totalScore: 0,
+            scoredRows: 0,
+            fastestSeconds: null,
+            highestScore: null,
+            latestActivity: null
+          });
+        });
+
+        starts.forEach((start) => {
+          if (!byGame.has(start.gameId)) {
+            byGame.set(start.gameId, {
+              gameId: start.gameId,
+              gameTitle: start.gameId,
+              openFrom: null,
+              uniqueStarted: new Set(),
+              uniqueCompleted: new Set(),
+              totalSeconds: 0,
+              totalAttempts: 0,
+              totalScore: 0,
+              scoredRows: 0,
+              fastestSeconds: null,
+              highestScore: null,
+              latestActivity: null
+            });
+          }
+
+          const row = byGame.get(start.gameId);
+          row.uniqueStarted.add(start.normalizedPlayerName);
+          const ts = new Date(start.startedAt).getTime();
+          if (!row.latestActivity || ts > row.latestActivity) row.latestActivity = ts;
+        });
+
+        scores.forEach((score) => {
+          if (!byGame.has(score.gameId)) {
+            byGame.set(score.gameId, {
+              gameId: score.gameId,
+              gameTitle: score.gameId,
+              openFrom: null,
+              uniqueStarted: new Set(),
+              uniqueCompleted: new Set(),
+              totalSeconds: 0,
+              totalAttempts: 0,
+              totalScore: 0,
+              scoredRows: 0,
+              fastestSeconds: null,
+              highestScore: null,
+              latestActivity: null
+            });
+          }
+
+          const row = byGame.get(score.gameId);
+          row.uniqueCompleted.add(score.normalizedPlayerName);
+          row.scoredRows += 1;
+          if (isFiniteNumber(score.seconds)) {
+            row.totalSeconds += score.seconds;
+            if (row.fastestSeconds === null || score.seconds < row.fastestSeconds) {
+              row.fastestSeconds = score.seconds;
+            }
+          }
+          if (isFiniteNumber(score.attempts)) row.totalAttempts += score.attempts;
+          if (isFiniteNumber(score.score)) {
+            row.totalScore += score.score;
+            if (row.highestScore === null || score.score > row.highestScore) {
+              row.highestScore = score.score;
+            }
+          }
+
+          const ts = new Date(score.createdAt).getTime();
+          if (!row.latestActivity || ts > row.latestActivity) row.latestActivity = ts;
+        });
+
+        const rows = Array.from(byGame.values()).map((row) => {
+          const startedCount = row.uniqueStarted.size;
+          const completedCount = row.uniqueCompleted.size;
+          return {
+            gameId: row.gameId,
+            gameTitle: row.gameTitle,
+            openFrom: row.openFrom,
+            uniqueStartedCount: startedCount,
+            uniqueCompletedCount: completedCount,
+            completionRate: startedCount ? (completedCount / startedCount) * 100 : null,
+            avgSeconds: row.scoredRows ? row.totalSeconds / row.scoredRows : null,
+            avgAttempts: row.scoredRows ? row.totalAttempts / row.scoredRows : null,
+            avgScore: row.scoredRows ? row.totalScore / row.scoredRows : null,
+            fastestSeconds: row.fastestSeconds,
+            highestScore: row.highestScore,
+            latestActivity: row.latestActivity ? new Date(row.latestActivity).toISOString() : null
+          };
+        });
+
+        rows.sort((a, b) => {
+          const aTime = a.openFrom ? new Date(a.openFrom).getTime() : Number.MAX_SAFE_INTEGER;
+          const bTime = b.openFrom ? new Date(b.openFrom).getTime() : Number.MAX_SAFE_INTEGER;
+          if (aTime !== bTime) return aTime - bTime;
+          const gameA = state.maps.gameById.get(a.gameId);
+          const gameB = state.maps.gameById.get(b.gameId);
+          const orderA = gameA && isFiniteNumber(gameA.displayOrder) ? gameA.displayOrder : Number.MAX_SAFE_INTEGER;
+          const orderB = gameB && isFiniteNumber(gameB.displayOrder) ? gameB.displayOrder : Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.gameTitle.localeCompare(b.gameTitle, 'nl');
+        });
+
+        return rows;
+      }
+
+      function playerKeyFrom(userId, normalizedName) {
+        return userId ? 'uid:' + userId : 'name:' + normalizedName;
+      }
+
+      function calculatePlayerStatistics(starts, scores, players) {
+        const playerMap = new Map();
+
+        function ensurePlayer(userId, normalizedName, rawName) {
+          const key = playerKeyFrom(userId, normalizedName);
+          if (!playerMap.has(key)) {
+            playerMap.set(key, {
+              key,
+              userId,
+              normalizedName,
+              displayName: displayPlayerName(rawName),
+              rawNames: new Set(),
+              totalStarts: 0,
+              totalCompletions: 0,
+              totalScore: 0,
+              totalSeconds: 0,
+              lastActivity: null,
+              startsByGame: new Map(),
+              completionByGame: new Map()
+            });
+          }
+          const player = playerMap.get(key);
+          const displayed = displayPlayerName(rawName);
+          if (displayed && player.displayName === UNKNOWN_PLAYER && displayed !== UNKNOWN_PLAYER) {
+            player.displayName = displayed;
+          }
+          player.rawNames.add(displayed);
+          return player;
+        }
+
+        players.forEach((playerRow) => {
+          const userId = safeText(playerRow.userId, true);
+          const rawName = safeText(playerRow.name, true);
+          const normalized = normalizePlayerName(rawName);
+          const player = ensurePlayer(userId, normalized, rawName);
+          const seen = safeDate(playerRow.lastSeenAt);
+          if (seen) {
+            const seenMs = new Date(seen).getTime();
+            if (!player.lastActivity || seenMs > player.lastActivity) player.lastActivity = seenMs;
+          }
+        });
+
+        starts.forEach((start) => {
+          const player = ensurePlayer(start.userId, start.normalizedPlayerName, start.playerName);
+          player.totalStarts += 1;
+
+          const startMs = new Date(start.startedAt).getTime();
+          if (!player.lastActivity || startMs > player.lastActivity) player.lastActivity = startMs;
+
+          if (!player.startsByGame.has(start.gameId)) {
+            player.startsByGame.set(start.gameId, {
+              gameId: start.gameId,
+              starts: [],
+              earliestStart: start.startedAt,
+              latestStart: start.startedAt
+            });
+          }
+
+          const gameInfo = player.startsByGame.get(start.gameId);
+          gameInfo.starts.push(start.startedAt);
+          if (new Date(start.startedAt).getTime() < new Date(gameInfo.earliestStart).getTime()) {
+            gameInfo.earliestStart = start.startedAt;
+          }
+          if (new Date(start.startedAt).getTime() > new Date(gameInfo.latestStart).getTime()) {
+            gameInfo.latestStart = start.startedAt;
+          }
+        });
+
+        scores.forEach((score) => {
+          const player = ensurePlayer(score.userId, score.normalizedPlayerName, score.playerName);
+          player.totalCompletions += 1;
+          if (isFiniteNumber(score.score)) player.totalScore += score.score;
+          if (isFiniteNumber(score.seconds)) player.totalSeconds += score.seconds;
+
+          const endMs = new Date(score.createdAt).getTime();
+          if (!player.lastActivity || endMs > player.lastActivity) player.lastActivity = endMs;
+
+          player.completionByGame.set(score.gameId, {
+            gameId: score.gameId,
+            score: score.score,
+            seconds: score.seconds,
+            attempts: score.attempts,
+            completedAt: score.createdAt
+          });
+        });
+
+        const rows = Array.from(playerMap.values()).map((player) => ({
+          key: player.key,
+          userId: player.userId,
+          normalizedName: player.normalizedName,
+          name: player.displayName,
+          started: player.totalStarts,
+          completed: player.totalCompletions,
+          totalScore: player.totalScore,
+          totalSeconds: player.totalSeconds,
+          lastActivity: player.lastActivity ? new Date(player.lastActivity).toISOString() : null,
+          startsByGame: player.startsByGame,
+          completionByGame: player.completionByGame
+        }));
+
+        rows.sort((a, b) => {
+          if (a.name === UNKNOWN_PLAYER && b.name !== UNKNOWN_PLAYER) return 1;
+          if (a.name !== UNKNOWN_PLAYER && b.name === UNKNOWN_PLAYER) return -1;
+          const byName = a.name.localeCompare(b.name, 'nl');
+          if (byName !== 0) return byName;
+          const activityA = a.lastActivity ? new Date(a.lastActivity).getTime() : 0;
+          const activityB = b.lastActivity ? new Date(b.lastActivity).getTime() : 0;
+          return activityB - activityA;
+        });
+
+        state.maps.playersByKey.clear();
+        rows.forEach((row) => {
+          state.maps.playersByKey.set(row.key, row);
+        });
+
+        return rows;
+      }
+
+      function renderSummaryCards(summary) {
+        ui.summaryCards.textContent = '';
+
+        const cards = [
+          ['Unieke spelers', formatInteger(summary.uniquePlayers)],
+          ['Gestarte spellen', formatInteger(summary.totalStarts)],
+          ['Afgeronde spellen', formatInteger(summary.totalCompletions)],
+          ['Starts laatste 24 uur', formatInteger(summary.starts24h)],
+          ['Afrondingen laatste 24 uur', formatInteger(summary.completions24h)],
+          ['Gemiddelde speeltijd', formatDuration(summary.avgPlaytime)],
+          ['Gemiddeld aantal pogingen', formatDecimal(summary.avgAttempts)],
+          ['Laatste activiteit', summary.lastActivityAt ? formatDateTime(summary.lastActivityAt) : '-']
+        ];
+
+        cards.forEach(([label, value]) => {
+          const card = document.createElement('article');
+          card.className = 'card';
+
+          const labelNode = document.createElement('span');
+          labelNode.textContent = label;
+
+          const valueNode = document.createElement('strong');
+          valueNode.textContent = value;
+
+          card.appendChild(labelNode);
+          card.appendChild(valueNode);
+          ui.summaryCards.appendChild(card);
+        });
+      }
+
+      function renderGamesTable(games) {
+        ui.gamesWrap.textContent = '';
+        if (!games.length) {
+          const empty = document.createElement('p');
+          empty.className = 'empty';
+          empty.textContent = 'Geen spelgegevens gevonden.';
+          ui.gamesWrap.appendChild(empty);
+          return;
+        }
+
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+
+        const headers = [
+          'Spel', 'Beschikbaar vanaf', 'Unieke starts', 'Unieke afgerond', 'Afrondingspercentage',
+          'Gem. speeltijd', 'Gem. pogingen', 'Gem. score', 'Snelste speeltijd', 'Hoogste score', 'Meest recente activiteit'
+        ];
+
+        const headerRow = document.createElement('tr');
+        headers.forEach((header) => {
+          const th = document.createElement('th');
+          th.textContent = header;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        games.forEach((game) => {
+          const tr = document.createElement('tr');
+          appendCell(tr, game.gameTitle);
+          appendCell(tr, game.openFrom ? formatDateTime(game.openFrom) : '-');
+          appendCell(tr, formatInteger(game.uniqueStartedCount), true);
+          appendCell(tr, formatInteger(game.uniqueCompletedCount), true);
+          appendCell(tr, game.completionRate === null ? '-' : formatPercent(game.completionRate));
+          appendCell(tr, formatDuration(game.avgSeconds));
+          appendCell(tr, formatDecimal(game.avgAttempts));
+          appendCell(tr, game.avgScore === null ? '-' : formatDecimal(game.avgScore));
+          appendCell(tr, formatDuration(game.fastestSeconds));
+          appendCell(tr, game.highestScore === null ? '-' : formatInteger(game.highestScore));
+          appendCell(tr, game.latestActivity ? formatDateTime(game.latestActivity) : '-');
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        ui.gamesWrap.appendChild(table);
+      }
+
+      function renderPlayersTable(players) {
+        ui.playersWrap.textContent = '';
+        if (!players.length) {
+          const empty = document.createElement('p');
+          empty.className = 'empty';
+          empty.textContent = 'Geen spelers gevonden.';
+          ui.playersWrap.appendChild(empty);
+          return;
+        }
+
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+
+        const headers = ['Speler', 'Gestarte spellen', 'Afgeronde spellen', 'Totale score', 'Totale speeltijd', 'Laatste activiteit'];
+        const headerRow = document.createElement('tr');
+        headers.forEach((header) => {
+          const th = document.createElement('th');
+          th.textContent = header;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        players.forEach((player) => {
+          const tr = document.createElement('tr');
+
+          const nameCell = document.createElement('td');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'player-link';
+          btn.textContent = player.name;
+          btn.dataset.player = player.key;
+          btn.addEventListener('click', () => renderPlayerDetails(player.key));
+          nameCell.appendChild(btn);
+          tr.appendChild(nameCell);
+
+          appendCell(tr, formatInteger(player.started), true);
+          appendCell(tr, formatInteger(player.completed), true);
+          appendCell(tr, formatInteger(player.totalScore), true);
+          appendCell(tr, formatDuration(player.totalSeconds), true);
+          appendCell(tr, player.lastActivity ? formatDateTime(player.lastActivity) : '-');
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        ui.playersWrap.appendChild(table);
+      }
+
+      function renderPlayerDetails(playerKey) {
+        const player = state.maps.playersByKey.get(playerKey);
+        if (!player) return;
+
+        ui.modalTitle.textContent = 'Spelerdetails - ' + player.name;
+        ui.modalBody.textContent = '';
+
+        const stats = document.createElement('section');
+        stats.className = 'modal-grid';
+        addModalStat(stats, 'Gestarte spellen', formatInteger(player.started));
+        addModalStat(stats, 'Afgeronde spellen', formatInteger(player.completed));
+        addModalStat(stats, 'Totale score', formatInteger(player.totalScore));
+        addModalStat(stats, 'Totale speeltijd', formatDuration(player.totalSeconds));
+        addModalStat(stats, 'Laatste activiteit', player.lastActivity ? formatDateTime(player.lastActivity) : '-');
+        ui.modalBody.appendChild(stats);
+
+        const startsSection = document.createElement('section');
+        startsSection.className = 'panel';
+        const startsHead = document.createElement('div');
+        startsHead.className = 'panel-head';
+        const startsH = document.createElement('h2');
+        startsH.textContent = 'Gestarte spellen';
+        startsHead.appendChild(startsH);
+        startsSection.appendChild(startsHead);
+
+        const startsWrap = document.createElement('div');
+        startsWrap.className = 'table-wrap';
+        if (!player.startsByGame.size) {
+          const empty = document.createElement('p');
+          empty.className = 'empty';
+          empty.textContent = 'Deze speler heeft nog geen starts.';
+          startsWrap.appendChild(empty);
+        } else {
+          const table = document.createElement('table');
+          const thead = document.createElement('thead');
+          const tbody = document.createElement('tbody');
+          const hr = document.createElement('tr');
+          ['Spel', 'Aantal starts', 'Eerste start', 'Laatste start'].forEach((text) => {
+          appendCell(tr, game.openFrom ? formatDate(game.openFrom) : '-');
+            th.textContent = text;
+            hr.appendChild(th);
+          });
+          thead.appendChild(hr);
+
+          const rows = Array.from(player.startsByGame.values());
+          rows.sort((a, b) => new Date(a.earliestStart).getTime() - new Date(b.earliestStart).getTime());
+          rows.forEach((row) => {
+            const tr = document.createElement('tr');
+            const game = state.maps.gameById.get(row.gameId);
+            appendCell(tr, game ? game.title : row.gameId);
+            appendCell(tr, formatInteger(row.starts.length), true);
+            appendCell(tr, formatDateTime(row.earliestStart));
+            appendCell(tr, formatDateTime(row.latestStart));
+            tbody.appendChild(tr);
+          });
+
+          table.appendChild(thead);
+          table.appendChild(tbody);
+          startsWrap.appendChild(table);
+        }
+
+        startsSection.appendChild(startsWrap);
+        ui.modalBody.appendChild(startsSection);
+
+        const completionSection = document.createElement('section');
+        completionSection.className = 'panel';
+        const completionHead = document.createElement('div');
+        completionHead.className = 'panel-head';
+        const completionH = document.createElement('h2');
+        completionH.textContent = 'Afgeronde spellen';
+        completionHead.appendChild(completionH);
+        completionSection.appendChild(completionHead);
+
+        const completionWrap = document.createElement('div');
+        completionWrap.className = 'table-wrap';
+
+        if (!player.completionByGame.size) {
+          const empty = document.createElement('p');
+          empty.className = 'empty';
+          empty.textContent = 'Deze speler heeft nog geen afrondingen.';
+          completionWrap.appendChild(empty);
+        } else {
+          const table = document.createElement('table');
+          const thead = document.createElement('thead');
+          const tbody = document.createElement('tbody');
+          const hr = document.createElement('tr');
+          ['Spel', 'Score', 'Speeltijd', 'Pogingen', 'Startdatum/tijd', 'Afrondingsdatum/tijd'].forEach((text) => {
+            const th = document.createElement('th');
+            th.textContent = text;
+            hr.appendChild(th);
+          });
+          thead.appendChild(hr);
+
+          const rows = Array.from(player.completionByGame.values());
+          rows.sort((a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime());
+          rows.forEach((row) => {
+            const tr = document.createElement('tr');
+            const game = state.maps.gameById.get(row.gameId);
+            const startInfo = player.startsByGame.get(row.gameId);
+            appendCell(tr, game ? game.title : row.gameId);
+            appendCell(tr, isFiniteNumber(row.score) ? formatInteger(row.score) : '-');
+            appendCell(tr, formatDuration(row.seconds));
+            appendCell(tr, isFiniteNumber(row.attempts) ? formatInteger(row.attempts) : '-');
+            appendCell(tr, startInfo ? formatDateTime(startInfo.earliestStart) : '-');
+            appendCell(tr, formatDateTime(row.completedAt));
+            tbody.appendChild(tr);
+          });
+
+          table.appendChild(thead);
+          table.appendChild(tbody);
+          completionWrap.appendChild(table);
+        }
+
+        completionSection.appendChild(completionWrap);
+        ui.modalBody.appendChild(completionSection);
+
+        ui.modal.dataset.open = 'true';
+      }
+
+      function closePlayerDetails() {
+        ui.modal.dataset.open = 'false';
+      }
+
+      function renderRecentActivity(activity) {
+        ui.activityWrap.textContent = '';
+        if (!activity.length) {
+          const empty = document.createElement('p');
+          empty.className = 'empty';
+          empty.textContent = 'Nog geen recente activiteit.';
+          ui.activityWrap.appendChild(empty);
+          return;
+        }
+
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
+
+        const headers = ['Speler', 'Spel', 'Status', 'Score', 'Speeltijd', 'Pogingen', 'Datum/tijd'];
+        const headerRow = document.createElement('tr');
+        headers.forEach((header) => {
+          const th = document.createElement('th');
+          th.textContent = header;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        activity.forEach((row) => {
+          const tr = document.createElement('tr');
+          appendCell(tr, row.playerName);
+          appendCell(tr, row.gameTitle);
+
+          const statusCell = document.createElement('td');
+          const tag = document.createElement('span');
+          tag.className = 'status-tag ' + (row.status === 'afgerond' ? 'completed' : 'started');
+          tag.textContent = row.status === 'afgerond' ? 'Afgerond' : 'Gestart';
+          statusCell.appendChild(tag);
+          tr.appendChild(statusCell);
+
+          appendCell(tr, isFiniteNumber(row.score) ? formatInteger(row.score) : '-');
+          appendCell(tr, row.seconds === null ? '-' : formatDuration(row.seconds));
+          appendCell(tr, isFiniteNumber(row.attempts) ? formatInteger(row.attempts) : '-');
+          appendCell(tr, formatDateTime(row.eventAt));
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        ui.activityWrap.appendChild(table);
+      }
+
+      function showLoading(visible) {
+        ui.loading.dataset.visible = visible ? 'true' : 'false';
+      }
+
+      function showError(message) {
+        showLoading(false);
+        ui.error.dataset.visible = 'true';
+        ui.error.textContent = message;
+      }
+
+      function hideError() {
+        ui.error.dataset.visible = 'false';
+        ui.error.textContent = '';
+      }
+
+      function appendCell(row, value, alignRight) {
+        const td = document.createElement('td');
+        td.textContent = value;
+        if (alignRight) td.className = 'align-right';
+        row.appendChild(td);
+      }
+
+      function addModalStat(parent, label, value) {
+        const wrapper = document.createElement('article');
+        wrapper.className = 'modal-stat';
+
+        const labelNode = document.createElement('span');
+        labelNode.textContent = label;
+        const valueNode = document.createElement('strong');
+        valueNode.textContent = value;
+
+        wrapper.appendChild(labelNode);
+        wrapper.appendChild(valueNode);
+        parent.appendChild(wrapper);
+      }
+
+      function normalizePlayerName(name) {
+        const normalized = safeText(name, true).trim().toLocaleLowerCase('nl-NL');
+        return normalized || '__unknown_player__';
+      }
+
+      function displayPlayerName(name) {
+        const clean = safeText(name, true).trim();
+        return clean || UNKNOWN_PLAYER;
+      }
+
+      function formatDate(value) {
+        const safe = safeDate(value);
+        return safe ? DATE_FORMAT.format(new Date(safe)) : '-';
+      }
+
+      function formatDateTime(value) {
+        const safe = safeDate(value);
+        return safe ? DATE_TIME_FORMAT.format(new Date(safe)) : '-';
+      }
+
+      function formatDuration(seconds) {
+        if (!isFiniteNumber(seconds)) return '-';
+        const total = Math.max(0, Math.round(seconds));
+        const hours = Math.floor(total / 3600);
+        const minutes = Math.floor((total % 3600) / 60);
+        const secs = total % 60;
+
+        if (hours > 0) {
+          return String(hours) + ':' + String(minutes).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+        return String(minutes) + ':' + String(secs).padStart(2, '0');
+      }
+
+      function formatPercent(value) {
+        if (!isFiniteNumber(value)) return '-';
+        return value.toLocaleString('nl-NL', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + '%';
+      }
+
+      function formatInteger(value) {
+        if (!isFiniteNumber(value)) return '-';
+        return NUMBER_FORMAT.format(Math.round(value));
+      }
+
+      function formatDecimal(value) {
+        if (!isFiniteNumber(value)) return '-';
+        return value.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      }
+
+      function safeNumber(value) {
+        const parsed = typeof value === 'number' ? value : Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
+      function safeDate(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return null;
+        return date.toISOString();
+      }
+
+      function safeText(value, allowEmpty) {
+        if (typeof value !== 'string') {
+          if (allowEmpty) return '';
+          return null;
+        }
+        const clean = value.replace(/\u0000/g, '');
+        if (!allowEmpty && !clean.trim()) return null;
+        return clean;
+      }
+
+      function isFiniteNumber(value) {
+        return typeof value === 'number' && Number.isFinite(value);
+      }
+    })();
+  </script>
+</body>
+</html>
