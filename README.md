@@ -106,7 +106,7 @@ API-calls naar Apps Script en score-opslag vereisen internet.
 ## 7. Nieuwe versie publiceren
 
 Verhoog bij iedere nieuwe publicatie het versienummer in `CACHE_NAME` bovenaan
-`service-worker.js` (bijvoorbeeld van `v31` naar `v32`). Zodra de nieuwe versie
+`service-worker.js` (bijvoorbeeld van `v32` naar `v33`). Zodra de nieuwe versie
 online staat, controleert de app hier iedere minuut op en opnieuw wanneer iemand
 de app opent of naar de app terugkeert. Er verschijnt dan op iedere pagina een
 melding met de knop **Vernieuwen**. De nieuwe versie wordt pas geactiveerd nadat

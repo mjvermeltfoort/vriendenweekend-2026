@@ -77,7 +77,7 @@
   const RAW_STORED_PLAYER_NAME = sanitizeName(localStorage.getItem(PLAYER_KEY) || '');
   const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
   const GAME_ID = 'mozaiek';
-  const APP_URL = window.VRIENDENWEEKEND_CONFIG?.appsScriptUrl || '';
+  const APP_URL = window.VRIENDENWEEKEND_CONFIG && window.VRIENDENWEEKEND_CONFIG.appsScriptUrl || '';
   const flameSvg = `data:image/svg+xml,${encodeURIComponent(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
       <defs>
@@ -189,7 +189,7 @@
     return result.data;
   }
 
-  function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+  function escapeHtml(value) { return String(value == null ? '' : value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
   function formatTime(seconds) { const m=Math.floor(seconds/60),s=seconds%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
   function start() {
     let tiles=Array.from({length:16},(_,i)=>i);
@@ -204,7 +204,8 @@
   function shuffleSolvable(original){const arr=original.slice();for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}if(!isSolvable(arr))[arr[0],arr[1]]=[arr[1],arr[0]];return arr;}
   function isSolvable(arr){let inv=0;const list=arr.filter(n=>n!==15);for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++)if(list[i]>list[j])inv++;const row=4-Math.floor(arr.indexOf(15)/4);return row%2===0?inv%2===1:inv%2===0;}
   function isSolved(arr){return arr.every((v,i)=>v===i);}
-  function render(){const el=document.getElementById('puzzle');const blank=puzzleState.tiles.indexOf(15);el.innerHTML='';puzzleState.tiles.forEach((n,pos)=>{const isBlank=n===15;const movable=!isBlank&&isAdjacent(pos,blank);const tile=document.createElement(isBlank?'div':'button');tile.className=`tile${isBlank?' blank':movable?' movable':''}`;tile.setAttribute('aria-label',isBlank?'Lege plek':`Mozaïektegel ${n+1}${movable?', kan naar de lege plek':''}`);if(isBlank){tile.setAttribute('role','img');}else{tile.type='button';tile.tabIndex=movable?0:-1;const x=n%4,y=Math.floor(n/4);tile.style.backgroundPosition=`${x*100/3}% ${y*100/3}%`;if(movable)tile.addEventListener('click',()=>move(pos));}el.appendChild(tile);});}
+  function bindTileActivation(tile,pos){let touchStart=null;tile.addEventListener('touchstart',event=>{const touch=event.changedTouches[0];touchStart=touch?{x:touch.clientX,y:touch.clientY}:null;},{passive:true});tile.addEventListener('touchend',event=>{if(!touchStart)return;const touch=event.changedTouches[0];const isTap=touch&&Math.abs(touch.clientX-touchStart.x)<18&&Math.abs(touch.clientY-touchStart.y)<18;touchStart=null;if(!isTap)return;event.preventDefault();move(pos);},{passive:false});tile.addEventListener('touchcancel',()=>{touchStart=null;},{passive:true});tile.addEventListener('click',()=>move(pos));}
+  function render(){const el=document.getElementById('puzzle');const blank=puzzleState.tiles.indexOf(15);el.innerHTML='';puzzleState.tiles.forEach((n,pos)=>{const isBlank=n===15;const movable=!isBlank&&isAdjacent(pos,blank);const tile=document.createElement(isBlank?'div':'button');tile.className=`tile${isBlank?' blank':movable?' movable':''}`;tile.setAttribute('aria-label',isBlank?'Lege plek':`Mozaïektegel ${n+1}${movable?', kan naar de lege plek':''}`);if(isBlank){tile.setAttribute('role','img');}else{tile.type='button';tile.tabIndex=movable?0:-1;const x=n%4,y=Math.floor(n/4);tile.style.backgroundPosition=`${x*100/3}% ${y*100/3}%`;if(movable)bindTileActivation(tile,pos);}el.appendChild(tile);});}
   function isAdjacent(pos,blank){const r=Math.floor(pos/4),c=pos%4,br=Math.floor(blank/4),bc=blank%4;return Math.abs(r-br)+Math.abs(c-bc)===1;}
   function move(pos){if(!gameAllowed||!puzzleState||puzzleState.submitted)return;const blank=puzzleState.tiles.indexOf(15);const r=Math.floor(pos/4),c=pos%4,br=Math.floor(blank/4),bc=blank%4;if(Math.abs(r-br)+Math.abs(c-bc)!==1)return;[puzzleState.tiles[pos],puzzleState.tiles[blank]]=[puzzleState.tiles[blank],puzzleState.tiles[pos]];puzzleState.moves++;document.getElementById('moves').textContent=puzzleState.moves;render();if(isSolved(puzzleState.tiles))finish();}
   function updateTimer(){if(puzzleState)document.getElementById('timer').textContent=formatTime(Math.floor((Date.now()-puzzleState.started)/1000));}
@@ -214,7 +215,7 @@
     gameAllowed = false;
     gameGate.blocked('Spel niet beschikbaar', message);
     const result = document.getElementById('result');
-    if (puzzleState?.timer) {
+    if (puzzleState && puzzleState.timer) {
       clearInterval(puzzleState.timer);
     }
     puzzleState = null;
@@ -253,7 +254,7 @@
           gameGate.completed(
             'Al voltooid',
             'Je hebt het zegel al hersteld. Je kunt opnieuw spelen, maar je huidige score voor dit spel vervalt dan.',
-            access.game?.hint || 'De volgende aanwijzing blijft nog verzegeld.',
+            access.game && access.game.hint || 'De volgende aanwijzing blijft nog verzegeld.',
             replayGame
           );
           return;
@@ -292,7 +293,7 @@
   }
 
   closeButton.addEventListener('click', closeGame);
-  document.getElementById('reshuffle').addEventListener('click',()=>{if(!gameAllowed)return;if(puzzleState?.timer)clearInterval(puzzleState.timer);start();});
+  document.getElementById('reshuffle').addEventListener('click',()=>{if(!gameAllowed)return;if(puzzleState&&puzzleState.timer)clearInterval(puzzleState.timer);start();});
   bootstrap();
 </script>
 <script src="../app-update.js"></script>
