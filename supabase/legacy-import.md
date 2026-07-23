@@ -38,3 +38,22 @@ Voor import: tel rijen per game en noteer unieke namen, ongeldige datums en dupl
 4. Meld als testspeler aan, controleer leaderboard, eigen voltooiing, hint en replay.
 
 Gebruik alleen transacties voor een importbatch en maak geen bestaand productiedata leeg.
+
+## Aangeleverd tabblad Spelstarts
+
+Voor de aangeleverde `Spelstarts`-export staat een uitvoerbare stagingmigratie in
+`supabase/migrations/005_import_legacy_game_starts.sql`. Laad de CSV eerst in
+`private.legacy_game_starts_staging` met de `\\copy`-instructie uit die migratie
+en voer daarna het resterende SQL-blok uit. De import slaat de twee testregels
+`Bijv. Mark` over, behoudt afzonderlijke startmomenten en verwacht 46 starts voor
+`mozaiek`. De migratie maakt voor iedere echte naam een legacy-speler in
+`private.players` en koppelt iedere start daaraan. Bij de eerste anonieme
+registratie met dezelfde naam neemt die sessie de bestaande voortgang over.
+Als je versie 005 al vóór deze wijziging uitvoerde, voer dan ook
+`006_relink_legacy_game_starts_to_players.sql` uit.
+
+Wanneer 005 al zonder CSV is uitgevoerd, voer vervolgens
+`007_import_staged_legacy_game_starts.sql` uit. Laad daarna de CSV in de
+stagingtabel en voer uit: `select private.import_legacy_game_starts_from_staging();`.
+De response moet voor de aangeleverde export `{"stagedRows": 46,
+"importedStarts": 46}` tonen; een tweede run importeert nul extra starts.
