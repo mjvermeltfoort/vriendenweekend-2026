@@ -568,14 +568,51 @@
 
     .lb-name-btn:hover { color: var(--accent-2); }
 
-    .leaderboard-detail > td {
-      padding: 0 !important;
-      border-bottom: 1px solid var(--border);
-      background: rgba(255,255,255,.02);
+    .lb-modal[hidden] { display: none; }
+
+    .lb-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(0,0,0,.62);
     }
 
-    .lb-detail-inner {
-      padding: 8px 11px 12px;
+    .lb-modal-card {
+      width: min(100%, 560px);
+      max-height: min(86vh, 640px);
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(255,255,255,.05), transparent 45%), var(--panel);
+      box-shadow: 0 24px 60px rgba(0,0,0,.45);
+      padding: 14px;
+    }
+
+    .lb-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .lb-modal-title {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .lb-modal-close {
+      min-height: 32px;
+      min-width: 32px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
     }
 
     .lb-game-list {
@@ -639,6 +676,8 @@
         white-space: nowrap;
       }
       .lb-game-meta { display: none; }
+      .lb-modal { padding: 10px; }
+      .lb-modal-card { padding: 10px; max-height: 90vh; }
     }
   </style>
 </head>
@@ -787,6 +826,16 @@
         <div class="empty" id="leaderboard-empty">Hier worden de scores van andere vrienden getoond.</div>
       </div>
 
+      <div class="lb-modal" id="leaderboard-modal" hidden>
+        <div class="lb-modal-card" role="dialog" aria-modal="true" aria-labelledby="leaderboard-modal-title">
+          <div class="lb-modal-head">
+            <h3 class="lb-modal-title" id="leaderboard-modal-title">Speldetails</h3>
+            <button class="lb-modal-close" id="leaderboard-modal-close" type="button" aria-label="Sluiten">✕</button>
+          </div>
+          <div id="leaderboard-modal-content"></div>
+        </div>
+      </div>
+
      </section>
   </main>
 
@@ -812,6 +861,10 @@
       const playerCount = document.getElementById('player-count');
       const refreshButton = document.getElementById('refresh-button');
       const leaderboardWrap = document.getElementById('leaderboard-wrap');
+      const leaderboardModal = document.getElementById('leaderboard-modal');
+      const leaderboardModalClose = document.getElementById('leaderboard-modal-close');
+      const leaderboardModalTitle = document.getElementById('leaderboard-modal-title');
+      const leaderboardModalContent = document.getElementById('leaderboard-modal-content');
       const installButton = document.getElementById('install-button');
       const activePlayersRoot = document.getElementById('active-players');
       let deferredPrompt = null;
@@ -994,6 +1047,31 @@
           '</div>';
       }
 
+      function formatDuration(totalSecs) {
+        const secsNum = Number(totalSecs || 0);
+        const mins = Math.floor(secsNum / 60);
+        const secs = secsNum % 60;
+        return mins + ':' + String(secs).padStart(2, '0');
+      }
+
+      function closeLeaderboardModal() {
+        leaderboardModal.hidden = true;
+      }
+
+      function openLeaderboardModal(playerName, details) {
+        const items = details.map(game => {
+          const att = Number(game.attempts || 0);
+          return '<li class="lb-game-row">' +
+            '<span class="lb-game-title">' + escapeHtml(game.title) + '</span>' +
+            '<span class="lb-game-score">' + Number(game.score || 0) + ' pt</span>' +
+            '<span class="lb-game-meta">' + formatDuration(game.seconds) + ' · ' + att + (att === 1 ? ' poging' : ' pogingen') + '</span>' +
+          '</li>';
+        }).join('');
+        leaderboardModalTitle.textContent = 'Speldetails · ' + playerName;
+        leaderboardModalContent.innerHTML = '<ul class="lb-game-list">' + items + '</ul>';
+        leaderboardModal.hidden = false;
+      }
+
       function renderActivePlayers(activePlayers) {
         const currentPlayer = sanitizePlayerName(activePlayerName || nameInput.value).toLowerCase();
         const players = (Array.isArray(activePlayers) ? activePlayers : [])
@@ -1085,34 +1163,17 @@
         const btn = event.target.closest('.lb-name-btn');
         if (!btn) return;
         const row = btn.closest('tr');
-        const next = row.nextElementSibling;
-        if (next && next.classList.contains('leaderboard-detail')) {
-          next.remove();
-          btn.setAttribute('aria-expanded', 'false');
-          return;
-        }
         const details = JSON.parse(row.dataset.details || 'null');
         if (!Array.isArray(details) || !details.length) return;
-        const items = details.map(game => {
-          const totalSecs = Number(game.seconds || 0);
-          const mins = Math.floor(totalSecs / 60);
-          const secs = totalSecs % 60;
-          const time = mins + ':' + String(secs).padStart(2, '0');
-          const att = Number(game.attempts || 0);
-          return '<li class="lb-game-row">' +
-            '<span class="lb-game-title">' + escapeHtml(game.title) + '</span>' +
-            '<span class="lb-game-score">' + Number(game.score || 0) + ' pt</span>' +
-            '<span class="lb-game-meta">' + time + ' · ' + att + (att === 1 ? ' poging' : ' pogingen') + '</span>' +
-          '</li>';
-        }).join('');
-        const detailRow = document.createElement('tr');
-        detailRow.className = 'leaderboard-detail';
-        const td = document.createElement('td');
-        td.colSpan = 4;
-        td.innerHTML = '<div class="lb-detail-inner"><ul class="lb-game-list">' + items + '</ul></div>';
-        detailRow.appendChild(td);
-        row.after(detailRow);
-        btn.setAttribute('aria-expanded', 'true');
+        openLeaderboardModal(btn.textContent || 'Speler', details);
+      });
+
+      leaderboardModalClose.addEventListener('click', closeLeaderboardModal);
+      leaderboardModal.addEventListener('click', event => {
+        if (event.target === leaderboardModal) closeLeaderboardModal();
+      });
+      window.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !leaderboardModal.hidden) closeLeaderboardModal();
       });
 
       form.addEventListener('submit', async event => {
