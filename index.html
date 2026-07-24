@@ -552,6 +552,69 @@
 
     .active-player small { color: var(--muted); }
 
+    .lb-name-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+      padding: 0;
+      text-align: left;
+      text-decoration: underline;
+      text-decoration-color: rgba(255,255,255,.28);
+      text-decoration-style: dotted;
+      text-underline-offset: 3px;
+    }
+
+    .lb-name-btn:hover { color: var(--accent-2); }
+
+    .leaderboard-detail > td {
+      padding: 0 !important;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+
+    .lb-detail-inner {
+      padding: 8px 11px 12px;
+    }
+
+    .lb-game-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .lb-game-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .87rem;
+    }
+
+    .lb-game-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+
+    .lb-game-score {
+      flex: 0 0 auto;
+      font-weight: 700;
+      color: var(--accent-2);
+    }
+
+    .lb-game-meta {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
     @media (max-width: 560px) {
       .toolbar { padding: 9px 10px; }
       .brand-icon { width: 34px; height: 34px; border-radius: 10px; font-size: 19px; }
@@ -575,6 +638,7 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      .lb-game-meta { display: none; }
     }
   </style>
 </head>
@@ -909,14 +973,17 @@
           return;
         }
 
-        const rows = board.map((row, index) => (
-          '<tr>' +
+        const rows = board.map((row, index) => {
+          const detailsAttr = Array.isArray(row.gameDetails) && row.gameDetails.length
+            ? ' data-details="' + escapeHtml(JSON.stringify(row.gameDetails)) + '"'
+            : '';
+          return '<tr' + detailsAttr + '>' +
             '<td>' + (index + 1) + '</td>' +
-            '<td>' + escapeHtml(row.name) + '</td>' +
+            '<td><button class="lb-name-btn" type="button" aria-expanded="false">' + escapeHtml(row.name) + '</button></td>' +
             '<td>' + Number(row.games || 0) + '</td>' +
             '<td><strong>' + Number(row.score || 0) + '</strong></td>' +
-          '</tr>'
-        )).join('');
+          '</tr>';
+        }).join('');
 
         leaderboardWrap.innerHTML =
           '<div class="leaderboard-scroll">' +
@@ -1013,6 +1080,40 @@
       function isConfigValid() {
         return window.VriendenweekendApi.isConfigured();
       }
+
+      leaderboardWrap.addEventListener('click', event => {
+        const btn = event.target.closest('.lb-name-btn');
+        if (!btn) return;
+        const row = btn.closest('tr');
+        const next = row.nextElementSibling;
+        if (next && next.classList.contains('leaderboard-detail')) {
+          next.remove();
+          btn.setAttribute('aria-expanded', 'false');
+          return;
+        }
+        const details = JSON.parse(row.dataset.details || 'null');
+        if (!Array.isArray(details) || !details.length) return;
+        const items = details.map(game => {
+          const totalSecs = Number(game.seconds || 0);
+          const mins = Math.floor(totalSecs / 60);
+          const secs = totalSecs % 60;
+          const time = mins + ':' + String(secs).padStart(2, '0');
+          const att = Number(game.attempts || 0);
+          return '<li class="lb-game-row">' +
+            '<span class="lb-game-title">' + escapeHtml(game.title) + '</span>' +
+            '<span class="lb-game-score">' + Number(game.score || 0) + ' pt</span>' +
+            '<span class="lb-game-meta">' + time + ' · ' + att + (att === 1 ? ' poging' : ' pogingen') + '</span>' +
+          '</li>';
+        }).join('');
+        const detailRow = document.createElement('tr');
+        detailRow.className = 'leaderboard-detail';
+        const td = document.createElement('td');
+        td.colSpan = 4;
+        td.innerHTML = '<div class="lb-detail-inner"><ul class="lb-game-list">' + items + '</ul></div>';
+        detailRow.appendChild(td);
+        row.after(detailRow);
+        btn.setAttribute('aria-expanded', 'true');
+      });
 
       form.addEventListener('submit', async event => {
         event.preventDefault();
