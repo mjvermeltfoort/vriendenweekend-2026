@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Vriendenweekend">
   <meta name="description" content="Spellen en hints voor Vriendenweekend 2026">
-  <link rel="manifest" href="manifest.webmanifest?v=20260722-3">
-  <link rel="icon" href="icons/icon-192.png?v=20260722-3">
-  <link rel="apple-touch-icon" href="icons/icon-192.png?v=20260722-3">
+  <link rel="manifest" href="manifest.webmanifest?v=20260724-1">
+  <link rel="icon" href="icons/icon-192.png?v=20260724-1">
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=20260724-1">
   <title>Vriendenweekend 2026</title>
   <style>
     :root {
@@ -840,8 +840,8 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260723-1"></script>
-  <script src="supabase-api.js?v=20260723-1"></script>
+  <script src="config.js?v=20260724-1"></script>
+  <script src="supabase-api.js?v=20260724-1"></script>
   <script>
     (() => {
       const PLAYER_KEY = 'vriendenweekend-player-name';
@@ -1061,10 +1061,12 @@
       function openLeaderboardModal(playerName, details) {
         const items = details.map(game => {
           const att = Number(game.attempts || 0);
+          const starts = Number(game.starts || 0);
+          const startsMeta = starts > 0 ? starts + (starts === 1 ? ' spelstart' : ' spelstarts') + ' · ' : '';
           return '<li class="lb-game-row">' +
             '<span class="lb-game-title">' + escapeHtml(game.title) + '</span>' +
             '<span class="lb-game-score">' + Number(game.score || 0) + ' pt</span>' +
-            '<span class="lb-game-meta">' + formatDuration(game.seconds) + ' · ' + att + (att === 1 ? ' poging' : ' pogingen') + '</span>' +
+            '<span class="lb-game-meta">' + startsMeta + formatDuration(game.seconds) + ' · ' + att + (att === 1 ? ' poging' : ' pogingen') + '</span>' +
           '</li>';
         }).join('');
         leaderboardModalTitle.textContent = 'Speldetails · ' + playerName;
