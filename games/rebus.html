@@ -308,6 +308,7 @@
     }
   </style>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
 </head>
 <body>
   <main class="game">
@@ -357,6 +358,25 @@
     </section>
   </main>
 
+  <div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent">
+    <div class="asst-wrap">
+      <div class="asst-bubble" id="asst-bubble" hidden>
+        <p class="asst-bubble-text" id="asst-bubble-text"></p>
+        <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+      </div>
+      <div class="asst-char-row">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+          <span class="asst-body"></span>
+          <span class="asst-eye asst-eye-l"></span>
+          <span class="asst-eye asst-eye-r"></span>
+          <span class="asst-mouth"></span>
+        </button>
+      </div>
+    </div>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+  </div>
+
   <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
     <div class="game-gate-card">
       <div class="game-gate-spinner" aria-hidden="true"></div>
@@ -375,6 +395,7 @@
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
   <script src="game-shell.js"></script>
+  <script src="game-assistant.js"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const urlParams = new URLSearchParams(window.location.search);
@@ -398,6 +419,7 @@
     let heartbeatHandle = null;
     let timerHandle = null;
     let accessAllowed = false;
+    let assistantActive = false;
 
     const timer = document.getElementById("timer");
     const attemptsLabel = document.getElementById("attempts");
@@ -410,6 +432,23 @@
     const hintText = document.getElementById("hint-text");
     const closeLink = document.getElementById("close-link");
     const gameGate = createGameGate(() => closeLink.click());
+    const assistantMessages = {
+      start: ["Lees de emoji’s rustig van links naar rechts. De hele zin moet kloppen."],
+      oneMinute: ["Denk in woorden en klank, niet alleen in losse symbolen."],
+      twoMinutesLowProgress: ["De rebus verstopt een volledige zin. Kijk naar het totaalritme."],
+      wrongStreak: ["Misschien zit je te letterlijk te kijken."],
+      idle: ["Soms hoor je de zin pas als je hem hardop denkt."],
+      halfDone: ["Je zit op goed spoor. De boodschap begint vorm te krijgen."],
+      threequartersDone: ["Nog een klein taalkundig zetje."],
+      almostDone: ["Bijna. Nu moet de zin alleen nog precies goed landen."],
+      fiveMinutes: ["Let op woordvolgorde. Dat is hier minstens zo belangrijk als de losse delen."],
+      eightMinutes: ["Emoji’s zijn hier meer fluisterhint dan letterlijke afbeelding."],
+      tenMinutes: ["Zal ik je helpen de rebus als volledige zin te bekijken?"],
+      twentyMinutes: ["Zelfs een goede rebus doet alsof hij logisch is achteraf."],
+      solved: ["Mooi. Bericht ontzegeld."],
+      easterEgg: ["Ja, emoji’s kunnen verrassend arrogant zijn."]
+    };
+    const assistant = createAssistantManager({ containerId: "game-assistant", messages: assistantMessages });
     const replayGame = createReplayHandler({
       gate: gameGate,
       post: apiPost,
@@ -572,6 +611,16 @@
       setFeedback(message, "error");
     }
 
+    function assistantHintCallback() {
+      const row = rows.querySelector("[data-id='r1']");
+      const input = row ? row.querySelector("[data-answer]") : null;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+      setFeedback("Hint: de volledige oplossing is één zin. Kijk goed naar de volgorde van alle emoji’s.", "error");
+    }
+
     async function evaluateBoard() {
       if (!accessAllowed || completed || saving) {
         return;
@@ -584,6 +633,10 @@
       const solvedCount = syncSolvedUi(states);
 
       if (solvedCount < REBUS_ITEMS.length) {
+        assistant.onMove({
+          correct: solvedCount > 0,
+          progressValue: solvedCount / REBUS_ITEMS.length
+        });
         setFeedback("Nog niet juist. Vul de volledige zin van de rebus in.", "error");
         const firstUnsolved = states.find(state => !state.solved);
         if (firstUnsolved && !firstUnsolved.input.disabled) {
@@ -592,6 +645,9 @@
         return;
       }
 
+      assistant.onMove({ correct: true, progressValue: 1 });
+      assistant.onGameSolved();
+      assistantActive = false;
       completed = true;
       setGameEnabled(false);
       clearInterval(timerHandle);
@@ -725,6 +781,8 @@
             timerHandle = setInterval(updateTimer, 1000);
             updateTimer();
             accessAllowed = true;
+            assistant.onGameStart(assistantHintCallback);
+            assistantActive = true;
             setGameEnabled(true);
             const firstInput = rows.querySelector("[data-answer]");
             if (firstInput) firstInput.focus();
@@ -743,7 +801,15 @@
     }
 
     checkButton.addEventListener("click", evaluateBoard);
-    window.addEventListener('pagehide', () => { if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle); }, { once: true });
+    document.addEventListener("visibilitychange", () => {
+      if (!assistantActive) return;
+      if (document.hidden) assistant.pause();
+      else assistant.resume();
+    });
+    window.addEventListener('pagehide', () => {
+      if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle);
+      assistant.destroy();
+    }, { once: true });
   bootstrap();
   </script>
   <script src="../app-update.js"></script>

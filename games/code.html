@@ -456,6 +456,7 @@
     }
   </style>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
 </head>
 <body>
   <main class="game">
@@ -533,6 +534,25 @@
     </section>
   </main>
 
+  <div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent">
+    <div class="asst-wrap">
+      <div class="asst-bubble" id="asst-bubble" hidden>
+        <p class="asst-bubble-text" id="asst-bubble-text"></p>
+        <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+      </div>
+      <div class="asst-char-row">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+          <span class="asst-body"></span>
+          <span class="asst-eye asst-eye-l"></span>
+          <span class="asst-eye asst-eye-r"></span>
+          <span class="asst-mouth"></span>
+        </button>
+      </div>
+    </div>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+  </div>
+
   <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
     <div class="game-gate-card">
       <div class="game-gate-spinner" aria-hidden="true"></div>
@@ -551,6 +571,7 @@
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
   <script src="game-shell.js"></script>
+  <script src="game-assistant.js"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const urlParams = new URLSearchParams(window.location.search);
@@ -568,6 +589,7 @@
     let heartbeatHandle = null;
     let timerHandle = null;
     let accessAllowed = false;
+    let assistantActive = false;
 
     const digits = [...document.querySelectorAll(".digit")];
     const timer = document.getElementById("timer");
@@ -582,6 +604,23 @@
     const hintText = document.getElementById("hintText");
     const closeLink = document.getElementById("close-link");
     const gameGate = createGameGate(() => closeLink.click());
+    const assistantMessages = {
+      start: ["Vier cijfers. Eén juiste volgorde. Kijk goed naar wat elk antwoord je vertelt."],
+      oneMinute: ["Cijfers op de juiste plek zijn goud waard. Bouw daaromheen verder."],
+      twoMinutesLowProgress: ["Tel steeds: welke cijfers staan goed en welke horen alleen ergens anders?"],
+      wrongStreak: ["Gebruik je laatste poging als kaart, niet als gok."],
+      idle: ["Misschien eerst je laatste feedback opnieuw lezen?"],
+      halfDone: ["Mooi. Een deel van de code ligt al bloot."],
+      threequartersDone: ["Bijna. Nu is vooral volgorde nog belangrijk."],
+      almostDone: ["Nog heel even. Dit slot begint al te kraken."],
+      fiveMinutes: ["Vergelijk vooral je recente pogingen met elkaar."],
+      eightMinutes: ["Als twee pogingen bijna hetzelfde zeggen, zit de waarheid ertussen."],
+      tenMinutes: ["Zal ik je een zetje geven? Ik kan je helpen anders naar de feedback te kijken."],
+      twentyMinutes: ["Deze code leeft van geduld en vergelijken, niet van haast."],
+      solved: ["Netjes. Het slot gaf sneller op dan het leek."],
+      easterEgg: ["Vier cijfers. Zo onschuldig. Zo gemeen."]
+    };
+    const assistant = createAssistantManager({ containerId: "game-assistant", messages: assistantMessages });
     const replayGame = createReplayHandler({
       gate: gameGate,
       post: apiPost,
@@ -779,6 +818,14 @@
       digits[0].focus();
     }
 
+    function assistantHintCallback() {
+      const lastAttempt = attemptsList.firstElementChild;
+      if (lastAttempt) {
+        lastAttempt.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      showError("Hint: begin met cijfers die al op de juiste plek staan en bouw van daaruit verder.");
+    }
+
     function checkCode() {
       if (completed || !accessAllowed) {
         return;
@@ -800,6 +847,10 @@
       if (code !== CORRECT_CODE) {
         const correct = evaluation.filter(state => state === "correct").length;
         const present = evaluation.filter(state => state === "present").length;
+        assistant.onMove({
+          correct: correct > 0,
+          progressValue: correct / CORRECT_CODE.length
+        });
 
         feedback.textContent =
           correct + " op de juiste plek, " +
@@ -810,6 +861,9 @@
         return;
       }
 
+      assistant.onMove({ correct: true, progressValue: 1 });
+      assistant.onGameSolved();
+      assistantActive = false;
       completed = true;
       clearInterval(timerHandle);
 
@@ -941,6 +995,8 @@
             updateTimer();
             timerHandle = setInterval(updateTimer, 1000);
             accessAllowed = true;
+            assistant.onGameStart(assistantHintCallback);
+            assistantActive = true;
             feedback.textContent = "Kraak de code met zo weinig mogelijk pogingen.";
             feedback.className = "feedback";
             setGameEnabled(true);
@@ -959,7 +1015,15 @@
 
     submitButton.addEventListener("click", checkCode);
 
-    window.addEventListener('pagehide', () => { if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle); }, { once: true });
+    document.addEventListener("visibilitychange", () => {
+      if (!assistantActive) return;
+      if (document.hidden) assistant.pause();
+      else assistant.resume();
+    });
+    window.addEventListener('pagehide', () => {
+      if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle);
+      assistant.destroy();
+    }, { once: true });
   bootstrap();
   </script>
   <script src="../app-update.js"></script>

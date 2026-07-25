@@ -3,10 +3,25 @@
 
   const CONFIG = window.VRIENDENWEEKEND_CONFIG || {};
   const TIMEOUT_MS = 12000;
+  const LOCAL_DEV_MODE = Boolean(CONFIG.localDevMode);
+  const LOCAL_DEV_HINT = 'Lokale testmodus: backend is overgeslagen, maar de spelstroom werkt wel.';
+  const LOCAL_DEV_GAMES = [
+    { id: 'mozaiek', title: 'Het gebroken zegel', description: 'Herstel het oude zegel en ontdek de eerste aanwijzing.' },
+    { id: 'rebus', title: 'Het verzegelde bericht', description: 'Ontcijfer een cryptische rebus.' },
+    { id: 'code', title: 'De viercijferige code', description: 'Vind de code met aanwijzingen uit eerdere spellen.' },
+    { id: 'memory', title: 'Het geheugenarchief', description: 'Vind alle kaartparen en onthul de verborgen aanwijzing.' },
+    { id: 'vallende-stenen', title: 'De Vallende Stenen', description: 'Plaats de vallende stenen en maak 10 volledige rijen.' },
+    { id: 'schaduwzoeker', title: 'Schaduwzoeker', description: 'Vind de zeven verschillen tussen het origineel en het schaduwbeeld.' },
+    { id: 'tussen-de-letters', title: 'Tussen de Letters', description: 'Vind de verborgen woorden en lees de aanwijzing tussen de letters.' },
+    { id: 'vluchtroute', title: 'Vluchtroute', description: 'Blijf uit handen van de achtervolgers en bereik de finish.' },
+    { id: 'dwaalspoor', title: 'Dwaalspoor', description: 'Volg het verborgen pad, verzamel de symbolen en open de uitgang.' },
+    { id: 'kettingreactie', title: 'Kettingreactie', description: 'Speel kleurgroepen weg en bevrijd de zes verzegelde letters.' }
+  ];
   let client = null;
   let authPromise = null;
 
   function configured() {
+    if (LOCAL_DEV_MODE) return true;
     return /^https:\/\//.test(CONFIG.supabaseUrl || '') &&
       CONFIG.supabaseUrl !== 'VUL_SUPABASE_URL_IN' &&
       typeof CONFIG.supabasePublishableKey === 'string' &&
@@ -31,6 +46,7 @@
 
   function getClient() {
     if (client) return client;
+    if (LOCAL_DEV_MODE) throw new Error('Lokale testmodus gebruikt geen Supabase-client.');
     if (!configured()) throw new Error('Vul eerst de Supabase URL en publishable key in config.js in.');
     if (!window.supabase || !window.supabase.createClient) throw new Error('De Supabase-client kon niet worden geladen.');
     client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
@@ -40,6 +56,7 @@
   }
 
   async function ensureAuth() {
+    if (LOCAL_DEV_MODE) return { access_token: 'local-dev-mode' };
     if (authPromise) return authPromise;
     authPromise = (async () => {
       const api = getClient();
@@ -56,7 +73,64 @@
     return authPromise;
   }
 
+  function localDevResponse(action, payload) {
+    if (action === 'register_player') {
+      return { ok: true, name: String(payload && payload.p_name || '').trim() };
+    }
+
+    if (action === 'get_app_state') {
+      return {
+        games: LOCAL_DEV_GAMES.map(game => ({
+          id: game.id,
+          title: game.title,
+          description: game.description,
+          state: 'open',
+          completed: false,
+          order: LOCAL_DEV_GAMES.findIndex(item => item.id === game.id) + 1,
+          hint: LOCAL_DEV_HINT
+        })),
+        leaderboard: [],
+        activePlayers: []
+      };
+    }
+
+    if (action === 'get_game_access') {
+      const gameId = payload && payload.p_game_id;
+      const game = LOCAL_DEV_GAMES.find(item => item.id === gameId) || { id: gameId, title: gameId, description: '' };
+      return {
+        allowed: true,
+        completed: null,
+        game: {
+          id: game.id,
+          title: game.title,
+          description: game.description,
+          hint: LOCAL_DEV_HINT,
+          state: 'open'
+        }
+      };
+    }
+
+    if (action === 'submit_score') {
+      return {
+        result: {
+          score: 0,
+          seconds: Number(payload && payload.p_seconds) || 0,
+          attempts: Number(payload && payload.p_attempts) || 0,
+          hint: LOCAL_DEV_HINT,
+          starts: 1
+        }
+      };
+    }
+
+    if (action === 'register_game_start' || action === 'register_game_heartbeat' || action === 'reset_game_progress') {
+      return { ok: true };
+    }
+
+    throw new Error('Onbekende lokale testactie.');
+  }
+
   async function rpc(name, params) {
+    if (LOCAL_DEV_MODE) return localDevResponse(name, params || {});
     await ensureAuth();
     const result = await withTimeout(getClient().rpc(name, params || {}));
     if (result.error) {

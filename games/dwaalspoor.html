@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#11150f">
   <title>Dwaalspoor</title>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
   <style>
     :root {
       color-scheme: dark;
@@ -931,6 +932,25 @@
     </defs>
   </svg>
 
+  <div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent">
+    <div class="asst-wrap">
+      <div class="asst-bubble" id="asst-bubble" hidden>
+        <p class="asst-bubble-text" id="asst-bubble-text"></p>
+        <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+      </div>
+      <div class="asst-char-row">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+          <span class="asst-body"></span>
+          <span class="asst-eye asst-eye-l"></span>
+          <span class="asst-eye asst-eye-r"></span>
+          <span class="asst-mouth"></span>
+        </button>
+      </div>
+    </div>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+  </div>
+
   <section class="result-overlay" id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
     <div class="result-card">
       <div class="result-seal" aria-hidden="true">
@@ -969,6 +989,7 @@
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
   <script src="game-shell.js"></script>
+  <script src="game-assistant.js"></script>
   <script>
     (() => {
       'use strict';
@@ -1013,6 +1034,23 @@
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const playerName = sanitizeName(localStorage.getItem(PLAYER_KEY) || params.get('playerName'));
       const gate = window.createGameGate(closeGame);
+      const assistantMessages = {
+        start: ["Volg de symbolen in de juiste volgorde. Verdwalen is hier deel van het contract."],
+        oneMinute: ["Onthoud kruispunten. Die bepalen straks je snelheid."],
+        twoMinutesLowProgress: ["Zoek niet zomaar de uitgang; eerst telt de volgorde van de symbolen."],
+        wrongStreak: ["Dat symbool was te vroeg. De route heeft een eigen wil."],
+        idle: ["Misschien eerst terugdenken: welk symbool komt nu echt als volgende?"],
+        halfDone: ["Mooi. Het pad begint zich te gedragen."],
+        threequartersDone: ["Nog even. De laatste routekeuzes worden nu belangrijk."],
+        almostDone: ["Bijna. Nog één goede koers en die uitgang luistert weer."],
+        fiveMinutes: ["Loop liever doelgericht tussen kruispunten dan doelloos door gangen."],
+        eightMinutes: ["Een doodlopend stuk is nog steeds nuttige kennis."],
+        tenMinutes: ["Zal ik je helpen focussen op het volgende symbool?"],
+        twentyMinutes: ["Doolhoven zijn gewoon kaarten die gemeen doen."],
+        solved: ["Mooi gelopen. Verborgen pad gevonden."],
+        easterEgg: ["Ik wist zeker dat die muur daar expres stond."]
+      };
+      const assistant = createAssistantManager({ containerId: 'game-assistant', messages: assistantMessages });
 
       const elements = {
         board: document.getElementById('maze-board'),
@@ -1048,6 +1086,7 @@
       let touchStart = null;
       let destroyed = false;
       let clue = GAME_CONFIG.hiddenClue;
+      let assistantActive = false;
       let state = null;
 
       function sanitizeName(value) {
@@ -1247,6 +1286,10 @@
         }).join('');
       }
 
+      function assistantHintCallback() {
+        flashMessage('Hint: volg eerst rustig de route naar het volgende symbool in de reeks.', 'error');
+      }
+
       function resetGame() {
         stopGameTimer();
         clearPendingTimeouts();
@@ -1275,6 +1318,8 @@
         updateHud();
         updatePlayer(false);
         updateVisibility();
+        assistant.onGameStart(assistantHintCallback);
+        assistantActive = true;
         startGameTimer();
         requestFrame(() => elements.board.focus());
       }
@@ -1374,6 +1419,7 @@
         const sequenceIndex = state.collected.length;
         state.collected.push(token);
         updateHud();
+        assistant.onMove({ correct: true, progressValue: state.collected.length / GAME_CONFIG.requiredOrder.length });
         announce(symbol.label + ' verzameld.');
         flashMessage(symbol.label + ' verzameld.', 'success');
         animateSymbol(token, sequenceIndex);
@@ -1391,6 +1437,7 @@
       function rejectSymbol(token, expectedToken) {
         state.wrongAttempts += 1;
         updateHud();
+        assistant.onMove({ correct: false, progressValue: state.collected.length / GAME_CONFIG.requiredOrder.length });
         const expected = GAME_CONFIG.symbols[expectedToken];
         const reached = GAME_CONFIG.symbols[token];
         announce(reached.label + ' is nog niet het juiste symbool. Zoek eerst ' + expected.label + '.');
@@ -1520,6 +1567,8 @@
       function finishGame() {
         if (!state || state.finishStarted || state.collected.length !== GAME_CONFIG.requiredOrder.length) return;
         state.finishStarted = true;
+        assistant.onGameSolved();
+        assistantActive = false;
         state.completed = true;
         state.playing = false;
         state.finalSeconds = Math.floor(elapsedMilliseconds() / 1000);
@@ -1615,8 +1664,13 @@
       }
 
       function handleVisibilityChange() {
-        if (document.hidden) pauseGameTimer();
-        else resumeGameTimer();
+        if (document.hidden) {
+          pauseGameTimer();
+          if (assistantActive) assistant.pause();
+        } else {
+          resumeGameTimer();
+          if (assistantActive) assistant.resume();
+        }
       }
 
       function bindControls() {
@@ -1642,6 +1696,7 @@
         window.clearInterval(heartbeatTimer);
         heartbeatTimer = 0;
         clearPendingTimeouts();
+        assistant.destroy();
         touchStart = null;
         listeners.splice(0).forEach(remove => remove());
         document.querySelectorAll('.flying-symbol').forEach(node => node.remove());

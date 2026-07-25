@@ -511,6 +511,7 @@
     }
   </style>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
 </head>
 <body>
   <main class="game">
@@ -559,6 +560,25 @@
     </section>
   </main>
 
+  <div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent">
+    <div class="asst-wrap">
+      <div class="asst-bubble" id="asst-bubble" hidden>
+        <p class="asst-bubble-text" id="asst-bubble-text"></p>
+        <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+      </div>
+      <div class="asst-char-row">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+          <span class="asst-body"></span>
+          <span class="asst-eye asst-eye-l"></span>
+          <span class="asst-eye asst-eye-r"></span>
+          <span class="asst-mouth"></span>
+        </button>
+      </div>
+    </div>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+  </div>
+
   <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
     <div class="game-gate-card">
       <div class="game-gate-spinner" aria-hidden="true"></div>
@@ -577,6 +597,7 @@
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
   <script src="game-shell.js"></script>
+  <script src="game-assistant.js"></script>
   <script>
     const PLAYER_KEY = "vriendenweekend-player-name";
     const HIDDEN_CLUE = "MONNIK";
@@ -608,6 +629,23 @@
     const resetButton = document.getElementById("reset-button");
     const closeLink = document.getElementById("close-link");
     const gameGate = createGameGate(() => closeLink.click());
+    const assistantMessages = {
+      start: ["Onthoud waar je iets zag. Geheugen wint hier van snelheid."],
+      oneMinute: ["Werk in kleine zones. Dan onthoud je paren makkelijker."],
+      twoMinutesLowProgress: ["Gebruik missers ook: elke omgedraaide kaart is informatie."],
+      wrongStreak: ["Misschien zit het paar net in dezelfde hoek als je laatste ontdekking."],
+      idle: ["Even wachten mag. Goed geheugen is ook een strategie."],
+      halfDone: ["Mooi. De helft van de paren is al binnen."],
+      threequartersDone: ["Nog een paar goede herinneringen en je bent er."],
+      almostDone: ["Bijna. Nu zou je bord eigenlijk tegen je moeten praten."],
+      fiveMinutes: ["Zoek naar kaarten waarvan je de tweeling al eerder zag."],
+      eightMinutes: ["Niet gokken. Herinneren is goedkoper dan herstellen."],
+      tenMinutes: ["Wil je een klein geheugensteuntje?"],
+      twentyMinutes: ["Het bord vergeet niks. Helaas jij soms wel."],
+      solved: ["Netjes. Alle paren liggen open."],
+      easterEgg: ["Ik onthoud alles. Jij mag het werk doen."]
+    };
+    const assistant = createAssistantManager({ containerId: "game-assistant", messages: assistantMessages });
     const replayGame = createReplayHandler({
       gate: gameGate,
       post: apiPost,
@@ -620,6 +658,7 @@
     let startedAt = 0;
     let heartbeatHandle = null;
     let timerHandle = null;
+    let assistantActive = false;
 
     let state = {
       cards: [],
@@ -783,6 +822,8 @@
       startedAt = Date.now();
       updateTimer();
       timerHandle = setInterval(updateTimer, 1000);
+      assistant.onGameStart(assistantHintCallback);
+      assistantActive = true;
     }
 
     function revealClueForPair(pairId) {
@@ -790,6 +831,13 @@
       if (Number.isInteger(clueIndex) && clueIndex >= 0 && clueIndex < state.revealedLetters.length) {
         state.revealedLetters[clueIndex] = true;
       }
+    }
+
+    function assistantHintCallback() {
+      const unmatchedIndex = state.cards.findIndex(card => card && !card.matched && !card.open);
+      const button = unmatchedIndex >= 0 ? cardsRoot.querySelector('[data-index="' + unmatchedIndex + '"]') : null;
+      if (button) button.focus();
+      setFeedback("Hint: onthoud waar je dezelfde symbolen al hebt gezien. Werk vanuit recente onthullingen.", "error");
     }
 
     async function onCardClick(index) {
@@ -832,6 +880,10 @@
         state.openIndexes = [];
         state.matchedPairs += 1;
         revealClueForPair(firstCard.pairId);
+        assistant.onMove({
+          correct: true,
+          progressValue: state.matchedPairs / SYMBOLS.length
+        });
 
         pairsLabel.textContent = state.matchedPairs + "/" + SYMBOLS.length;
         renderCards();
@@ -845,6 +897,10 @@
         return;
       }
 
+      assistant.onMove({
+        correct: false,
+        progressValue: state.matchedPairs / SYMBOLS.length
+      });
       state.locked = true;
       setGameEnabled(accessAllowed);
       setFeedback("Niet hetzelfde paar. Deze kaarten draaien terug.", "error");
@@ -861,6 +917,8 @@
 
     async function finishGame() {
       state.completed = true;
+      assistant.onGameSolved();
+      assistantActive = false;
       clearInterval(timerHandle);
       timerHandle = null;
 
@@ -928,6 +986,7 @@
     function resetGame() {
       clearInterval(timerHandle);
       timerHandle = null;
+      assistantActive = false;
 
       state = {
         cards: createDeck(),
@@ -1040,7 +1099,15 @@
       setGameEnabled(accessAllowed);
     });
 
-    window.addEventListener('pagehide', () => { if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle); }, { once: true });
+    document.addEventListener("visibilitychange", () => {
+      if (!assistantActive) return;
+      if (document.hidden) assistant.pause();
+      else assistant.resume();
+    });
+    window.addEventListener('pagehide', () => {
+      if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle);
+      assistant.destroy();
+    }, { once: true });
   bootstrap();
   </script>
   <script src="../app-update.js"></script>

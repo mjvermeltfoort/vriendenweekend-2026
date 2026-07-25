@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#10140f">
   <title>Tussen de Letters</title>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
   <style>
     :root {
       color-scheme: dark;
@@ -562,6 +563,25 @@
     <div class="sr-only" id="live-status" aria-live="assertive" aria-atomic="true"></div>
   </main>
 
+  <div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent">
+    <div class="asst-wrap">
+      <div class="asst-bubble" id="asst-bubble" hidden>
+        <p class="asst-bubble-text" id="asst-bubble-text"></p>
+        <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+      </div>
+      <div class="asst-char-row">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+          <span class="asst-body"></span>
+          <span class="asst-eye asst-eye-l"></span>
+          <span class="asst-eye asst-eye-r"></span>
+          <span class="asst-mouth"></span>
+        </button>
+      </div>
+    </div>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+  </div>
+
   <section class="result-overlay" id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
     <div class="result-card">
       <div class="result-symbol" aria-hidden="true">✦</div>
@@ -601,6 +621,7 @@
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
   <script src="game-shell.js"></script>
+  <script src="game-assistant.js"></script>
   <script>
     (() => {
       "use strict";
@@ -677,11 +698,29 @@
         const closeLink = root.querySelector("#close-link");
         const resultClose = document.getElementById("result-close");
         const gameGate = createGameGate(() => closeLink.click());
+        const assistantMessages = {
+          start: ["Zoek woorden in rechte lijnen. De rest van de letters bewaart het echte geheim."],
+          oneMinute: ["Scan horizontaal, verticaal en diagonaal. Alles mag, zolang het recht blijft."],
+          twoMinutesLowProgress: ["Begin met woorden die qua vorm of lengte het meest opvallen."],
+          wrongStreak: ["Misschien sleep je te snel. Controleer begin- en eindletter rustiger."],
+          idle: ["Een woordzoeker beloont geduldige ogen."],
+          halfDone: ["Mooi. Het raster wordt al een stuk stiller."],
+          threequartersDone: ["Nog even. De overgebleven woorden vallen straks extra op."],
+          almostDone: ["Bijna. De laatste woorden verstoppen zich vaak schaamteloos in het zicht."],
+          fiveMinutes: ["Kijk of een opvallende beginletter in meerdere richtingen iets vormt."],
+          eightMinutes: ["De lastigste woorden zitten vaak langs een diagonaal verstopt."],
+          tenMinutes: ["Wil je een duwtje naar een nog verborgen woord?"],
+          twentyMinutes: ["Ik zou zeggen dat letters stil liggen, maar ze gedragen zich verdacht."],
+          solved: ["Netjes. Nu mag de rest van het raster eindelijk praten."],
+          easterEgg: ["Zelfs losse letters hebben hier samenzweringsneigingen."]
+        };
+        const assistant = createAssistantManager({ containerId: "game-assistant", messages: assistantMessages });
 
         let cells = [];
         let accessAllowed = false;
         let completed = false;
         let completionHandled = false;
+        let assistantActive = false;
         let cleaned = false;
         let wrongAttempts = 0;
         let startedAt = 0;
@@ -953,9 +992,16 @@
           }) || null;
         }
 
+        function assistantHintCallback() {
+          const nextWord = GAME_CONFIG.words.find(entry => !foundWords.has(entry.id));
+          if (!nextWord) return;
+          setFeedback("Hint: zoek opnieuw naar “" + nextWord.label + "” en let op rechte lijnen.", "error");
+        }
+
         function markWrongSelection(path, message) {
           wrongAttempts += 1;
           wrongAttemptsLabel.textContent = String(wrongAttempts);
+          assistant.onMove({ correct: false, progressValue: foundWords.size / GAME_CONFIG.words.length });
           const marked = path && path.length ? path : [selectionStart, selectionEnd];
           marked.filter(index => Number.isInteger(index)).forEach(index => cells[index]?.classList.add("is-wrong"));
           setFeedback(message, "error");
@@ -1013,6 +1059,7 @@
           }
 
           markWordFound(entry);
+          assistant.onMove({ correct: true, progressValue: foundWords.size / GAME_CONFIG.words.length });
           clearPreview();
           if (foundWords.size === GAME_CONFIG.words.length) {
             beginCompletion();
@@ -1381,6 +1428,8 @@
         function beginCompletion() {
           if (completionHandled) return;
           completionHandled = true;
+          assistant.onGameSolved();
+          assistantActive = false;
           completed = true;
           accessAllowed = false;
           finalSeconds = elapsedSeconds();
@@ -1415,6 +1464,8 @@
           gameGate.hide();
           startedAt = Date.now();
           finalSeconds = 0;
+          assistant.onGameStart(assistantHintCallback);
+          assistantActive = true;
           accessAllowed = true;
           setGridEnabled(true);
           updateTimer();
@@ -1522,6 +1573,7 @@
           revealTimers.forEach(timeout => window.clearTimeout(timeout));
           revealTimers.clear();
           observer.disconnect();
+          assistant.destroy();
           controller.abort();
           cancelPointerSelection();
         }
@@ -1533,6 +1585,11 @@
 
         root.addEventListener("tussen-de-letters:destroy", cleanup, { once: true, signal });
         window.addEventListener("game:close", cleanup, { signal });
+        document.addEventListener("visibilitychange", () => {
+          if (!assistantActive) return;
+          if (document.hidden) assistant.pause();
+          else assistant.resume();
+        }, { signal });
         window.addEventListener("pagehide", cleanup, { once: true, signal });
         closeLink.addEventListener("click", cleanup, { signal });
         resultClose.addEventListener("click", cleanup, { signal });

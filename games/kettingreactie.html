@@ -402,6 +402,7 @@
     }
   </style>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
 </head>
 <body>
   <main class="game" id="kettingreactie-game">
@@ -479,6 +480,25 @@
     </section>
   </main>
 
+  <div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent">
+    <div class="asst-wrap">
+      <div class="asst-bubble" id="asst-bubble" hidden>
+        <p class="asst-bubble-text" id="asst-bubble-text"></p>
+        <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+      </div>
+      <div class="asst-char-row">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+          <span class="asst-body"></span>
+          <span class="asst-eye asst-eye-l"></span>
+          <span class="asst-eye asst-eye-r"></span>
+          <span class="asst-mouth"></span>
+        </button>
+      </div>
+    </div>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+  </div>
+
   <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
     <div class="game-gate-card">
       <div class="game-gate-spinner" aria-hidden="true"></div>
@@ -497,6 +517,7 @@
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
   <script src="game-shell.js"></script>
+  <script src="game-assistant.js"></script>
   <script>
     (() => {
       "use strict";
@@ -597,6 +618,23 @@
         const resultClose = root.querySelector("#result-close");
         const closeLink = root.querySelector("#close-link");
         const gameGate = createGameGate(() => closeLink.click());
+        const assistantMessages = {
+          start: ["Maak kleurcombinaties en bevrijd letters voordat de gevarenzone wint."],
+          oneMinute: ["Zoek groepen die met één schot naar drie of meer kunnen springen."],
+          twoMinutesLowProgress: ["Soms is een voorbereidend schot slimmer dan direct wegspelen."],
+          wrongStreak: ["Misschien richt je te veel op losse bollen en te weinig op clusters."],
+          idle: ["Even mikken mag. Een goed schot telt dubbel."],
+          halfDone: ["Mooi. Er zijn al letters aan het loskomen."],
+          threequartersDone: ["Nog even. Het veld begint eindelijk mee te werken."],
+          almostDone: ["Bijna. Nog een paar slimme kettingen."],
+          fiveMinutes: ["Let op loshangende delen. Vallende bollen zijn gratis winst."],
+          eightMinutes: ["Niet alleen kleur telt, ook wat daarna van het plafond loslaat."],
+          tenMinutes: ["Wil je een hint voor slimmere combinaties?"],
+          twentyMinutes: ["Kettingreacties zijn heerlijk. Als je ze overleeft."],
+          solved: ["Mooi schotwerk. Alle letters bevrijd."],
+          easterEgg: ["Deze bollen hebben meer drama dan nodig is."]
+        };
+        const assistant = createAssistantManager({ containerId: "game-assistant", messages: assistantMessages });
         const replayGame = createReplayHandler({ gate: gameGate, post: apiPost, playerName, gameId: GAME_ID });
 
         let state = null;
@@ -604,6 +642,7 @@
         let heartbeatHandle = null;
         let animationFrameHandle = null;
         let lastFrameTime = 0;
+        let assistantActive = false;
         let cleaned = false;
         let completionSubmitted = false;
         let pointerId = null;
@@ -909,6 +948,10 @@
           return [...viable].sort()[0];
         }
 
+        function assistantHintCallback() {
+          setFeedback("Hint: zoek naar groepen die bijna drie gelijke bollen vormen en speel daarop.", "error");
+        }
+
         function resetGame() {
           stopTimer();
           stopAnimationLoop();
@@ -946,6 +989,8 @@
           letterProgress.classList.remove("complete");
           renderLetterProgress(false);
           renderStatus();
+          assistant.onGameStart(assistantHintCallback);
+          assistantActive = true;
           setFeedback("Richt en schiet een bol tegen twee of meer gelijke bollen.");
           timerHandle = window.setInterval(updateTimer, 1000);
           startAnimationLoop();
@@ -1106,6 +1151,7 @@
           const group = connectedGroup(state.board, placedKey, true);
           const madeCombination = group.size >= 3;
           if (madeCombination) {
+            assistant.onMove({ correct: true, progressValue: state.freedOrder.length / GAME_CONFIG.letterBubbles.length });
             state.chainStage = 1;
             group.forEach(bubbleKey => {
               const bubble = state.board.get(bubbleKey);
@@ -1119,6 +1165,7 @@
             state.misses = Math.max(0, state.misses - 1);
             await processChainReaction();
           } else {
+            assistant.onMove({ correct: false, progressValue: state.freedOrder.length / GAME_CONFIG.letterBubbles.length });
             state.misses += 1;
             announce("Geen combinatie. Nog " + Math.max(0, GAME_CONFIG.maxMisses - state.misses) + " missers tot een nieuwe rij.");
             setFeedback("Geen combinatie. De misserteller loopt op.", "error");
@@ -1239,6 +1286,8 @@
         async function completeGame() {
           if (state.completed || completionSubmitted) return;
           state.completed = true;
+          assistant.onGameSolved();
+          assistantActive = false;
           state.locked = true;
           state.finalSeconds = elapsedSeconds();
           stopTimer();
@@ -1697,6 +1746,7 @@
         function cleanup() {
           if (cleaned) return;
           cleaned = true;
+          assistant.destroy();
           stopTimer();
           stopAnimationLoop();
           if (heartbeatHandle !== null) {
@@ -1724,6 +1774,11 @@
         resultClose.addEventListener("click", cleanup, { signal });
         root.addEventListener("kettingreactie:destroy", cleanup, { once: true, signal });
         window.addEventListener("game:close", cleanup, { signal });
+        document.addEventListener("visibilitychange", () => {
+          if (!assistantActive) return;
+          if (document.hidden) assistant.pause();
+          else assistant.resume();
+        }, { signal });
         window.addEventListener("pagehide", cleanup, { once: true, signal });
         closeLink.addEventListener("click", cleanup, { signal });
 

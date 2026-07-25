@@ -277,7 +277,23 @@
   document.getElementById('reshuffle').addEventListener('click',()=>{if(!gameAllowed)return;if(puzzleState&&puzzleState.timer)clearInterval(puzzleState.timer);start();});
   window.addEventListener('pagehide', () => { if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle); if (assistant) assistant.destroy(); }, { once: true });
   document.addEventListener('visibilitychange', () => { if (assistant) { if (document.hidden) assistant.pause(); else assistant.resume(); } });
-  assistant = createAssistantManager({ containerId: 'game-assistant' });
+  const assistantMessages = {
+    start: ['Klaar voor het avontuur? Schuif die tegels op hun plek!'],
+    oneMinute: ['Begin met herkenbare hoeken, randen of grote kleurvlakken.'],
+    twoMinutesLowProgress: ['Werk van stukjes die logisch voelen, niet van losse gokzetten.'],
+    wrongStreak: ['Misschien schuif je nu vooral om ruimte te maken, niet om beeld op te bouwen.'],
+    idle: ['Even kijken naar het totaalplaatje helpt vaak meer dan nog een snelle zet.'],
+    halfDone: ['Mooi. Het beeld begint zich eindelijk te tonen.'],
+    threequartersDone: ['Nog een klein stuk en alles valt op zijn plek.'],
+    almostDone: ['Bijna. Nu zit het verschil vooral in volgorde en geduld.'],
+    fiveMinutes: ['Zoek naar stukken die samen één duidelijk vlak vormen.'],
+    eightMinutes: ['De lege plek is hier net zo belangrijk als de juiste tegel.'],
+    tenMinutes: ['Wil je dat ik een bruikbare schuifhint geef?'],
+    twentyMinutes: ['Schuifpuzzels doen graag alsof chaos een strategie is.'],
+    solved: ['Netjes gedaan! Afbeelding hersteld.'],
+    easterEgg: ['Die laatste tegels doen altijd alsof zij de baas zijn.']
+  };
+  assistant = createAssistantManager({ containerId: 'game-assistant', messages: assistantMessages });
   bootstrap();
 </script>
 <script src="../app-update.js"></script>

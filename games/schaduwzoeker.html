@@ -337,6 +337,7 @@
     }
   </style>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
 </head>
 <body>
   <main class="game" id="schaduwzoeker-game">
@@ -406,6 +407,25 @@
     </section>
   </main>
 
+  <div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent">
+    <div class="asst-wrap">
+      <div class="asst-bubble" id="asst-bubble" hidden>
+        <p class="asst-bubble-text" id="asst-bubble-text"></p>
+        <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+      </div>
+      <div class="asst-char-row">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+          <span class="asst-body"></span>
+          <span class="asst-eye asst-eye-l"></span>
+          <span class="asst-eye asst-eye-r"></span>
+          <span class="asst-mouth"></span>
+        </button>
+      </div>
+    </div>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+  </div>
+
   <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
     <div class="game-gate-card">
       <div class="game-gate-spinner" aria-hidden="true"></div>
@@ -424,6 +444,7 @@
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
   <script src="game-shell.js"></script>
+  <script src="game-assistant.js"></script>
   <script>
     (() => {
       "use strict";
@@ -463,6 +484,7 @@
         let accessAllowed = false;
         let completed = false;
         let completionHandled = false;
+        let assistantActive = false;
         let cleaned = false;
         let gameHint = "De volgende aanwijzing blijft nog verzegeld.";
 
@@ -480,6 +502,23 @@
         const stages = [...root.querySelectorAll("[data-image-stage]")];
         const images = [...root.querySelectorAll("[data-puzzle-image]")];
         const gameGate = createGameGate(() => closeLink.click());
+        const assistantMessages = {
+          start: ["Zeven verschillen. Rustig kijken wint het van wild klikken."],
+          oneMinute: ["Vergelijk opvallende objecten, randen en lichtpunten."],
+          twoMinutesLowProgress: ["Werk systematisch van boven naar beneden of van links naar rechts."],
+          wrongStreak: ["Niet gokken. Kies liever één hoek en scan die echt goed."],
+          idle: ["Misschien mis je iets kleins dat nét anders staat."],
+          halfDone: ["Mooi. Het schaduwbeeld geeft zich langzaam bloot."],
+          threequartersDone: ["Nog maar een paar details verborgen."],
+          almostDone: ["Bijna. Waarschijnlijk zit er nog één gemene kleine tussen."],
+          fiveMinutes: ["Kijk naar vormen die je brein vanzelf overslaat: kaarsen, randen, kleine voorwerpen."],
+          eightMinutes: ["De kleinste verschillen gedragen zich vaak het onschuldigst."],
+          tenMinutes: ["Zal ik je een subtiele kijkhint geven?"],
+          twentyMinutes: ["Zelfs kamers met geheimen hebben maar zeven fouten. Meestal."],
+          solved: ["Scherp gezien. Alles gevonden."],
+          easterEgg: ["Ik vertrouw die kamer al vanaf het begin niet."]
+        };
+        const assistant = createAssistantManager({ containerId: "game-assistant", messages: assistantMessages });
         const replayGame = createReplayHandler({
           gate: gameGate,
           post: apiPost,
@@ -540,6 +579,12 @@
           if (game.hint) gameHint = game.hint;
         }
 
+        function assistantHintCallback() {
+          const nextHotspot = root.querySelector('[data-hotspot]:not(.is-found)');
+          if (nextHotspot) nextHotspot.focus();
+          setFeedback("Hint: vergelijk opvallende objecten en hoeken van de kamer nog eens rustig.", "error");
+        }
+
         function renderDifferenceElements() {
           stages.forEach(stage => {
             const stageName = stage.dataset.imageStage === "original" ? "Origineel" : "Schaduwbeeld";
@@ -595,6 +640,7 @@
             hotspot.setAttribute("aria-label", "Gevonden verschil");
           });
           foundCount.textContent = found.size + "/" + DIFFERENCES.length;
+          assistant.onMove({ correct: true, progressValue: found.size / DIFFERENCES.length });
 
           if (found.size === DIFFERENCES.length) {
             accessAllowed = false;
@@ -614,6 +660,7 @@
 
           wrongAttempts += 1;
           wrongAttemptsLabel.textContent = String(wrongAttempts);
+          assistant.onMove({ correct: false, progressValue: found.size / DIFFERENCES.length });
           setFeedback("Daar zit geen verschil.", "error");
 
           const stage = event.currentTarget;
@@ -697,6 +744,8 @@
           if (completionHandled) return;
           completionDelayHandle = null;
           completionHandled = true;
+          assistant.onGameSolved();
+          assistantActive = false;
           accessAllowed = false;
           if (!completed) {
             completed = true;
@@ -739,6 +788,8 @@
           gameGate.hide();
           startedAt = Date.now();
           finalSeconds = 0;
+          assistant.onGameStart(assistantHintCallback);
+          assistantActive = true;
           accessAllowed = true;
           setBoardEnabled(true);
           updateTimer();
@@ -837,6 +888,7 @@
             completionDelayHandle = null;
           }
           observer.disconnect();
+          assistant.destroy();
           controller.abort();
         }
 
@@ -847,6 +899,11 @@
 
         root.addEventListener("schaduwzoeker:destroy", cleanup, { once: true, signal });
         window.addEventListener("game:close", cleanup, { signal });
+        document.addEventListener("visibilitychange", () => {
+          if (!assistantActive) return;
+          if (document.hidden) assistant.pause();
+          else assistant.resume();
+        }, { signal });
         window.addEventListener("pagehide", cleanup, { once: true, signal });
         closeLink.addEventListener("click", cleanup, { signal });
 

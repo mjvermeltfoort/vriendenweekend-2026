@@ -24,6 +24,7 @@
     @media(min-width:700px){.controls{width:65%;margin:9px auto 0}.stage{min-height:500px}}
   </style>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
 </head>
 <body>
 <main class="app">
@@ -35,10 +36,12 @@
   </section>
   <div class="controls"><button class="control" id="left" aria-label="Naar links">←</button><button class="control" id="right" aria-label="Naar rechts">→</button></div>
 </main>
+<div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent"><div class="asst-wrap"><div class="asst-bubble" id="asst-bubble" hidden><p class="asst-bubble-text" id="asst-bubble-text"></p><button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button></div><div class="asst-char-row"><button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button><button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint"><span class="asst-body"></span><span class="asst-eye asst-eye-l"></span><span class="asst-eye asst-eye-r"></span><span class="asst-mouth"></span></button></div></div><button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
 <script src="game-shell.js"></script>
+<script src="game-assistant.js"></script>
 <script>
 (() => {
   'use strict';
@@ -46,7 +49,7 @@
   const clean=v=>String(v||'').replace(/[<>]/g,'').replace(/\s+/g,' ').trim().slice(0,40);
   const player=clean(localStorage.getItem(PLAYER_KEY)||params.get('playerName')), gameId='vluchtroute';
   const stage=document.getElementById('stage'), car=document.getElementById('car');
-  const $=id=>document.getElementById(id); let state=null, raf=0, heartbeat=0, allowed=false, touchX=null, hint='';
+  const $=id=>document.getElementById(id); let state=null, raf=0, heartbeat=0, allowed=false, touchX=null, hint='',assistantActive=false,lastDistanceHint=0;const assistantMessages={start:['Blijf in leven, wissel slim van rijstrook en haal de finish.'],oneMinute:['Kijk niet alleen naar nu, maar ook naar wat over twee tellen voor je zit.'],twoMinutesLowProgress:['De veiligste rij is vaak degene met de meeste uitwijkruimte.'],wrongStreak:['Rustig. Wild slingeren helpt achtervolging zelden.'],idle:['Een goede chauffeur kijkt vooruit, niet alleen recht voor zich.'],halfDone:['Mooi. Je bent al over de helft van de route.'],threequartersDone:['Nog even. Nu worden fouten extra duur.'],almostDone:['De finish is dichtbij. Niet heldhaftig worden nu.'],fiveMinutes:['Kies liever vroeg van rijstrook dan op het laatste moment.'],eightMinutes:['Bonussen zijn mooi, maar alleen als ze je geen botsing kosten.'],tenMinutes:['Wil je een rijstrookhint?'],twentyMinutes:['Autorijden onder druk is verrassend ongezond.'],solved:['Netjes gereden. Finish gehaald.'],easterEgg:['Ik heb slechtere vluchtplannen gezien.']};const assistant=createAssistantManager({containerId:'game-assistant',messages:assistantMessages});
   const hazards=[{icon:'🚧',name:'versperring',kind:'life'},{icon:'🚓',name:'politie',kind:'life'},{icon:'🟤',name:'modder',kind:'time'},{icon:'🌳',name:'boom',kind:'life'},{icon:'🐗',name:'wild zwijn',kind:'time'},{icon:'🦌',name:'hert',kind:'time'}];
   const laneX=n=>[31,50,69][n];
   const formatTime=seconds=>String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(Math.floor(seconds%60)).padStart(2,'0');
@@ -54,6 +57,7 @@
   function setCar(){car.style.left=laneX(state?.lane??1)+'%'}
   function move(d){if(!state?.running)return;state.lane=Math.max(0,Math.min(2,state.lane+d));setCar()}
   function note(text){const m=$('message');m.textContent=text;m.classList.remove('show');void m.offsetWidth;m.classList.add('show')}
+  function assistantHintCallback(){note('Hint: kijk vooral naar de vrijste rijstrook, niet alleen naar wat vlak voor je zit.')}
   function spawn(){
     const bonus=Math.random()<.13, def=bonus?(Math.random()<.52?{icon:'🛡️',name:'schild',kind:'shield'}:{icon:'⏳',name:'vertraging',kind:'slow'}):hazards[Math.floor(Math.random()*hazards.length)];
     const lane=Math.floor(Math.random()*3), el=document.createElement('div');el.className='entity'+(bonus?' bonus':'');el.innerHTML=def.icon+'<small>'+def.name+'</small>';el.style.left=laneX(lane)+'%';el.style.top='-45px';stage.appendChild(el);state.entities.push({el,lane,y:-45,def,hit:false});
@@ -63,19 +67,19 @@
     if(e.def.kind==='slow'){state.slowUntil=performance.now()+6000;stage.classList.add('slow');note('Tijd vertraagd!');return}
     if(performance.now()<state.shieldUntil){note('Schild hield je veilig');return}
     if(performance.now()<state.invulnerableUntil)return;state.hits++;state.invulnerableUntil=performance.now()+1100;
-    if(e.def.kind==='life'){state.lives--;navigator.vibrate?.(90);note('Botsing! Eén leven kwijt');car.animate([{transform:'translateX(-50%) rotate(-8deg)'},{transform:'translateX(-50%) rotate(8deg)'},{transform:'translateX(-50%)'}],{duration:350});if(state.lives<=0)end(false)}
-    else{state.penalty+=4;note('+4 strafseconden');navigator.vibrate?.(45)}
+    if(e.def.kind==='life'){assistant.onMove({correct:false,progressValue:Math.min(1,state.distance/100)});state.lives--;navigator.vibrate?.(90);note('Botsing! Eén leven kwijt');car.animate([{transform:'translateX(-50%) rotate(-8deg)'},{transform:'translateX(-50%) rotate(8deg)'},{transform:'translateX(-50%)'}],{duration:350});if(state.lives<=0)end(false)}
+    else{assistant.onMove({correct:false,progressValue:Math.min(1,state.distance/100)});state.penalty+=4;note('+4 strafseconden');navigator.vibrate?.(45)}
   }
   function draw(now){
     if(!state?.running)return;const dt=Math.min(.035,(now-state.last)/1000);state.last=now;const active=(now-state.started)/1000;state.speed=1+Math.min(1.65,active/32);const slowed=now<state.slowUntil;const velocity=(125*state.speed)*(slowed?.52:1);state.distance=Math.min(100,state.distance+dt*(2.15*state.speed)*(slowed?.62:1));state.spawnIn-=dt;
     if(state.spawnIn<=0){spawn();if(active>18&&Math.random()<Math.min(.46,active/85))setTimeout(()=>state?.running&&spawn(),170);state.spawnIn=Math.max(.32,1.18-active/70)+Math.random()*.42}
     state.entities.forEach(e=>{if(e.hit)return;e.y+=velocity*dt;e.el.style.top=e.y+'px';if(e.y>stage.clientHeight-125&&e.y<stage.clientHeight-43&&e.lane===state.lane)collide(e);else if(e.y>stage.clientHeight+60){e.hit=true;e.el.remove()}});state.entities=state.entities.filter(e=>!e.hit);
     if(now>=state.shieldUntil)car.classList.remove('shielded');if(now>=state.slowUntil)stage.classList.remove('slow');
-    $('lives').textContent=('♥ '.repeat(state.lives)+'♡ '.repeat(3-state.lives)).trim();$('distance').textContent=Math.floor(state.distance)+'%';$('progress').style.width=state.distance+'%';$('time').textContent=formatTime(active+state.penalty);$('speed').textContent=state.speed.toFixed(1)+'×';
+    if(state.distance-lastDistanceHint>=10){lastDistanceHint=Math.floor(state.distance/10)*10;assistant.onMove({correct:true,progressValue:Math.min(1,state.distance/100)})}$('lives').textContent=('♥ '.repeat(state.lives)+'♡ '.repeat(3-state.lives)).trim();$('distance').textContent=Math.floor(state.distance)+'%';$('progress').style.width=state.distance+'%';$('time').textContent=formatTime(active+state.penalty);$('speed').textContent=state.speed.toFixed(1)+'×';
     if(state.distance>=100){$('finish').classList.add('show');end(true);return}raf=requestAnimationFrame(draw)
   }
-  function reset(){cancelAnimationFrame(raf);stage.querySelectorAll('.entity').forEach(e=>e.remove());$('finish').classList.remove('show');stage.classList.remove('slow');car.classList.remove('shielded');state={running:true,lane:1,lives:3,distance:0,penalty:0,hits:0,entities:[],started:performance.now(),last:performance.now(),spawnIn:.8,shieldUntil:0,slowUntil:0,invulnerableUntil:0,speed:1};setCar();raf=requestAnimationFrame(draw)}
-  async function end(won){if(!state?.running)return;state.running=false;cancelAnimationFrame(raf);clearInterval(heartbeat);const seconds=Math.round((performance.now()-state.started)/1000+state.penalty);if(!won){showCard('<h2>De vlucht strandde</h2><p>De wagen kan niet verder. Kies een beter spoor en probeer opnieuw.</p><button class="primary" id="again">Opnieuw proberen</button>');$('again').onclick=reset;return}
+  function reset(){cancelAnimationFrame(raf);assistant.onGameStart(assistantHintCallback);assistantActive=true;lastDistanceHint=0;stage.querySelectorAll('.entity').forEach(e=>e.remove());$('finish').classList.remove('show');stage.classList.remove('slow');car.classList.remove('shielded');state={running:true,lane:1,lives:3,distance:0,penalty:0,hits:0,entities:[],started:performance.now(),last:performance.now(),spawnIn:.8,shieldUntil:0,slowUntil:0,invulnerableUntil:0,speed:1};setCar();raf=requestAnimationFrame(draw)}
+  async function end(won){if(!state?.running)return;state.running=false;cancelAnimationFrame(raf);clearInterval(heartbeat);if(won){assistant.onGameSolved();assistantActive=false}else assistantActive=false;const seconds=Math.round((performance.now()-state.started)/1000+state.penalty);if(!won){showCard('<h2>De vlucht strandde</h2><p>De wagen kan niet verder. Kies een beter spoor en probeer opnieuw.</p><button class="primary" id="again">Opnieuw proberen</button>');$('again').onclick=reset;return}
     const clue=hint||'De volgende aanwijzing blijft nog verzegeld.';showCard('<h2>Finish bereikt!</h2><p>De verborgen aanwijzing:</p><div class="revealed-clue">'+escapeHtml(clue)+'</div><div class="save" id="save">Score opslaan…</div><button class="primary" id="done">Terug naar dossier</button>');$('done').onclick=close;
     try{const data=await post('score',{name:player,gameId,seconds,attempts:Math.max(1,state.hits),detail:{version:1,lives:state.lives,penalty:state.penalty}});const saved=data.result||data;$('save').textContent=(saved.score||0)+' punten · '+seconds+' seconden'}catch(e){$('save').textContent='Score kon niet worden opgeslagen: '+e.message}
   }
@@ -93,7 +97,7 @@
     localStorage.setItem(PLAYER_KEY,player);showCard('<h2>Route verkennen…</h2><p>Toegang wordt gecontroleerd.</p>');
     try{const access=await get('access',{gameId,playerName:player});if(access.game?.title){$('game-title').textContent=access.game.title;document.title=access.game.title}hint=access.game?.hint||'';if(!access.allowed){if(access.completed){showCard('<h2>Al voltooid</h2><p>Je hebt deze vluchtroute al gereden. Je kunt opnieuw spelen, maar je huidige score vervalt dan.</p><div class="revealed-clue">'+escapeHtml(hint||'De volgende aanwijzing blijft nog verzegeld.')+'</div><button class="primary" id="replay">Opnieuw spelen</button><button class="secondary-action" id="back">Terug naar dossier</button>');$('replay').onclick=replay;$('back').onclick=close}else{showCard('<h2>Route afgesloten</h2><p>Dit spel is nog niet vrijgegeven.</p><button class="secondary-action" id="back">Terug naar dossier</button>');$('back').onclick=close}return}await post('start',{name:player,gameId,source:'github-pages',userAgent:navigator.userAgent});heartbeat=setInterval(()=>{if(!document.hidden)post('heartbeat',{name:player,gameId}).catch(()=>{})},10000);allowed=true;showCard('<h2>De uitweg wacht</h2><p>Wissel van rijstrook en ontwijk alles op de weg. Houd vol tot de finish.</p><div class="legend"><span>🚧 🚓 🌳 🐗<br>obstakels</span><span>🛡️ ⏳<br>bonussen</span><span>← → / A D<br>toetsen</span><span>Veeg of tik<br>op mobiel</span></div><button class="primary" id="go">Start de vlucht</button>');$('go').onclick=()=>{$('overlay').style.display='none';reset()}}catch(e){showCard('<h2>Geen verbinding</h2><p>'+escapeHtml(e.message)+'</p><button class="secondary-action" id="back">Terug naar dossier</button>');$('back').onclick=close}
   }
-  $('close').onclick=close;$('left').onclick=()=>move(-1);$('right').onclick=()=>move(1);addEventListener('keydown',e=>{if(['ArrowLeft','a','A'].includes(e.key)){e.preventDefault();move(-1)}if(['ArrowRight','d','D'].includes(e.key)){e.preventDefault();move(1)}});stage.addEventListener('touchstart',e=>touchX=e.changedTouches[0].clientX,{passive:true});stage.addEventListener('touchend',e=>{const x=e.changedTouches[0].clientX,d=x-touchX;if(Math.abs(d)>28)move(d>0?1:-1);else move(x<innerWidth/2?-1:1)},{passive:true});addEventListener('pagehide',()=>clearInterval(heartbeat),{once:true});boot();
+  $('close').onclick=close;$('left').onclick=()=>move(-1);$('right').onclick=()=>move(1);addEventListener('keydown',e=>{if(['ArrowLeft','a','A'].includes(e.key)){e.preventDefault();move(-1)}if(['ArrowRight','d','D'].includes(e.key)){e.preventDefault();move(1)}});stage.addEventListener('touchstart',e=>touchX=e.changedTouches[0].clientX,{passive:true});stage.addEventListener('touchend',e=>{const x=e.changedTouches[0].clientX,d=x-touchX;if(Math.abs(d)>28)move(d>0?1:-1);else move(x<innerWidth/2?-1:1)},{passive:true});document.addEventListener('visibilitychange',()=>{if(!assistantActive)return;if(document.hidden)assistant.pause();else assistant.resume()});addEventListener('pagehide',()=>{clearInterval(heartbeat);assistant.destroy()},{once:true});boot();
 })();
 </script>
 <script src="../app-update.js"></script>
