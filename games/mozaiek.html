@@ -29,6 +29,7 @@
     @media(max-width:680px){ body{padding:10px} }
   </style>
   <link rel="stylesheet" href="game-shell.css">
+  <link rel="stylesheet" href="game-assistant.css">
 </head>
 <body>
   <main class="game">
@@ -52,6 +53,25 @@
       </div>
     </div>
     <div id="result" aria-live="polite"></div>
+
+    <div id="game-assistant" class="game-assistant" data-emotion="idle" aria-label="Spelassistent">
+      <div class="asst-wrap">
+        <div class="asst-bubble" id="asst-bubble" hidden>
+          <p class="asst-bubble-text" id="asst-bubble-text"></p>
+          <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+        </div>
+        <div class="asst-char-row">
+          <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+          <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+            <span class="asst-body"></span>
+            <span class="asst-eye asst-eye-l"></span>
+            <span class="asst-eye asst-eye-r"></span>
+            <span class="asst-mouth"></span>
+          </button>
+        </div>
+      </div>
+      <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+    </div>
   </main>
 
   <section class="game-gate" id="game-gate" data-loading="true" role="dialog" aria-modal="true" aria-live="polite">
@@ -72,6 +92,7 @@
   <script src="../config.js?v=20260724-1"></script>
   <script src="../supabase-api.js?v=20260724-1"></script>
 <script src="game-shell.js"></script>
+<script src="game-assistant.js"></script>
 <script>
   const PLAYER_KEY = 'vriendenweekend-player-name';
   const urlParams = new URLSearchParams(window.location.search);
@@ -96,6 +117,7 @@
   let puzzleState = null;
   let heartbeatHandle = null;
   let gameAllowed = false;
+  let assistant = null;
   const closeButton = document.getElementById('close-button');
   const gameGate = createGameGate(closeGame);
   const replayGame = createReplayHandler({
@@ -156,6 +178,7 @@
     document.getElementById('timer').textContent='00:00';
     document.getElementById('puzzle').style.setProperty('--flame', `url('${flameSvg}')`);
     render();
+    if(assistant) assistant.onGameStart(hintCallback);
   }
   function shuffleSolvable(original){const arr=original.slice();for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}if(!isSolvable(arr))[arr[0],arr[1]]=[arr[1],arr[0]];return arr;}
   function isSolvable(arr){let inv=0;const list=arr.filter(n=>n!==15);for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++)if(list[i]>list[j])inv++;const row=4-Math.floor(arr.indexOf(15)/4);return row%2===0?inv%2===1:inv%2===0;}
@@ -163,9 +186,9 @@
   function bindTileActivation(tile,pos){let touchStart=null;tile.addEventListener('touchstart',event=>{const touch=event.changedTouches[0];touchStart=touch?{x:touch.clientX,y:touch.clientY}:null;},{passive:true});tile.addEventListener('touchend',event=>{if(!touchStart)return;const touch=event.changedTouches[0];const isTap=touch&&Math.abs(touch.clientX-touchStart.x)<18&&Math.abs(touch.clientY-touchStart.y)<18;touchStart=null;if(!isTap)return;event.preventDefault();move(pos);},{passive:false});tile.addEventListener('touchcancel',()=>{touchStart=null;},{passive:true});tile.addEventListener('click',()=>move(pos));}
   function render(){const el=document.getElementById('puzzle');const blank=puzzleState.tiles.indexOf(15);el.innerHTML='';puzzleState.tiles.forEach((n,pos)=>{const isBlank=n===15;const movable=!isBlank&&isAdjacent(pos,blank);const tile=document.createElement(isBlank?'div':'button');tile.className=`tile${isBlank?' blank':movable?' movable':''}`;tile.setAttribute('aria-label',isBlank?'Lege plek':`Mozaïektegel ${n+1}${movable?', kan naar de lege plek':''}`);if(isBlank){tile.setAttribute('role','img');}else{tile.type='button';tile.tabIndex=movable?0:-1;const x=n%4,y=Math.floor(n/4);tile.style.backgroundPosition=`${x*100/3}% ${y*100/3}%`;if(movable)bindTileActivation(tile,pos);}el.appendChild(tile);});}
   function isAdjacent(pos,blank){const r=Math.floor(pos/4),c=pos%4,br=Math.floor(blank/4),bc=blank%4;return Math.abs(r-br)+Math.abs(c-bc)===1;}
-  function move(pos){if(!gameAllowed||!puzzleState||puzzleState.submitted)return;const blank=puzzleState.tiles.indexOf(15);const r=Math.floor(pos/4),c=pos%4,br=Math.floor(blank/4),bc=blank%4;if(Math.abs(r-br)+Math.abs(c-bc)!==1)return;[puzzleState.tiles[pos],puzzleState.tiles[blank]]=[puzzleState.tiles[blank],puzzleState.tiles[pos]];puzzleState.moves++;document.getElementById('moves').textContent=puzzleState.moves;render();if(isSolved(puzzleState.tiles))finish();}
+  function move(pos){if(!gameAllowed||!puzzleState||puzzleState.submitted)return;const blank=puzzleState.tiles.indexOf(15);const r=Math.floor(pos/4),c=pos%4,br=Math.floor(blank/4),bc=blank%4;if(Math.abs(r-br)+Math.abs(c-bc)!==1)return;const correctBefore=puzzleState.tiles.filter((v,i)=>v===i).length;[puzzleState.tiles[pos],puzzleState.tiles[blank]]=[puzzleState.tiles[blank],puzzleState.tiles[pos]];puzzleState.moves++;document.getElementById('moves').textContent=puzzleState.moves;const correctAfter=puzzleState.tiles.filter((v,i)=>v===i).length;if(assistant)assistant.onMove({correct:correctAfter>correctBefore,progressValue:correctAfter/16});render();if(isSolved(puzzleState.tiles))finish();}
   function updateTimer(){if(puzzleState)document.getElementById('timer').textContent=formatTime(Math.floor((Date.now()-puzzleState.started)/1000));}
-  async function finish(){if(!puzzleState||puzzleState.submitted)return;puzzleState.submitted=true;clearInterval(puzzleState.timer);const seconds=Math.floor((Date.now()-puzzleState.started)/1000);const result=document.getElementById('result');result.innerHTML='<div class="hint"><strong>Afbeelding hersteld</strong>Score opslaan…</div>';try{const data=await apiPost('score',{name:PLAYER_NAME,gameId:GAME_ID,seconds,attempts:puzzleState.moves,detail:{version:4,modular:true}});const saved=data.result||data;const startsNote=Number(saved.starts)>1?` · ${Number(saved.starts)}× gestart`:'';result.innerHTML=`<div class="hint"><strong>${escapeHtml(saved.score)} punten verdiend</strong><div>Jouw aanwijzing:</div><h3>"${escapeHtml(saved.hint || 'De volgende aanwijzing blijft nog verzegeld.')}"</h3><div class="muted">Tijd: ${formatTime(Number(saved.seconds) || seconds)} · ${Number(saved.attempts) || puzzleState.moves} zetten${startsNote}</div></div>`;}catch(error){puzzleState.submitted=false;result.innerHTML=`<div class="hint"><strong>Opslaan mislukt</strong>${escapeHtml(error.message)}</div>`;}}
+  async function finish(){if(!puzzleState||puzzleState.submitted)return;if(assistant)assistant.onGameSolved();puzzleState.submitted=true;clearInterval(puzzleState.timer);const seconds=Math.floor((Date.now()-puzzleState.started)/1000);const result=document.getElementById('result');result.innerHTML='<div class="hint"><strong>Afbeelding hersteld</strong>Score opslaan…</div>';try{const data=await apiPost('score',{name:PLAYER_NAME,gameId:GAME_ID,seconds,attempts:puzzleState.moves,detail:{version:4,modular:true}});const saved=data.result||data;const startsNote=Number(saved.starts)>1?` · ${Number(saved.starts)}× gestart`:'';result.innerHTML=`<div class="hint"><strong>${escapeHtml(saved.score)} punten verdiend</strong><div>Jouw aanwijzing:</div><h3>"${escapeHtml(saved.hint || 'De volgende aanwijzing blijft nog verzegeld.')}"</h3><div class="muted">Tijd: ${formatTime(Number(saved.seconds) || seconds)} · ${Number(saved.attempts) || puzzleState.moves} zetten${startsNote}</div></div>`;}catch(error){puzzleState.submitted=false;result.innerHTML=`<div class="hint"><strong>Opslaan mislukt</strong>${escapeHtml(error.message)}</div>`;}}
 
   function showBlocked(message) {
     gameAllowed = false;
@@ -248,9 +271,13 @@
     }
   }
 
+  function hintCallback(){if(!puzzleState||puzzleState.submitted)return;const tiles=puzzleState.tiles;const blank=tiles.indexOf(15);const adj=[];const r=Math.floor(blank/4),c=blank%4;if(r>0)adj.push(blank-4);if(r<3)adj.push(blank+4);if(c>0)adj.push(blank-1);if(c<3)adj.push(blank+1);let bestPos=adj[0],bestCorrect=-1;for(const p of adj){const t=tiles.slice();[t[p],t[blank]]=[t[blank],t[p]];const nc=t.filter((v,i)=>v===i).length;if(nc>bestCorrect){bestCorrect=nc;bestPos=p;}}const el=document.getElementById('puzzle').children[bestPos];if(el){el.classList.add('asst-hint-tile');setTimeout(()=>el.classList.remove('asst-hint-tile'),4000);}}
+
   closeButton.addEventListener('click', closeGame);
   document.getElementById('reshuffle').addEventListener('click',()=>{if(!gameAllowed)return;if(puzzleState&&puzzleState.timer)clearInterval(puzzleState.timer);start();});
-  window.addEventListener('pagehide', () => { if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle); }, { once: true });
+  window.addEventListener('pagehide', () => { if (heartbeatHandle !== null) window.clearInterval(heartbeatHandle); if (assistant) assistant.destroy(); }, { once: true });
+  document.addEventListener('visibilitychange', () => { if (assistant) { if (document.hidden) assistant.pause(); else assistant.resume(); } });
+  assistant = createAssistantManager({ containerId: 'game-assistant' });
   bootstrap();
 </script>
 <script src="../app-update.js"></script>
