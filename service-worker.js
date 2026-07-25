@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v38';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v39';
 
 const APP_SHELL = [
   './',
@@ -56,17 +56,20 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+  const normalizedKey = url.origin + url.pathname;
 
   if (url.origin !== self.location.origin) return;
 
-  const isAlwaysFresh =
+  const isNetworkPreferred =
     url.pathname.endsWith('/manifest.webmanifest') ||
     url.pathname.endsWith('/config.js') ||
     url.pathname.includes('/icons/') ||
     url.pathname.endsWith('/service-worker.js');
 
-  if (isAlwaysFresh) {
-    event.respondWith(fetch(event.request));
+  if (isNetworkPreferred) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request).then(hit => hit || caches.match(normalizedKey)))
+    );
     return;
   }
 
@@ -97,15 +100,15 @@ self.addEventListener('fetch', event => {
       fetch(event.request)
         .then(response => {
           const copy = response.clone();
-
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, copy);
-          });
-
+          event.waitUntil(
+            caches.open(CACHE_NAME).then(cache => {
+              return cache.put(normalizedKey, copy);
+            })
+          );
           return response;
         })
         .catch(() =>
-          caches.match(event.request).then(hit => {
+          caches.match(normalizedKey).then(hit => {
             if (hit) return hit;
             return caches.match(fallbackPath).then(pathHit => {
               if (pathHit) return pathHit;
@@ -119,6 +122,8 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request).catch(() =>
+      caches.match(event.request).then(hit => hit || caches.match(normalizedKey))
+    )
   );
 });

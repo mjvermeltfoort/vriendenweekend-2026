@@ -111,9 +111,10 @@
     }
 
     if (action === 'submit_score') {
+      const clientScore = Number(payload && payload.p_detail && payload.p_detail.clientScore);
       return {
         result: {
-          score: 0,
+          score: Number.isFinite(clientScore) ? clientScore : 0,
           seconds: Number(payload && payload.p_seconds) || 0,
           attempts: Number(payload && payload.p_attempts) || 0,
           hint: LOCAL_DEV_HINT,
