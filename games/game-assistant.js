@@ -183,6 +183,15 @@
       }, ms);
     }
 
+    function enter() {
+      container.hidden = false;
+      container.classList.remove('asst-hidden');
+      container.classList.remove('asst-entering');
+      void container.offsetWidth;
+      container.classList.add('asst-entering');
+      window.setTimeout(() => container.classList.remove('asst-entering'), 1800);
+    }
+
     function showBubble(text, emotion, autoDismiss) {
       if (!bubble || !bubbleText || !text) return;
       window.clearTimeout(bubbleTimer);
@@ -372,6 +381,22 @@
         sessionAt = performance.now();
         if (!tickTimer) tickTimer = window.setInterval(tick, 1000);
       },
+
+      speak(text, options = {}) {
+        showBubble(text, options.emotion || null, options.autoDismiss);
+      },
+
+      emote(name, duration) {
+        if (!name) {
+          setEmotion('idle');
+          return;
+        }
+
+        setEmotion(name);
+        if (duration) clearEmotionAfter(name, duration);
+      },
+
+      enter,
 
       /** Ruim alle timers op bij afsluiten van de pagina. */
       destroy() {

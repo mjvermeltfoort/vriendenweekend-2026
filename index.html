@@ -12,6 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=20260724-1">
   <link rel="icon" href="icons/icon-192.png?v=20260724-1">
   <link rel="apple-touch-icon" href="icons/icon-192.png?v=20260724-1">
+  <link rel="stylesheet" href="games/game-assistant.css">
   <title>Vriendenweekend 2026</title>
   <style>
     :root {
@@ -838,9 +839,29 @@
      </section>
   </main>
 
+  <div id="game-assistant" class="game-assistant asst-hidden" data-emotion="idle" aria-label="Spelassistent" hidden>
+    <div class="asst-wrap">
+      <div class="asst-bubble" id="asst-bubble" hidden>
+        <p class="asst-bubble-text" id="asst-bubble-text"></p>
+        <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
+      </div>
+      <div class="asst-char-row">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+          <span class="asst-body"></span>
+          <span class="asst-eye asst-eye-l"></span>
+          <span class="asst-eye asst-eye-r"></span>
+          <span class="asst-mouth"></span>
+        </button>
+      </div>
+    </div>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20260724-1"></script>
   <script src="supabase-api.js?v=20260724-1"></script>
+  <script src="games/game-assistant.js"></script>
   <script>
     (() => {
       const PLAYER_KEY = 'vriendenweekend-player-name';
@@ -871,6 +892,206 @@
       let activePlayersSignature = '';
       let leaderboardSignature = '';
       let liveOverviewRefreshPending = false;
+      const HOMEPAGE_ASSISTANT_SEEN_KEY = 'vriendenweekend-home-assistant-seen';
+      const assistant = window.createAssistantManager({ containerId: 'game-assistant' });
+      const assistantIntro = [
+        'Hallo! 👋',
+        'Ik ben jouw spelassistent.',
+        'Ik geef af en toe een hint, moedig je aan als je vastloopt en zorg dat je niet helemaal verdwaalt.',
+        'Geen zorgen... ik verklap nooit de oplossing.'
+      ];
+      const assistantAltIntros = [
+        ['Ah, een nieuwe puzzelaar!', 'Ik hoop dat je scherpe ogen hebt.'],
+        ['Welkom bij de online escape room!', 'Je hebt nog een hoop geheimen te ontdekken.'],
+        ['Ik ben hier voor de moeilijke momenten.', 'En natuurlijk ook om een beetje commentaar te geven. 😄'],
+        ['Ik blijf gezellig met je meekijken.', 'Niet schrikken als ik af en toe iets roep.'],
+        ['De eerste puzzel wacht al op je.', 'Succes... je gaat het nodig hebben. 😉']
+      ];
+      const assistantComments = [
+        'Ik heb gehoord dat nog niemand alles in één keer oplost...',
+        'Vergeet niet af en toe op de kaart te kijken.',
+        'Sommige aanwijzingen lijken nutteloos... tot ze dat ineens niet meer zijn.',
+        'Niet alles is wat het lijkt.',
+        'Ik zou overal even goed rondkijken.',
+        'Goed speurwerk begint met nieuwsgierigheid.',
+        'Elke puzzel brengt je dichter bij de eindbestemming.',
+        'Er zijn meer geheimen verstopt dan je denkt.',
+        'Wie goed kijkt, ziet meer.',
+        'Haast is zelden een goede raadgever.',
+        'Misschien is die ene hint later belangrijk.',
+        'Ik heb een goed gevoel over vandaag.',
+        'Heb je alle spellen al bekeken?',
+        'Soms is samenwerken stiekem best handig.',
+        'Ik kan je aanmoedigen...\n\n...maar puzzelen moet je zelf doen.'
+      ];
+      const assistantUnlockedMessages = [
+        'Hé!\n\nEr is zojuist een nieuw spel geopend!',
+        'Nieuwe uitdaging ontdekt!',
+        'Volgens mij wacht daar weer een aanwijzing.'
+      ];
+      const assistantReturningMessages = [
+        'Welkom terug!',
+        'Leuk dat je er weer bent.',
+        'Zin in nog een puzzel?',
+        'Waar waren we gebleven?',
+        'Ik heb op je gewacht.'
+      ];
+      const assistantIdleMessages = [
+        'Nog aan het twijfelen?',
+        'Ik ben er nog hoor.',
+        'Geen haast.',
+        'Een goede puzzelaar denkt eerst.'
+      ];
+      const assistantOpenGameMessages = [
+        'Veel succes!',
+        'Ik ben benieuwd hoe snel je deze oplost.',
+        'Ik houd de tijd wel voor je bij.',
+        'Dit wordt een leuke.'
+      ];
+      const assistantJokes = [
+        'Ik heb geprobeerd alvast te spieken...\n\n...maar zelfs ik kom er niet in.',
+        'Ik ben helaas allergisch voor spoilers.',
+        'Mijn favoriete kleur? Hint-geel.',
+        'Ik ben geprogrammeerd om optimistisch te blijven.',
+        'Ik weet zeker dat deze puzzel ergens logisch is.',
+        'Ik krijg alleen betaald in complimentjes.',
+        'Ik zou zeggen dat dit makkelijk is...\n\n...maar dan zou ik liegen.'
+      ];
+      const assistantRareMessages = [
+        'Ik heb het gevoel dat iemand heel dichtbij de oplossing is...',
+        'Ik mag eigenlijk niet zeggen dat dit mijn favoriete spel is.',
+        'Psst... blijf vooral klikken. Dat doen goede speurders.',
+        'Als niemand kijkt, oefen ik zelf ook op de puzzels.'
+      ];
+      const assistantAllDoneMessages = [
+        ['🎉 Ongelooflijk!', 'Je hebt alle spellen voltooid.', 'Dat verdient respect.'],
+        ['Missie geslaagd!', 'Nu weet jij het geheim dat verborgen was.']
+      ];
+      let assistantCommentTimer = 0;
+      let assistantIdleTimer = 0;
+      let assistantSequenceTimers = [];
+      let assistantHasEntered = false;
+      let assistantReturningShown = false;
+      let assistantShouldWelcomeBack = Boolean(sanitizePlayerName(localStorage.getItem(PLAYER_KEY) || ''));
+      let assistantAllDoneShown = false;
+      let assistantLastLine = '';
+      let previousOpenGameIds = [];
+      let previousCompletedCount = 0;
+
+      function pickRandom(list, exclude) {
+        const items = Array.isArray(list) ? list.filter(Boolean) : [];
+        if (!items.length) return '';
+        const pool = items.length > 1 && exclude ? items.filter(item => item !== exclude) : items;
+        const source = pool.length ? pool : items;
+        return source[Math.floor(Math.random() * source.length)] || source[0];
+      }
+
+      function clearAssistantSequence() {
+        assistantSequenceTimers.forEach(timer => window.clearTimeout(timer));
+        assistantSequenceTimers = [];
+      }
+
+      function speakAssistant(line, options) {
+        if (!line) return;
+        assistantLastLine = line;
+        assistant.speak(line, Object.assign({ emotion: 'curious', autoDismiss: true }, options || {}));
+      }
+
+      function queueAssistantLines(lines, options) {
+        const items = (Array.isArray(lines) ? lines : [lines]).filter(Boolean);
+        if (!items.length) return;
+        const startDelay = options && Number.isFinite(options.startDelay) ? options.startDelay : 0;
+        const interval = options && Number.isFinite(options.interval) ? options.interval : 2600;
+        clearAssistantSequence();
+        items.forEach((line, index) => {
+          const timer = window.setTimeout(() => {
+            speakAssistant(line, {
+              emotion: index === items.length - 1 ? (options && options.lastEmotion) || 'happy' : (options && options.emotion) || 'curious',
+              autoDismiss: index === items.length - 1 ? options && options.autoDismiss : true
+            });
+          }, startDelay + (index * interval));
+          assistantSequenceTimers.push(timer);
+        });
+      }
+
+      function scheduleAssistantComment() {
+        window.clearTimeout(assistantCommentTimer);
+        if (document.hidden || !assistantHasEntered) return;
+        const delay = 45000 + Math.floor(Math.random() * 45000);
+        assistantCommentTimer = window.setTimeout(() => {
+          const roll = Math.random();
+          const line = roll < 0.02
+            ? pickRandom(assistantRareMessages, assistantLastLine)
+            : roll < 0.2
+              ? pickRandom(assistantJokes, assistantLastLine)
+              : pickRandom(assistantComments, assistantLastLine);
+          speakAssistant(line, { emotion: roll < 0.2 ? 'happy' : 'curious', autoDismiss: true });
+          scheduleAssistantComment();
+        }, delay);
+      }
+
+      function scheduleAssistantIdleMessage() {
+        window.clearTimeout(assistantIdleTimer);
+        if (document.hidden || !assistantHasEntered) return;
+        assistantIdleTimer = window.setTimeout(() => {
+          speakAssistant(pickRandom(assistantIdleMessages, assistantLastLine), { emotion: 'thinking', autoDismiss: true });
+          scheduleAssistantIdleMessage();
+        }, 90000);
+      }
+
+      function noteAssistantActivity() {
+        if (!assistantHasEntered || document.hidden) return;
+        scheduleAssistantIdleMessage();
+      }
+
+      function showAssistantArrival() {
+        if (assistantHasEntered) return;
+        assistantHasEntered = true;
+        assistant.enter();
+        assistant.emote('curious', 2600);
+        const seenBefore = localStorage.getItem(HOMEPAGE_ASSISTANT_SEEN_KEY) === '1';
+        const hasRememberedPlayer = Boolean(sanitizePlayerName(localStorage.getItem(PLAYER_KEY) || ''));
+        const introLines = !seenBefore
+          ? assistantIntro
+          : hasRememberedPlayer
+            ? [pickRandom(assistantReturningMessages)]
+            : pickRandom(assistantAltIntros);
+        queueAssistantLines(introLines, { startDelay: 2400, interval: 2500, emotion: 'curious', lastEmotion: 'happy', autoDismiss: false });
+        localStorage.setItem(HOMEPAGE_ASSISTANT_SEEN_KEY, '1');
+        if (hasRememberedPlayer) assistantReturningShown = true;
+        scheduleAssistantComment();
+        scheduleAssistantIdleMessage();
+      }
+
+      function handleAssistantGameState(games) {
+        const list = Array.isArray(games) ? games : [];
+        const openIds = list
+          .filter(game => game && game.state === 'open' && !game.completed)
+          .map(game => game.id)
+          .sort();
+        const completed = list.filter(game => Boolean(game && game.completed)).length;
+        const total = list.length;
+
+        if (previousOpenGameIds.length) {
+          const unlocked = openIds.filter(id => !previousOpenGameIds.includes(id));
+          if (unlocked.length) {
+            speakAssistant(pickRandom(assistantUnlockedMessages, assistantLastLine), { emotion: 'surprised', autoDismiss: false });
+          }
+        }
+
+        if (assistantShouldWelcomeBack && !assistantReturningShown && activePlayerName && previousOpenGameIds.length === 0) {
+          assistantReturningShown = true;
+          speakAssistant(pickRandom(assistantReturningMessages, assistantLastLine), { emotion: 'happy', autoDismiss: true });
+        }
+
+        if (total > 0 && completed === total && previousCompletedCount !== total && !assistantAllDoneShown) {
+          assistantAllDoneShown = true;
+          queueAssistantLines(pickRandom(assistantAllDoneMessages), { interval: 2400, emotion: 'excited', lastEmotion: 'win', autoDismiss: false });
+        }
+
+        previousOpenGameIds = openIds;
+        previousCompletedCount = completed;
+      }
 
       function setNameLocked(locked) {
         nameInput.readOnly = locked;
@@ -1120,6 +1341,7 @@
         renderMetrics(games, leaderboard);
         renderLeaderboard(leaderboard);
         renderActivePlayers(activePlayers);
+        handleAssistantGameState(games);
 
         setStatus('Status geladen voor ' + playerName + '.', 'success');
         refreshButton.disabled = false;
@@ -1135,6 +1357,9 @@
         renderLeaderboard(leaderboard);
         renderActivePlayers(activePlayers);
         playerCount.textContent = String(leaderboard.length);
+        previousOpenGameIds = [];
+        previousCompletedCount = 0;
+        assistantAllDoneShown = false;
         setStatus('Scorebord geladen. Sla je naam op om jouw spelstatus te laden.');
         refreshButton.disabled = false;
       }
@@ -1159,6 +1384,25 @@
       function isConfigValid() {
         return window.VriendenweekendApi.isConfigured();
       }
+
+      gamesRoot.addEventListener('click', event => {
+        const link = event.target.closest('[data-link]');
+        if (!link || link.getAttribute('aria-disabled') === 'true') return;
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        noteAssistantActivity();
+        speakAssistant(pickRandom(assistantOpenGameMessages, assistantLastLine), { emotion: 'excited', autoDismiss: false });
+        window.setTimeout(() => {
+          window.location.assign(link.href);
+        }, 700);
+      });
+
+      ['pointerdown', 'scroll'].forEach(eventName => {
+        document.addEventListener(eventName, noteAssistantActivity, { passive: true });
+      });
+      ['keydown', 'input'].forEach(eventName => {
+        document.addEventListener(eventName, noteAssistantActivity);
+      });
 
       leaderboardWrap.addEventListener('click', event => {
         const btn = event.target.closest('.lb-name-btn');
@@ -1275,9 +1519,24 @@
         deferredPrompt = null;
       });
 
+      window.setTimeout(showAssistantArrival, 3200);
       window.setInterval(refreshLiveOverview, 10000);
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) refreshLiveOverview();
+        if (document.hidden) {
+          window.clearTimeout(assistantCommentTimer);
+          window.clearTimeout(assistantIdleTimer);
+          clearAssistantSequence();
+          return;
+        }
+        refreshLiveOverview();
+        scheduleAssistantComment();
+        scheduleAssistantIdleMessage();
+      });
+      window.addEventListener('pagehide', () => {
+        window.clearTimeout(assistantCommentTimer);
+        window.clearTimeout(assistantIdleTimer);
+        clearAssistantSequence();
+        assistant.destroy();
       });
 
     })();

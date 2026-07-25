@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v36';
+const CACHE_NAME = 'vriendenweekend-dossier-shell-v37';
 
 const APP_SHELL = [
   './',
@@ -8,6 +8,8 @@ const APP_SHELL = [
   './config.example.js',
   './supabase-api.js',
   './manifest.webmanifest',
+  './games/game-assistant.css',
+  './games/game-assistant.js',
   './games/game-shell.css',
   './games/game-shell.js',
   './games/code.html',
