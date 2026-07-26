@@ -713,6 +713,7 @@
           <input class="name-input" id="player-name" name="playerName" autocomplete="name" maxlength="40" placeholder="Bijv. Mark" required>
           <button class="button" id="save-name-button" type="submit">Naam opslaan</button>
         </div>
+        <p class="helper" id="player-name-notice" hidden>Je naam bevat Mark. Kies verplicht even een andere naam.</p>
       </form>
 
       <p class="status" id="status" aria-live="polite">Vul je naam in om de actuele spelstatus op te halen.</p>
@@ -846,8 +847,8 @@
         <button class="asst-hint-btn" id="asst-hint-btn" type="button" hidden>Geef me een hint</button>
       </div>
       <div class="asst-char-row">
-        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Assistent minimaliseren" title="Minimaliseren">−</button>
-        <button class="asst-character" id="asst-character" type="button" aria-label="Spelassistent – klik voor laatste hint">
+        <button class="asst-minimize" id="asst-minimize" type="button" aria-label="Hint Henk minimaliseren" title="Hint Henk minimaliseren">−</button>
+        <button class="asst-character" id="asst-character" type="button" aria-label="Hint Henk – klik voor laatste hint">
           <span class="asst-body"></span>
           <span class="asst-eye asst-eye-l"></span>
           <span class="asst-eye asst-eye-r"></span>
@@ -855,7 +856,7 @@
         </button>
       </div>
     </div>
-    <button class="asst-restore" id="asst-restore" type="button" aria-label="Spelassistent tonen" title="Assistent tonen" hidden>🔮</button>
+    <button class="asst-restore" id="asst-restore" type="button" aria-label="Hint Henk tonen" title="Hint Henk tonen" hidden>🔮</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -874,6 +875,7 @@
       const form = document.getElementById('player-form');
       const nameInput = document.getElementById('player-name');
       const saveNameButton = document.getElementById('save-name-button');
+      const playerNameNotice = document.getElementById('player-name-notice');
       const status = document.getElementById('status');
       const gamesRoot = document.getElementById('games');
       const availableCount = document.getElementById('available-count');
@@ -893,10 +895,10 @@
       let leaderboardSignature = '';
       let liveOverviewRefreshPending = false;
       const HOMEPAGE_ASSISTANT_SEEN_KEY = 'vriendenweekend-home-assistant-seen';
-      const assistant = window.createAssistantManager({ containerId: 'game-assistant' });
+      const assistant = window.createAssistantManager({ containerId: 'game-assistant', name: 'Hint Henk' });
       const assistantIntro = [
         'Hallo! 👋',
-        'Ik ben jouw spelassistent.',
+        'Ik ben Hint Henk, jouw spelassistent.',
         'Ik geef af en toe een hint, moedig je aan als je vastloopt en zorg dat je niet helemaal verdwaalt.',
         'Geen zorgen... ik verklap nooit de oplossing.'
       ];
@@ -1091,6 +1093,18 @@
 
         previousOpenGameIds = openIds;
         previousCompletedCount = completed;
+      }
+
+      function containsBlockedNamePart(name) {
+        return sanitizePlayerName(name).toLowerCase().includes('mark');
+      }
+
+      function canChangeSavedName(name) {
+        return containsBlockedNamePart(name);
+      }
+
+      function updatePlayerNameNotice(name) {
+        playerNameNotice.hidden = !containsBlockedNamePart(name);
       }
 
       function setNameLocked(locked) {
@@ -1417,6 +1431,10 @@
         if (event.key === 'Escape' && !leaderboardModal.hidden) closeLeaderboardModal();
       });
 
+      nameInput.addEventListener('input', () => {
+        updatePlayerNameNotice(nameInput.value);
+      });
+
       form.addEventListener('submit', async event => {
         event.preventDefault();
 
@@ -1431,8 +1449,13 @@
           return;
         }
 
+        if (containsBlockedNamePart(playerName)) {
+          setStatus('Pas je naam aan om verder te gaan.');
+          return;
+        }
+
         const savedName = sanitizePlayerName(localStorage.getItem(PLAYER_KEY) || '');
-        if (savedName && savedName.toLowerCase() !== playerName.toLowerCase()) {
+        if (savedName && savedName.toLowerCase() !== playerName.toLowerCase() && !canChangeSavedName(savedName)) {
           nameInput.value = savedName;
           setStatus('Naam is al opgeslagen op dit apparaat en kan niet worden gewijzigd.', 'error');
           return;
@@ -1443,7 +1466,8 @@
           nameInput.value = playerName;
           localStorage.setItem(PLAYER_KEY, playerName);
           activePlayerName = playerName;
-          setNameLocked(true);
+          updatePlayerNameNotice(playerName);
+          setNameLocked(!canChangeSavedName(playerName));
           await loadStateForPlayer(playerName);
         } catch (error) {
           refreshButton.disabled = false;
@@ -1480,14 +1504,30 @@
       if (rememberedName) {
         nameInput.value = rememberedName;
         activePlayerName = rememberedName;
-        setNameLocked(true);
-        window.VriendenweekendApi.register(rememberedName)
-          .then(() => loadStateForPlayer(rememberedName))
-          .catch(error => {
-            refreshButton.disabled = false;
-            setStatus(error && error.message ? error.message : 'Status laden is mislukt.', 'error');
-          });
+        updatePlayerNameNotice(rememberedName);
+
+        if (containsBlockedNamePart(rememberedName)) {
+          activePlayerName = '';
+          setNameLocked(false);
+          loadLeaderboardOnly()
+            .then(() => {
+              setStatus('Pas je naam aan om verder te gaan.');
+            })
+            .catch(error => {
+              refreshButton.disabled = false;
+              setStatus(error && error.message ? error.message : 'Scorebord laden is mislukt.', 'error');
+            });
+        } else {
+          setNameLocked(true);
+          window.VriendenweekendApi.register(rememberedName)
+            .then(() => loadStateForPlayer(rememberedName))
+            .catch(error => {
+              refreshButton.disabled = false;
+              setStatus(error && error.message ? error.message : 'Status laden is mislukt.', 'error');
+            });
+        }
       } else {
+        updatePlayerNameNotice(nameInput.value);
         setNameLocked(false);
         loadLeaderboardOnly()
           .catch(error => {

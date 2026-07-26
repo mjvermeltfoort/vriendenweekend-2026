@@ -5,6 +5,8 @@
   // ============================================================
   // Assistentteksten – aanpasbaar per spel of via options.messages
   // ============================================================
+  const DEFAULT_ASSISTANT_NAME = 'Hint Henk';
+
   const ASSISTANT_MESSAGES = {
     start: [
       'Klaar voor het avontuur? Schuif die tegels op hun plek!',
@@ -140,6 +142,8 @@
    * @param {object}  [options.messages]  overschrijf één of meer berichtencategorieën
    */
   function createAssistantManager(options) {
+    options = options || {};
+    const assistantName = options.name || DEFAULT_ASSISTANT_NAME;
     const messages  = Object.assign({}, ASSISTANT_MESSAGES, options.messages || {});
     const container = document.getElementById(options.containerId || 'game-assistant');
     if (!container) return createNoopManager();
@@ -148,9 +152,24 @@
     const bubble     = container.querySelector('.asst-bubble');
     const bubbleText = container.querySelector('.asst-bubble-text');
     const hintBtn    = container.querySelector('.asst-hint-btn');
+    const charRow    = container.querySelector('.asst-char-row');
     const character  = container.querySelector('.asst-character');
     const minimizeEl = container.querySelector('.asst-minimize');
     const restoreEl  = container.querySelector('.asst-restore');
+
+    container.dataset.assistantName = assistantName;
+    container.setAttribute('aria-label', assistantName);
+    if (charRow) charRow.dataset.assistantName = assistantName;
+    if (character) character.setAttribute('aria-label', assistantName + ' – klik voor laatste hint');
+    if (restoreEl) {
+      restoreEl.setAttribute('aria-label', assistantName + ' tonen');
+      restoreEl.title = assistantName + ' tonen';
+    }
+    if (minimizeEl) {
+      minimizeEl.setAttribute('aria-label', assistantName + ' minimaliseren');
+      minimizeEl.title = assistantName + ' minimaliseren';
+    }
+    if (hintBtn) hintBtn.setAttribute('aria-label', assistantName + ' geeft een hint');
 
     // ---- Interne toestand ----
     let accMs        = 0;       // opgebouwde speeltijd vóór de laatste pauze
