@@ -28,6 +28,11 @@ interface GameContextValue {
   completeFinale: () => Promise<void>;
 }
 
+interface SyncResult {
+  ok: boolean;
+  error?: string;
+}
+
 const GameContext = createContext<GameContextValue | null>(null);
 
 function uid() {
@@ -106,7 +111,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setSyncMessage(isSupabaseAvailable() ? 'Lokaal opgeslagen' : 'Offline opgeslagen');
     if (isSupabaseAvailable()) {
       const scheduled = scheduleSync(teamArg, progressArg);
-      if (waitForSync) await scheduled;
+      if (waitForSync) {
+        const result = await scheduled;
+        if (!result.ok) {
+          throw new Error(`Team is lokaal opgeslagen, maar online synchroniseren is mislukt: ${result.error}`);
+        }
+      } else {
+        void scheduled.catch(() => undefined);
+      }
     }
   }
 
@@ -155,19 +167,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!team || !currentProgress) {
       setSyncStatus('saved');
       setSyncMessage('Alles opgeslagen');
-      return;
+      return { ok: true } satisfies SyncResult;
     }
     if (!isSupabaseAvailable()) {
       setSyncStatus('offline');
       setSyncMessage('Offline opgeslagen');
-      return;
+      return { ok: false, error: 'Cloudsynchronisatie is niet beschikbaar.' } satisfies SyncResult;
     }
     const items = await loadQueueItems(team.id);
     const latestProgress = await loadProgress(team.id) ?? currentProgress;
     if (!items.length) {
       setSyncStatus('saved');
       setSyncMessage('Alles opgeslagen');
-      return;
+      return { ok: true } satisfies SyncResult;
     }
     setSyncStatus('syncing');
     let synced = 0;
@@ -197,18 +209,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     await saveTeam(latestTeam);
     setActiveTeam(latestTeam);
     setTeams((items) => [latestTeam, ...items.filter((item) => item.id !== latestTeam.id)]);
-    setProgress((prev) => (prev ? { ...prev, lastSyncedAt: new Date().toISOString() } : prev));
-    return void synced;
+    if (!failed) {
+      setProgress((prev) => (prev ? { ...prev, lastSyncedAt: new Date().toISOString() } : prev));
+    }
+    return failed
+      ? { ok: false, error: failed } satisfies SyncResult
+      : { ok: true } satisfies SyncResult;
   }
 
   function scheduleSync(team: TeamRecord | null, currentProgress: GameProgress | null) {
     const scheduled = syncChainRef.current.then(() => syncPending(team, currentProgress));
-    syncChainRef.current = scheduled.catch(() => undefined);
+    syncChainRef.current = scheduled.then(() => undefined, () => undefined);
     return scheduled;
   }
 
   async function syncNow() {
-    return scheduleSync(activeTeam, progress);
+    await scheduleSync(activeTeam, progress);
   }
 
   async function unlockStop(stopId: string, method: 'gps' | 'manual') {

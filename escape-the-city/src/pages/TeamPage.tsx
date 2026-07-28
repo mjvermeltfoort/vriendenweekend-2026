@@ -8,7 +8,7 @@ import { GameIcon, PageShell, ProgressBar, SyncStatus, TeamAvatar } from '../com
 
 export function TeamPage({ pack }: { pack: GamePack }) {
   const navigate = useNavigate();
-  const { createTeam, resumeWithJoinCode, activeTeam, progress, syncStatus, syncMessage } = useGame();
+  const { createTeam, resumeWithJoinCode, activeTeam, progress, syncStatus, syncMessage, syncNow } = useGame();
   const [name, setName] = useState('');
   const [members, setMembers] = useState('');
   const [privacyAccepted, setPrivacyAccepted] = useState(true);
@@ -74,6 +74,18 @@ export function TeamPage({ pack }: { pack: GamePack }) {
     }
   }
 
+  async function retrySync() {
+    setBusy(true);
+    setError('');
+    try {
+      await syncNow();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Synchroniseren is mislukt.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const names = activeTeam?.memberNames.length ? activeTeam.memberNames : activeTeam ? [activeTeam.name] : [];
 
   return (
@@ -99,8 +111,19 @@ export function TeamPage({ pack }: { pack: GamePack }) {
           <div>
             <p className="eyebrow">Teamcode</p>
             <div className="join-code">{activeTeam.joinCode}</div>
-            <p className="muted small">Met deze code kan jullie team op een ander toestel worden hersteld.</p>
-            <button className="button secondary" onClick={() => void shareCode()}><GameIcon name="team" size={18} /> Teamcode delen</button>
+            <p className="muted small">
+              {syncStatus === 'saved'
+                ? 'Met deze code kan jullie team op een ander toestel worden hersteld.'
+                : 'Synchroniseer het team eerst voordat je deze code deelt.'}
+            </p>
+            <button className="button secondary" disabled={busy || syncStatus !== 'saved'} onClick={() => void shareCode()}>
+              <GameIcon name="team" size={18} /> Teamcode delen
+            </button>
+            {syncStatus === 'failed' ? (
+              <button className="button primary" disabled={busy} onClick={() => void retrySync()}>
+                <GameIcon name="sync" size={18} /> Opnieuw synchroniseren
+              </button>
+            ) : null}
             {codeMessage ? <p className="status" role="status">{codeMessage}</p> : null}
           </div>
         </section>
