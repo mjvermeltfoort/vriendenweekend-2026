@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { useInstallPrompt } from '../features/pwa/useInstallPrompt';
-import { AudioControl, GameIcon, HeroArt, SyncStatus } from '../components/GameUi';
+import { AudioControl, GameIcon, SyncStatus } from '../components/GameUi';
 import { useAudio } from '../features/audio/audioContext';
 
 export function HomePage({ pack }: { pack: GamePack }) {
@@ -17,11 +17,17 @@ export function HomePage({ pack }: { pack: GamePack }) {
       <div className="page-content">
         <section className="home-hero">
           <AudioControl className="home-audio-control" />
-          <HeroArt />
+          <div className="home-hero__visual">
+            <img
+              className="home-welcome-image"
+              src={`${import.meta.env.BASE_URL}images/welkom-image.png`}
+              alt=""
+              fetchPriority="high"
+              decoding="async"
+            />
+            <h1 className="visually-hidden">Het Geheim van de Moerasdraak — Den Bosch</h1>
+          </div>
           <div className="home-hero__content">
-            <p className="home-kicker">Het geheim van de</p>
-            <h1 className="home-title">Moerasdraak</h1>
-            <p className="home-city">Den Bosch</p>
             <p className="home-subtitle">Een escape the city-avontuur vol raadsels, geheimen en Bossche legendes.</p>
             <div className="home-actions">
               {lastTeam ? (
