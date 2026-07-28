@@ -39,6 +39,7 @@ function cloneProgress(progress: GameProgress): GameProgress {
 }
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
+  const syncChainRef = React.useRef<Promise<void>>(Promise.resolve());
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<TeamRecord[]>([]);
   const [activeTeam, setActiveTeam] = useState<TeamRecord | null>(null);
@@ -66,11 +67,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { void refresh(); }, []);
 
   useEffect(() => {
-    const online = () => { void syncNow(); };
+    const online = () => { void scheduleSync(activeTeam, progress); };
+    const visibility = () => {
+      if (!document.hidden) void scheduleSync(activeTeam, progress);
+    };
     window.addEventListener('online', online);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncNow(); });
-    return () => window.removeEventListener('online', online);
-  }, []);
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      window.removeEventListener('online', online);
+      document.removeEventListener('visibilitychange', visibility);
+    };
+  }, [activeTeam, progress]);
 
   async function persistTeam(team: TeamRecord, nextProgress: GameProgress) {
     await Promise.all([saveTeam(team), saveProgress(nextProgress)]);
@@ -82,7 +89,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setSyncMessage(isSupabaseAvailable() ? 'Lokaal opgeslagen' : 'Offline opgeslagen');
   }
 
-  async function pushEvent(eventType: string, payload: Record<string, unknown>, stopId?: string, teamArg = activeTeam, progressArg = progress) {
+  async function pushEvent(
+    eventType: string,
+    payload: Record<string, unknown>,
+    stopId?: string,
+    teamArg = activeTeam,
+    progressArg = progress,
+    waitForSync = false
+  ) {
     if (!teamArg || !progressArg) return;
     const item: SyncQueueItem = { id: uid(), teamId: teamArg.id, eventType, stopId, payload, occurredAt: new Date().toISOString(), attempts: 0, status: 'pending' };
     await saveQueueItem(item);
@@ -90,14 +104,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setQueue(nextQueue);
     setSyncStatus(isSupabaseAvailable() ? 'local' : 'offline');
     setSyncMessage(isSupabaseAvailable() ? 'Lokaal opgeslagen' : 'Offline opgeslagen');
+    if (isSupabaseAvailable()) {
+      const scheduled = scheduleSync(teamArg, progressArg);
+      if (waitForSync) await scheduled;
+    }
   }
 
   async function createTeam(input: { name: string; members: string[]; privacyAccepted: boolean }) {
     const team = createTeamRecord({ id: uid(), game: gamePack, name: input.name, members: input.members, privacyAccepted: input.privacyAccepted });
     const nextProgress = createInitialProgress(team.id, gamePack);
     await persistTeam(team, nextProgress);
-    await pushEvent('team_created', { name: team.name, joinCode: team.joinCode, members: team.memberNames }, undefined, team, nextProgress);
-    void syncNow();
+    await pushEvent('team_created', { name: team.name, joinCode: team.joinCode, members: team.memberNames }, undefined, team, nextProgress, true);
   }
 
   async function activateTeam(teamId: string) {
@@ -115,7 +132,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const remote = await joinTeamByCode(normalized);
     await persistTeam(remote.team, remote.progress);
     await pushEvent('team_joined', { joinCode: normalized }, undefined, remote.team, remote.progress);
-    void syncNow();
     return remote.team.id;
   }
 
@@ -135,8 +151,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     saveStoredSettings(next);
   }
 
-  async function syncNow() {
-    if (!activeTeam || !progress) {
+  async function syncPending(team: TeamRecord | null, currentProgress: GameProgress | null) {
+    if (!team || !currentProgress) {
       setSyncStatus('saved');
       setSyncMessage('Alles opgeslagen');
       return;
@@ -146,7 +162,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setSyncMessage('Offline opgeslagen');
       return;
     }
-    const items = await loadQueueItems(activeTeam.id);
+    const items = await loadQueueItems(team.id);
+    const latestProgress = await loadProgress(team.id) ?? currentProgress;
     if (!items.length) {
       setSyncStatus('saved');
       setSyncMessage('Alles opgeslagen');
@@ -157,7 +174,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     let failed: string | null = null;
     for (const item of items) {
       try {
-        await syncQueueItem(item, activeTeam, progress);
+        await syncQueueItem(item, team, latestProgress);
         await saveQueueItem({ ...item, status: 'pending', attempts: item.attempts + 1, lastAttemptAt: new Date().toISOString() });
         await deleteQueueItem(item.id);
         synced += 1;
@@ -167,7 +184,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         break;
       }
     }
-    const remaining = await loadQueueItems(activeTeam.id);
+    const remaining = await loadQueueItems(team.id);
     setQueue(remaining);
     if (failed) {
       setSyncStatus('failed');
@@ -176,12 +193,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setSyncStatus('saved');
       setSyncMessage(remaining.length ? `Offline opgeslagen (${remaining.length} acties)` : 'Alles opgeslagen');
     }
-    const latestTeam = { ...activeTeam, lastActivityAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const latestTeam = { ...team, lastActivityAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     await saveTeam(latestTeam);
     setActiveTeam(latestTeam);
     setTeams((items) => [latestTeam, ...items.filter((item) => item.id !== latestTeam.id)]);
     setProgress((prev) => (prev ? { ...prev, lastSyncedAt: new Date().toISOString() } : prev));
     return void synced;
+  }
+
+  function scheduleSync(team: TeamRecord | null, currentProgress: GameProgress | null) {
+    const scheduled = syncChainRef.current.then(() => syncPending(team, currentProgress));
+    syncChainRef.current = scheduled.catch(() => undefined);
+    return scheduled;
+  }
+
+  async function syncNow() {
+    return scheduleSync(activeTeam, progress);
   }
 
   async function unlockStop(stopId: string, method: 'gps' | 'manual') {
@@ -198,7 +225,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     next.currentStopId = stopId;
     await saveProgress(next);
     setProgress(next);
-    await pushEvent('stop_unlocked', { method }, stopId);
+    await pushEvent('stop_unlocked', { method }, stopId, activeTeam, next);
   }
 
   async function startStop(stopId: string) {
@@ -211,7 +238,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     next.currentStopId = stopId;
     await saveProgress(next);
     setProgress(next);
-    await pushEvent('stop_started', {}, stopId);
+    await pushEvent('stop_started', {}, stopId, activeTeam, next);
   }
 
   async function useHint(stopId: string, hintId: string) {
@@ -223,7 +250,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     next.totalHintsUsed += 1;
     await saveProgress(next);
     setProgress(next);
-    await pushEvent('hint_used', { hintId }, stopId);
+    await pushEvent('hint_used', { hintId }, stopId, activeTeam, next);
   }
 
   async function attemptAnswer(stopId: string, challenge: ChallengeConfig, answer: unknown) {
@@ -252,13 +279,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       next.currentStopId = nextStop?.id ?? stopId;
       await saveProgress(next);
       setProgress(next);
-      await pushEvent('stop_completed', { score: stop.scoreAwarded }, stopId);
+      await pushEvent('stop_completed', { score: stop.scoreAwarded }, stopId, activeTeam, next);
       return { correct: true, message: 'Goed antwoord.' };
     }
     next.wrongAttempts += 1;
     await saveProgress(next);
     setProgress(next);
-    await pushEvent('answer_attempted', { answer }, stopId);
+    await pushEvent('answer_attempted', { answer }, stopId, activeTeam, next);
     return { correct: false, message: 'Nog niet juist.' };
   }
 
@@ -279,7 +306,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     };
     await saveProgress(next);
     setProgress(next);
-    await pushEvent('game_completed', { score: next.totalScore }, gamePack.finalStopId);
+    await pushEvent('game_completed', { score: next.totalScore }, gamePack.finalStopId, activeTeam, next);
   }
 
   const value = useMemo<GameContextValue>(() => ({

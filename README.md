@@ -16,8 +16,10 @@ De publishable key mag openbaar zijn. Dat is alleen veilig dankzij tabel-grants,
 1. Maak een Supabase-project.
 2. Schakel in **Authentication → Providers → Anonymous** anonieme aanmeldingen in.
 3. Voer in de SQL Editor, in volgorde, [`001_initial_schema.sql`](supabase/migrations/001_initial_schema.sql), [`002_seed_games.sql`](supabase/migrations/002_seed_games.sql) en bij een eerder geprobeerd project ook [`003_remove_access_code.sql`](supabase/migrations/003_remove_access_code.sql) en [`004_repair_removed_access_code.sql`](supabase/migrations/004_repair_removed_access_code.sql) uit.
-4. Vul Project URL en publishable key in `config.js`; begin eventueel vanuit `config.example.js`.
+4. Vul voor lokaal gebruik Project URL en publishable key in `config.js`; begin eventueel vanuit `config.example.js`.
 5. Stel bij **Authentication → URL Configuration** de GitHub Pages-URL (en lokale test-URL) als toegestane redirect/origin in.
+
+Voor GitHub Pages stel je onder **Settings → Secrets and variables → Actions → Variables** de repositoryvariabelen `SUPABASE_URL` en `SUPABASE_PUBLISHABLE_KEY` in. De deploymentworkflow genereert daarmee `config.js` en geeft dezelfde waarden als `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY` door aan de Moerasdraak-build. De workflow stopt met een duidelijke fout als een van beide variabelen ontbreekt.
 
 De seed heeft bewust geen `open_from`- of `close_at`-waarden: neem die bij de legacy-import uit de bestaande Sheet over, of beheer ze later rechtstreeks in `private.games`.
 

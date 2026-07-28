@@ -17,6 +17,7 @@ on:
       - 'games/**'
       - 'icons/**'
       - 'escape-the-city/**'
+      - '.github/scripts/generate-config.mjs'
       - '.github/workflows/escape-the-city.yml'
 
 permissions:
@@ -31,6 +32,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,6 +44,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: escape-the-city/package-lock.json
+      - name: Generate public runtime configuration
+        run: node .github/scripts/generate-config.mjs config.js
       - name: Install Escape the City dependencies
         run: npm ci
         working-directory: escape-the-city

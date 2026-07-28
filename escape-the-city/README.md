@@ -24,11 +24,13 @@ npm run dev
 
 ## Environment
 Kopieer `.env.example` naar `.env`.
+De GitHub Pages-workflow gebruikt de repositoryvariabelen `SUPABASE_URL` en `SUPABASE_PUBLISHABLE_KEY` voor zowel de publieke `config.js` als `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY`. Bij een lokale productiebuild zonder Vite-variabelen gebruikt de app de publieke Supabase-configuratie uit `config.js`.
 
 ## Supabase
 - Zet `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY`
 - Schakel Anonymous auth in
 - Run `supabase/migrations/015_city_game_schema.sql`
+- Run `supabase/migrations/016_city_game_sync_rpcs.sql`
 - Lees `docs/supabase-setup.md`
 
 ## Teamflow

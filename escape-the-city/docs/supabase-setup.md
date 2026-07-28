@@ -2,7 +2,7 @@
 
 1. Create Supabase project.
 2. Enable Anonymous auth.
-3. Run root migration `supabase/migrations/015_city_game_schema.sql`.
+3. Run root migrations `supabase/migrations/015_city_game_schema.sql` and `supabase/migrations/016_city_game_sync_rpcs.sql` in that order.
 4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env`.
 5. Test `join_city_game_team(join_code)` with anon user.
 6. Verify RLS: owner/member can read, others cannot.
