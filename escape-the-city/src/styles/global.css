@@ -1273,6 +1273,7 @@ details p { color: var(--color-text-muted); }
 }
 @media (min-width: 560px) {
   .page { min-height: calc(100dvh - 2rem); margin-block: 1rem; border: var(--border-gold); border-radius: var(--radius-large); }
+  .home-hero { min-height: 0; }
   .bottom-nav { bottom: 1rem; border-inline: var(--border-gold); border-radius: 0 0 var(--radius-large) var(--radius-large); }
 }
 @media (max-width: 350px) {
