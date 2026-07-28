@@ -1,6 +1,6 @@
 # Het Verzegelde Dossier – PWA
 
-Statische GitHub Pages-PWA voor Vriendenweekend 2026. De interface en tien spellen blijven gewone HTML/CSS/JavaScript; Supabase levert de anonieme sessies en Postgres/RPC-datalaag. `Code.gs` staat uitsluitend nog als tijdelijke rollbackkopie in deze repository en wordt niet door de frontend geladen.
+Statische GitHub Pages-PWA voor Vriendenweekend 2026. De interface en tien spellen blijven gewone HTML/CSS/JavaScript; Supabase levert de anonieme sessies en Postgres/RPC-datalaag. In dezelfde repository staat ook subapp `escape-the-city/` voor Het Geheim van de Moerasdraak. `Code.gs` staat uitsluitend nog als tijdelijke rollbackkopie in deze repository en wordt niet door de frontend geladen.
 
 ## Architectuur
 
@@ -27,7 +27,7 @@ Volg het handmatige, niet-destructieve pad in [`supabase/legacy-import.md`](supa
 
 ## Lokaal testen en publiceren
 
-Start in de repository bijvoorbeeld `python3 -m http.server 8080`, open de site via `http://localhost:8080`, registreer een naam en test een open spel. Publiceer daarna de root van de repository met GitHub Pages (branch `main`, map `/ (root)`). De PWA-cache wordt in `service-worker.js` per release verhoogd.
+Start in de repository bijvoorbeeld `python3 -m http.server 8080`, open de site via `http://localhost:8080`, registreer een naam en test een open spel. De Moerasdraak-app zit onder `escape-the-city/` en wordt via dezelfde Pages-publicatie meegeleverd. GitHub Actions stelt daarvoor een schone Pages-site samen: de bestaande statische app blijft op `/` en alleen de gebouwde Moerasdraak-app komt onder `/escape-the-city/`. Configureer GitHub Pages met **GitHub Actions** als bron. De PWA-cache wordt in `service-worker.js` per release verhoogd.
 
 ## Rollback
 

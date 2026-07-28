@@ -1,4 +1,6 @@
-const CACHE_NAME = 'vriendenweekend-dossier-shell-v41';
+const CACHE_PREFIX = 'vriendenweekend-dossier-shell-';
+const CACHE_NAME = `${CACHE_PREFIX}v42`;
+const ESCAPE_THE_CITY_PATH = new URL('./escape-the-city/', self.registration.scope).pathname;
 
 const APP_SHELL = [
   './',
@@ -44,7 +46,7 @@ self.addEventListener('activate', event => {
       .then(keys =>
         Promise.all(
           keys
-            .filter(key => key !== CACHE_NAME)
+            .filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
             .map(key => caches.delete(key))
         )
       )
@@ -59,6 +61,7 @@ self.addEventListener('fetch', event => {
   const normalizedKey = url.origin + url.pathname;
 
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith(ESCAPE_THE_CITY_PATH)) return;
 
   const isNetworkPreferred =
     url.pathname.endsWith('/manifest.webmanifest') ||

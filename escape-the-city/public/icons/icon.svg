@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Moerasdraak icoon">
+  <rect width="512" height="512" rx="112" fill="#10243a"/>
+  <path d="M128 332c48-98 92-148 128-148 38 0 84 47 128 142-35-18-72-28-128-28s-93 10-128 34z" fill="#caa85c"/>
+  <path d="M172 208c23-30 51-48 84-48 33 0 61 18 84 48-29-12-56-18-84-18s-55 6-84 18z" fill="#f4efe7" opacity=".9"/>
+  <path d="M186 350c18-46 39-74 70-74 31 0 52 28 70 74-21-8-44-12-70-12s-49 4-70 12z" fill="#0d1a28"/>
+  <path d="M170 356h172v22H170z" fill="#caa85c"/>
+</svg>

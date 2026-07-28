@@ -1,0 +1,64 @@
+name: Deploy Vriendenweekend site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'dashboard.html'
+      - 'config.js'
+      - 'config.example.js'
+      - 'supabase-api.js'
+      - 'app-update.js'
+      - 'manifest.webmanifest'
+      - 'service-worker.js'
+      - 'CNAME'
+      - 'assets/**'
+      - 'games/**'
+      - 'icons/**'
+      - 'escape-the-city/**'
+      - '.github/workflows/escape-the-city.yml'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-vriendenweekend
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: escape-the-city/package-lock.json
+      - name: Install Escape the City dependencies
+        run: npm ci
+        working-directory: escape-the-city
+      - name: Build Escape the City
+        run: npm run build
+        working-directory: escape-the-city
+      - name: Assemble GitHub Pages site
+        run: |
+          mkdir -p _site/escape-the-city
+          cp index.html dashboard.html config.js config.example.js supabase-api.js app-update.js manifest.webmanifest service-worker.js CNAME _site/
+          cp -R assets games icons _site/
+          cp -R escape-the-city/dist/. _site/escape-the-city/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
