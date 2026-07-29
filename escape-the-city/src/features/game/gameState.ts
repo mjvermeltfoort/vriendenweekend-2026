@@ -141,6 +141,27 @@ export function statusOrder(status: StopStatus) {
   return ['locked', 'available', 'arrived', 'started', 'completed'].indexOf(status);
 }
 
+export function hasLocationUnlock(progress: GameProgress, stopId: string) {
+  const stop = progress.stopProgress?.[stopId];
+  return !!stop
+    && statusOrder(stop.state) >= statusOrder('arrived')
+    && (stop.unlockMethod === 'gps' || stop.unlockMethod === 'manual');
+}
+
+export function canAccessChallenge(progress: GameProgress, stopId: string) {
+  const stop = progress.stopProgress?.[stopId];
+  return !!stop
+    && statusOrder(stop.state) >= statusOrder('started')
+    && (stop.state === 'completed' || hasLocationUnlock(progress, stopId));
+}
+
+export function canViewResult(progress: GameProgress, game: GamePack) {
+  return progress.finalized
+    && !!progress.finalResult
+    && game.stops.every((stop) => progress.stopProgress?.[stop.id]?.state === 'completed')
+    && progress.finalResult.symbols.length === game.stops.length;
+}
+
 export function canStartFinale(progress: GameProgress, game: GamePack) {
   const final = game.stops[game.stops.length - 1];
   const requiredStops = game.stops.slice(0, -1);
@@ -173,7 +194,10 @@ export function challengeAnswerIsCorrect(challenge: ChallengeConfig, answer: unk
     return Array.isArray(answer) && answer.length === challenge.correctOrder.length && answer.every((item, index) => item === challenge.correctOrder[index]);
   }
   if (challenge.kind === 'composite') {
-    return typeof answer === 'object' && answer !== null;
+    if (typeof answer !== 'object' || answer === null) return false;
+    const values = answer as Record<string, unknown>;
+    return Object.entries(challenge.correctAnswer)
+      .every(([category, expected]) => values[category] === expected);
   }
   return false;
 }

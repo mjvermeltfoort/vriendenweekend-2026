@@ -94,6 +94,7 @@ export interface CompositeSelectChallengeConfig {
   kind: 'composite';
   prompt: string;
   categories: Record<string, string[]>;
+  correctAnswer: Record<string, string>;
   summaryTemplate: string;
   wrongFeedback: string;
 }

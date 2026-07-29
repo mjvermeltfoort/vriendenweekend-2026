@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { isFinaleLocationRevealed, stopById } from '../features/game/gameState';
+import { canAccessChallenge, isFinaleLocationRevealed, stopById } from '../features/game/gameState';
 import { GameIcon, HintDialog, PageShell } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { BellChallengeAudio } from '../components/BellChallengeAudio';
@@ -32,6 +32,17 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           <GameIcon name="lock" size={32} />
           <h1>Eindlocatie nog verborgen</h1>
           <p>Voltooi eerst alle eerdere opdrachten.</p>
+        </section>
+      </PageShell>
+    );
+  }
+  if (!progress || !canAccessChallenge(progress, currentStop.id)) {
+    return (
+      <PageShell title="Locatie controleren" backTo={`/stop/${currentStop.id}`}>
+        <section className="card stack center">
+          <GameIcon name="location" size={32} />
+          <h1>Controleer eerst jullie locatie</h1>
+          <p>Ontgrendel deze opdracht met GPS of de handmatige locatiecontrole.</p>
         </section>
       </PageShell>
     );

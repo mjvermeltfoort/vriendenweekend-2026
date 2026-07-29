@@ -14,6 +14,16 @@ export function validateGamePack(pack: GamePack) {
     if (stop.coordinates.radiusMeters <= 0 || stop.coordinates.maximumAccuracyMeters <= 0) return { valid: false, message: `Ongeldige GPS-configuratie voor ${stop.id}` };
     if (symbols.has(stop.reward.symbol)) return { valid: false, message: `Dubbel beloningssymbool: ${stop.reward.symbol}` };
     symbols.add(stop.reward.symbol);
+    if (stop.challenge.kind === 'code' && !stop.challenge.acceptedAnswers.length) {
+      return { valid: false, message: `Ontbrekend codeantwoord voor ${stop.id}` };
+    }
+    if (stop.challenge.kind === 'composite') {
+      const challenge = stop.challenge;
+      const categories = Object.keys(challenge.categories);
+      if (!categories.every((category) => challenge.categories[category].includes(challenge.correctAnswer[category]))) {
+        return { valid: false, message: `Ongeldig samengesteld antwoord voor ${stop.id}` };
+      }
+    }
   }
   if (pack.stops[0]?.id !== pack.startStopId) return { valid: false, message: 'Startstop klopt niet.' };
   if (pack.stops[pack.stops.length - 1]?.id !== pack.finalStopId) return { valid: false, message: 'Finalestop klopt niet.' };

@@ -40,7 +40,16 @@ export function HomePage({ pack }: { pack: GamePack }) {
                 <Link className="button primary" to="/team" onClick={unlockAudio}>Begin avontuur</Link>
               )}
               {lastTeam ? <Link className="button secondary" to="/team">Nieuw team</Link> : null}
-              <a className="text-link" href="#uitleg">Hoe werkt het?</a>
+              <button
+                className="text-link"
+                type="button"
+                onClick={() => {
+                  document.getElementById('uitleg')?.scrollIntoView({ behavior: 'smooth' });
+                  document.getElementById('uitleg-title')?.focus({ preventScroll: true });
+                }}
+              >
+                Hoe werkt het?
+              </button>
             </div>
             {isHomeSyncStatusVisible(syncStatus) ? (
               <div className="home-sync-status">
@@ -52,7 +61,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
 
         <div className="home-details stack stack--large" id="uitleg">
           <section>
-            <p className="eyebrow center">Jullie avontuur</p>
+            <p className="eyebrow center" id="uitleg-title" tabIndex={-1}>Jullie avontuur</p>
             <div className="fact-grid">
               <div className="fact"><GameIcon name="time" /><strong>2–2,5 uur</strong><span>speelduur</span></div>
               <div className="fact"><GameIcon name="compass" /><strong>{pack.estimatedDistanceKm} km</strong><span>door de stad</span></div>

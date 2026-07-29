@@ -256,9 +256,14 @@ summary:focus-visible {
 }
 .text-link {
   display: inline-block;
+  min-height: 44px;
   padding: var(--space-2);
+  cursor: pointer;
   color: var(--color-gold-light);
   font-size: 0.9rem;
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
   text-underline-offset: 4px;
 }
 
@@ -761,7 +766,7 @@ summary:focus-visible {
 .map-location-button {
   position: absolute;
   z-index: 7;
-  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  bottom: max(3.25rem, calc(env(safe-area-inset-bottom) + 2.5rem));
   left: max(0.75rem, env(safe-area-inset-left));
   min-height: 42px;
   display: inline-flex;

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { gamePack } from '../game-data/moerasdraak/game';
-import { createInitialProgress, createTeamRecord, normalizeJoinCode, type GameProgress, type SyncQueueItem, type TeamRecord } from '../features/game/gameState';
+import { canStartFinale, challengeAnswerIsCorrect, createInitialProgress, createTeamRecord, hasLocationUnlock, normalizeJoinCode, type GameProgress, type SyncQueueItem, type TeamRecord } from '../features/game/gameState';
 import { clearLastTeamId, deleteQueueItem, deleteTeam, loadLastTeamId, loadProgress, loadQueueItems, loadStoredSettings, loadTeam, loadTeams, saveProgress, saveQueueItem, saveTeam, updateStoredSettings, type StoredSettings } from '../features/offline/storage';
 import { isSupabaseAvailable, joinTeamByCode, syncQueueItem } from '../lib/supabase/sync';
 import type { ChallengeConfig } from '../features/game/gameTypes';
@@ -22,7 +22,7 @@ interface GameContextValue {
   enqueue: (eventType: string, payload: Record<string, unknown>, stopId?: string) => Promise<void>;
   syncNow: () => Promise<void>;
   unlockStop: (stopId: string, method: 'gps' | 'manual') => Promise<void>;
-  startStop: (stopId: string) => Promise<void>;
+  startStop: (stopId: string) => Promise<boolean>;
   useHint: (stopId: string, hintId: string) => Promise<void>;
   attemptAnswer: (stopId: string, challenge: ChallengeConfig, answer: unknown) => Promise<{ correct: boolean; message: string }>;
   completeFinale: () => Promise<void>;
@@ -244,16 +244,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function startStop(stopId: string) {
-    if (!progress) return;
+    if (!progress || !hasLocationUnlock(progress, stopId)) return false;
     const next = cloneProgress(progress);
     const stop = next.stopProgress[stopId];
-    if (!stop) return;
+    if (!stop) return false;
     stop.state = stop.state === 'completed' ? 'completed' : 'started';
     stop.startedAt = stop.startedAt ?? new Date().toISOString();
     next.currentStopId = stopId;
     await saveProgress(next);
     setProgress(next);
     await pushEvent('stop_started', {}, stopId, activeTeam, next);
+    return true;
   }
 
   async function useHint(stopId: string, hintId: string) {
@@ -273,14 +274,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const next = cloneProgress(progress);
     const stop = next.stopProgress[stopId];
     if (!stop) return { correct: false, message: 'Onbekende stop.' };
+    if (stop.state === 'completed') return { correct: true, message: 'Deze opdracht was al voltooid.' };
+    if (stop.state !== 'started' || !hasLocationUnlock(progress, stopId)) {
+      return { correct: false, message: 'Controleer eerst jullie locatie.' };
+    }
     stop.attempts += 1;
-    const correct = (() => {
-      if (challenge.kind === 'choice') return challenge.options.some((option) => option.id === String(answer) && option.correct);
-      if (challenge.kind === 'code') return challenge.acceptedAnswers.some((value) => value.replace(/[\s-]/g, '').toUpperCase() === String(answer).replace(/[\s-]/g, '').toUpperCase());
-      if (challenge.kind === 'reorder') return Array.isArray(answer) && answer.join('|') === challenge.correctOrder.join('|');
-      if (challenge.kind === 'composite') return typeof answer === 'object' && answer !== null;
-      return false;
-    })();
+    const correct = challengeAnswerIsCorrect(challenge, answer);
     if (correct) {
       const stopData = gamePack.stops.find((item) => item.id === stopId)!;
       stop.state = 'completed';
@@ -308,6 +307,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!progress || !activeTeam) return;
     const next = cloneProgress(progress);
     if (next.finalized) return;
+    const eligibility = canStartFinale(progress, gamePack);
+    const finalStop = progress.stopProgress[gamePack.finalStopId];
+    if (eligibility.missingCount > 0 || finalStop?.state !== 'completed') return;
     next.finalized = true;
     next.finalResult = {
       title: gamePack.title,

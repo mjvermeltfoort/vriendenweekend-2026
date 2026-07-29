@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { DragonEmblem, GameIcon, PageShell } from '../components/GameUi';
@@ -7,6 +7,7 @@ import { AudioControl } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { narrationAudio } from '../features/audio/audioConfig';
 import { audioTranscripts } from '../features/audio/audioTranscripts';
+import { canViewResult } from '../features/game/gameState';
 
 const resultPalette = {
   background: '#07100d',
@@ -19,10 +20,19 @@ const resultPalette = {
 } as const;
 
 export function ResultPage({ pack }: { pack: GamePack }) {
-  const { progress, activeTeam } = useGame();
+  const { loading, progress, activeTeam } = useGame();
   const result = progress?.finalResult;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const text = useMemo(() => result?.summary ?? `MOERASDRAAK\nTeam ${activeTeam?.name ?? 'Onbekend'}`, [result, activeTeam]);
+  const text = useMemo(
+    () => result?.summary ?? `MOERASDRAAK\nTeam ${activeTeam?.name ?? 'Onbekend'}`,
+    [result, activeTeam]
+  );
+  if (loading) {
+    return <PageShell navigation={false}><p role="status">Resultaat laden…</p></PageShell>;
+  }
+  if (!progress || !activeTeam || !canViewResult(progress, pack)) {
+    return <Navigate to="/route" replace />;
+  }
   const score = result?.score ?? progress?.totalScore ?? 0;
   const hints = result?.hintsUsed ?? progress?.totalHintsUsed ?? 0;
   const wrongAttempts = result?.wrongAttempts ?? progress?.wrongAttempts ?? 0;

@@ -134,7 +134,17 @@ export function TeamPage({ pack }: { pack: GamePack }) {
         <h2>Team aanmaken</h2>
         <label className="field">
           <span>Teamnaam</span>
-          <input value={name} onChange={(event) => setName(event.target.value)} maxLength={40} autoComplete="organization" />
+          <input
+            value={name}
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? 'team-create-error' : undefined}
+            onChange={(event) => {
+              setName(event.target.value);
+              if (error) setError('');
+            }}
+            maxLength={40}
+            autoComplete="organization"
+          />
         </label>
         <label className="field">
           <span>Namen teamleden, optioneel</span>
@@ -145,7 +155,7 @@ export function TeamPage({ pack }: { pack: GamePack }) {
           <span className="small">Akkoord met privacyuitleg</span>
         </label>
         <button className="button primary" disabled={busy} onClick={() => void submitCreate()}>Team maken</button>
-        {error ? <p className="error" role="alert">{error}</p> : null}
+        {error ? <p className="error" id="team-create-error" role="alert">{error}</p> : null}
       </section>
 
       <section className="card stack" style={{ marginTop: '1rem' }}>

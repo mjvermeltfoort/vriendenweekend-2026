@@ -2,7 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { canStartFinale, isFinaleLocationRevealed, nextStop, stopById } from '../features/game/gameState';
+import { canStartFinale, hasLocationUnlock, isFinaleLocationRevealed, nextStop, stopById } from '../features/game/gameState';
 import { browserLocationProvider } from '../features/location/browserProvider';
 import { createSimulatorProvider, defaultSimulatorState, type SimulatorState } from '../features/location/simulator';
 import { checkGeofence } from '../features/location/geolocation';
@@ -39,7 +39,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
 
   const currentStop = stop;
   const stopState = progress?.stopProgress[currentStop.id]?.state ?? 'locked';
-  const canPlay = stopState !== 'locked';
+  const canPlay = progress ? hasLocationUnlock(progress, currentStop.id) : false;
   const isCompleted = stopState === 'completed';
   const finaleEligibility = currentStop.isFinal && progress ? canStartFinale(progress, pack) : { eligible: true, missingCount: 0, missingTitles: [] as string[] };
   const isDev = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true';
@@ -73,7 +73,11 @@ export function StopPage({ pack }: { pack: GamePack }) {
         return;
       }
       if (!check.withinRadius) {
-        setGpsMessage(`Je bent nog ongeveer ${Math.round(check.distanceMeters)} meter van deze plek verwijderd.`);
+        const roundedDistance = Math.round(check.distanceMeters);
+        const distance = roundedDistance >= 1000
+          ? `${(roundedDistance / 1000).toLocaleString('nl-NL', { maximumFractionDigits: 1 })} kilometer`
+          : `${roundedDistance} meter`;
+        setGpsMessage(`Je bent nog ongeveer ${distance} van deze plek verwijderd.`);
         return;
       }
       setGpsMessage('Locatie gevonden. De opdracht is ontgrendeld.');
@@ -155,7 +159,9 @@ export function StopPage({ pack }: { pack: GamePack }) {
           <button
             className="button primary"
             disabled={!canPlay || !finaleEligibility.eligible}
-            onClick={() => void startStop(currentStop.id).then(() => navigate(`/challenge/${currentStop.id}`))}
+            onClick={() => void startStop(currentStop.id).then((started) => {
+              if (started) navigate(`/challenge/${currentStop.id}`);
+            })}
           >
             Opdracht starten
           </button>

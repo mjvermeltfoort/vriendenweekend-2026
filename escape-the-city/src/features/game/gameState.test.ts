@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canStartFinale, createInitialProgress, isFinaleLocationRevealed, normalizeJoinCode, readableJoinCode } from './gameState';
+import { canAccessChallenge, canStartFinale, canViewResult, challengeAnswerIsCorrect, createInitialProgress, hasLocationUnlock, isFinaleLocationRevealed, normalizeJoinCode, readableJoinCode } from './gameState';
 import { gamePack } from '../../game-data/moerasdraak/game';
 
 describe('gameState', () => {
@@ -34,5 +34,57 @@ describe('gameState', () => {
     };
     expect(isFinaleLocationRevealed(legacyProgress as unknown as ReturnType<typeof createInitialProgress>, gamePack)).toBe(false);
     expect(canStartFinale(legacyProgress as unknown as ReturnType<typeof createInitialProgress>, gamePack).eligible).toBe(false);
+  });
+
+  it('requires an explicit location unlock before a challenge', () => {
+    const progress = createInitialProgress('team-1', gamePack);
+    const stop = progress.stopProgress[gamePack.startStopId];
+    expect(hasLocationUnlock(progress, gamePack.startStopId)).toBe(false);
+    expect(canAccessChallenge(progress, gamePack.startStopId)).toBe(false);
+
+    stop.state = 'started';
+    stop.unlockMethod = 'gps';
+    expect(hasLocationUnlock(progress, gamePack.startStopId)).toBe(true);
+    expect(canAccessChallenge(progress, gamePack.startStopId)).toBe(true);
+  });
+
+  it('accepts bell code 3142 and rejects the old five-digit pattern', () => {
+    const bell = gamePack.stops.find((stop) => stop.id === 'sint-jan')!.challenge;
+    expect(challengeAnswerIsCorrect(bell, '3142')).toBe(true);
+    expect(challengeAnswerIsCorrect(bell, '3-1-4-2')).toBe(true);
+    expect(challengeAnswerIsCorrect(bell, '32143')).toBe(false);
+  });
+
+  it('checks every category of a composite answer', () => {
+    const composite = gamePack.stops.find((stop) => stop.id === 'bosch-wezen')!.challenge;
+    expect(challengeAnswerIsCorrect(composite, {
+      head: 'Horn',
+      body: 'Schubben',
+      object: 'Lantaarn'
+    })).toBe(true);
+    expect(challengeAnswerIsCorrect(composite, {
+      head: 'Masker',
+      body: 'Schubben',
+      object: 'Lantaarn'
+    })).toBe(false);
+  });
+
+  it('only exposes a complete, finalized result', () => {
+    const progress = createInitialProgress('team-1', gamePack);
+    expect(canViewResult(progress, gamePack)).toBe(false);
+    for (const stop of gamePack.stops) progress.stopProgress[stop.id].state = 'completed';
+    progress.collectedRewards = gamePack.stops.map((stop) => stop.reward.symbol);
+    progress.finalized = true;
+    progress.finalResult = {
+      title: gamePack.title,
+      summary: 'Klaar',
+      score: 7000,
+      durationMinutes: 120,
+      hintsUsed: 0,
+      wrongAttempts: 0,
+      symbols: progress.collectedRewards,
+      createdAt: new Date().toISOString()
+    };
+    expect(canViewResult(progress, gamePack)).toBe(true);
   });
 });

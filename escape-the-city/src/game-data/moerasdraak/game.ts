@@ -105,6 +105,11 @@ export const gamePack: GamePack = {
           body: ['Schubben', 'Mantel', 'Steen'],
           object: ['Lantaarn', 'Sleutel', 'Vork']
         },
+        correctAnswer: {
+          head: 'Horn',
+          body: 'Schubben',
+          object: 'Lantaarn'
+        },
         summaryTemplate: 'Hoofd: {head}, lijf: {body}, object: {object}.',
         wrongFeedback: 'Nog niet de juiste combinatie.'
       },
@@ -124,9 +129,9 @@ export const gamePack: GamePack = {
       challenge: {
         kind: 'code',
         prompt: 'Voer de ritmecode in.',
-        answerLength: 5,
+        answerLength: 4,
         keyboard: 'numeric',
-        acceptedAnswers: ['32143', '3-2-1-4-3'],
+        acceptedAnswers: ['3142', '3-1-4-2'],
         wrongFeedback: 'De code klinkt anders.'
       },
       hints: [{ id: 'h1', text: 'Tel korte en lange signalen apart.' }],
