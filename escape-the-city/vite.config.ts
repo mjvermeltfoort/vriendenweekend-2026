@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { readFileSync } from 'node:fs';
+
+const { version: appVersion } = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8')
+) as { version: string };
 
 export default defineConfig({
   base: '/escape-the-city/',
@@ -11,6 +16,8 @@ export default defineConfig({
       includeAssets: ['icons/*'],
       manifest: false,
       workbox: {
+        cacheId: `escape-the-city-v${appVersion}`,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,geojson,woff2}'],
         runtimeCaching: [
           {

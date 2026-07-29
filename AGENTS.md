@@ -16,6 +16,8 @@ python3 -m http.server 8080
 
 Open `http://localhost:8080`, configure Supabase using `config.example.js` as a starting point, then manually test registration, game access, score submission, dashboard data, and replay behavior. After changes that affect cached assets, increment the cache version in `service-worker.js` and verify an update reaches a previously loaded page.
 
+For every deployable change in `escape-the-city/`, bump the same patch version in its `package.json`, `package-lock.json`, and `manifest.webmanifest` (start with `npm version patch --no-git-tag-version`, then update the manifest). The Vite config includes the package version in the Workbox cache ID. Run a production build, confirm the generated manifest and `sw.js` contain the new version, and verify that an already loaded or installed app activates the new service worker and refreshes automatically.
+
 ## Coding Style & Naming Conventions
 
 Use two-space indentation for JavaScript, HTML, CSS, and SQL. Keep browser scripts dependency-free, wrapped in an IIFE where appropriate, and use `window.VriendenweekendApi` for backend calls—do not call Supabase tables directly from pages. Prefer `camelCase` for JavaScript functions and variables, kebab-case for CSS classes and asset filenames, and descriptive Dutch UI copy consistent with the existing interface. Use `textContent` for dynamic text unless HTML is deliberately required.
