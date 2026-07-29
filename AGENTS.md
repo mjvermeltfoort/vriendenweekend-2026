@@ -4,7 +4,7 @@
 
 This is a static GitHub Pages PWA for *Het Verzegelde Dossier*. The root holds the main application pages (`index.html`, `dashboard.html`), shared browser code (`supabase-api.js`, `app-update.js`), PWA files (`manifest.webmanifest`, `service-worker.js`), and runtime configuration (`config.js`).
 
-Individual games live in `games/`: each game is a standalone HTML page, while `game-shell.js`/`.css` provide shared gate and layout behavior. Keep reusable game UI in shared files rather than duplicating it across games. Images belong in `assets/`; PWA icons belong in `icons/`. Database schema and operational changes are ordered SQL files in `supabase/migrations/`; read `supabase/legacy-import.md` before importing historical data. `Code.gs` is a rollback-only legacy copy—do not wire it into the current frontend.
+Individual games live in `games/`: each game is a standalone HTML page, while `game-shell.js`/`.css` provide shared gate and layout behavior. Keep reusable game UI in shared files rather than duplicating it across games. Images belong in `assets/`; PWA icons belong in `icons/`. Database schema and operational changes are ordered SQL files in `supabase/migrations/`; read `supabase/legacy-import.md` before importing historical data.
 
 ## Build, Test, and Development Commands
 

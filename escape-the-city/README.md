@@ -31,6 +31,7 @@ De GitHub Pages-workflow gebruikt de repositoryvariabelen `SUPABASE_URL` en `SUP
 - Schakel Anonymous auth in
 - Run `supabase/migrations/015_city_game_schema.sql`
 - Run `supabase/migrations/016_city_game_sync_rpcs.sql`
+- Run `supabase/migrations/017_enforce_city_game_rpc_only.sql`
 - Lees `docs/supabase-setup.md`
 
 ## Teamflow
