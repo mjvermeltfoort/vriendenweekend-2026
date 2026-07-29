@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { gamePack } from '../game-data/moerasdraak/game';
 import { createInitialProgress, createTeamRecord, normalizeJoinCode, type GameProgress, type SyncQueueItem, type TeamRecord } from '../features/game/gameState';
-import { clearLastTeamId, deleteQueueItem, deleteTeam, loadLastTeamId, loadProgress, loadQueueItems, loadStoredSettings, loadTeam, loadTeams, saveProgress, saveQueueItem, saveStoredSettings, saveTeam, type StoredSettings } from '../features/offline/storage';
+import { clearLastTeamId, deleteQueueItem, deleteTeam, loadLastTeamId, loadProgress, loadQueueItems, loadStoredSettings, loadTeam, loadTeams, saveProgress, saveQueueItem, saveTeam, updateStoredSettings, type StoredSettings } from '../features/offline/storage';
 import { isSupabaseAvailable, joinTeamByCode, syncQueueItem } from '../lib/supabase/sync';
 import type { ChallengeConfig } from '../features/game/gameTypes';
 
@@ -158,9 +158,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }
 
   function updateSettings(patch: Partial<StoredSettings>) {
-    const next = { ...settings, ...patch };
+    const next = updateStoredSettings(settings, patch);
     setSettings(next);
-    saveStoredSettings(next);
   }
 
   async function syncPending(team: TeamRecord | null, currentProgress: GameProgress | null) {

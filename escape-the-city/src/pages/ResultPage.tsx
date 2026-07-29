@@ -8,6 +8,16 @@ import { AudioPlayer } from '../components/AudioPlayer';
 import { narrationAudio } from '../features/audio/audioConfig';
 import { audioTranscripts } from '../features/audio/audioTranscripts';
 
+const resultPalette = {
+  background: '#07100d',
+  border: '#c4974d',
+  borderDecorative: '#765326',
+  title: '#e0bc78',
+  success: '#74ad88',
+  text: '#ead8af',
+  muted: '#ad9a74'
+} as const;
+
 export function ResultPage({ pack }: { pack: GamePack }) {
   const { progress, activeTeam } = useGame();
   const result = progress?.finalResult;
@@ -25,43 +35,43 @@ export function ResultPage({ pack }: { pack: GamePack }) {
     if (!ctx) return;
     canvas.width = 1080;
     canvas.height = 1350;
-    ctx.fillStyle = '#07100d';
+    ctx.fillStyle = resultPalette.background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#c4974d';
+    ctx.strokeStyle = resultPalette.border;
     ctx.lineWidth = 8;
     ctx.strokeRect(45, 45, 990, 1260);
-    ctx.strokeStyle = '#765326';
+    ctx.strokeStyle = resultPalette.borderDecorative;
     ctx.lineWidth = 2;
     ctx.strokeRect(65, 65, 950, 1220);
-    ctx.fillStyle = '#c4974d';
+    ctx.fillStyle = resultPalette.border;
     ctx.font = '600 34px Georgia';
     ctx.textAlign = 'center';
     ctx.fillText('HET GEHEIM VAN DE', 540, 150);
-    ctx.fillStyle = '#e0bc78';
+    ctx.fillStyle = resultPalette.title;
     ctx.font = 'bold 78px Georgia';
     ctx.fillText('MOERASDRAAK', 540, 245);
-    ctx.fillStyle = '#74ad88';
+    ctx.fillStyle = resultPalette.success;
     ctx.font = '600 34px Georgia';
     ctx.fillText('DEN BOSCH', 540, 300);
-    ctx.fillStyle = '#ead8af';
+    ctx.fillStyle = resultPalette.text;
     ctx.font = '48px Georgia';
     ctx.fillText(`Team ${activeTeam?.name ?? 'Onbekend'}`, 540, 410);
     ctx.font = '34px Georgia';
     ctx.fillText(symbols.join('  ') || '✦  ✦  ✦  ✦  ✦  ✦  ✦', 540, 510);
-    ctx.strokeStyle = '#765326';
+    ctx.strokeStyle = resultPalette.borderDecorative;
     ctx.beginPath();
     ctx.moveTo(170, 575);
     ctx.lineTo(910, 575);
     ctx.stroke();
     ctx.font = '32px Georgia';
-    ctx.fillStyle = '#ead8af';
+    ctx.fillStyle = resultPalette.text;
     ctx.fillText(`Score ${score}   ·   Hints ${hints}   ·   Fouten ${wrongAttempts}`, 540, 655);
     ctx.fillText(new Date(result?.createdAt ?? Date.now()).toLocaleDateString('nl-NL'), 540, 720);
-    ctx.fillStyle = '#ad9a74';
+    ctx.fillStyle = resultPalette.muted;
     ctx.font = '29px Georgia';
     ctx.fillText('Gebrouwen met water, moed, verbeelding', 540, 865);
     ctx.fillText('en een sterk verhaal.', 540, 910);
-    ctx.fillStyle = '#c4974d';
+    ctx.fillStyle = resultPalette.border;
     ctx.font = '600 30px Georgia';
     ctx.fillText('FINALE BIJ BOSSCHE BROUWERS', 540, 1125);
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
@@ -95,7 +105,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
         <div className="result-stat"><GameIcon name="star" /><span>Score</span><strong>{score}</strong></div>
       </section>
 
-      <section className="result-label" style={{ marginTop: '1rem' }}>
+      <section className="result-label result-section">
         <p className="eyebrow">Het geheim van de</p>
         <h2>Moerasdraak</h2>
         <p className="home-city">Team {activeTeam?.name ?? 'Onbekend'}</p>
@@ -105,7 +115,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
         <p className="small">{new Date(result?.createdAt ?? Date.now()).toLocaleDateString('nl-NL')} · Bossche Brouwers</p>
       </section>
 
-      <section className="card stack" style={{ marginTop: '1rem' }}>
+      <section className="card stack result-section">
         <AudioPlayer
           source={narrationAudio.completed}
           title="Luister naar de afsluiting"

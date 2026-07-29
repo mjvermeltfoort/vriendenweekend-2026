@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { readableJoinCode } from '../game/gameState';
-import { loadStoredSettings } from './storage';
+import { loadStoredSettings, saveStoredSettings, updateStoredSettings } from './storage';
 
 describe('storage helpers', () => {
   beforeEach(() => localStorage.clear());
@@ -14,7 +14,36 @@ describe('storage helpers', () => {
 
     expect(loadStoredSettings()).toMatchObject({
       soundEnabled: false,
-      backgroundMusicEnabled: true
+      backgroundMusicEnabled: true,
+      highContrastEnabled: false
     });
+  });
+
+  it('loads a stored high contrast preference', () => {
+    localStorage.setItem('moerasdraak-settings', JSON.stringify({
+      soundEnabled: true,
+      backgroundMusicEnabled: true,
+      highContrastEnabled: true
+    }));
+
+    expect(loadStoredSettings().highContrastEnabled).toBe(true);
+  });
+
+  it('saves a high contrast preference', () => {
+    saveStoredSettings({
+      soundEnabled: true,
+      backgroundMusicEnabled: true,
+      highContrastEnabled: true
+    });
+
+    expect(loadStoredSettings().highContrastEnabled).toBe(true);
+  });
+
+  it('updates and persists a high contrast preference', () => {
+    const current = loadStoredSettings();
+    const updated = updateStoredSettings(current, { highContrastEnabled: true });
+
+    expect(updated.highContrastEnabled).toBe(true);
+    expect(loadStoredSettings().highContrastEnabled).toBe(true);
   });
 });

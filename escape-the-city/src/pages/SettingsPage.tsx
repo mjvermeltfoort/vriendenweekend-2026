@@ -4,7 +4,7 @@ import { useGame } from '../app/gameContext';
 import { useAudio } from '../features/audio/audioContext';
 
 export function SettingsPage() {
-  const { syncStatus, syncMessage, syncNow, removeActiveTeam, settings } = useGame();
+  const { syncStatus, syncMessage, syncNow, removeActiveTeam, settings, updateSettings } = useGame();
   const { toggleSound, toggleBackgroundMusic } = useAudio();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -25,6 +25,21 @@ export function SettingsPage() {
           <summary>Offline spelen</summary>
           <p>Team en voortgang worden lokaal opgeslagen. Bereid de route vooraf voor voor de beste offline ervaring.</p>
         </details>
+      </section>
+
+      <section className="card settings-section stack">
+        <p className="eyebrow">Weergave</p>
+        <label className="settings-toggle">
+          <input
+            type="checkbox"
+            checked={settings.highContrastEnabled}
+            onChange={(event) => updateSettings({ highContrastEnabled: event.target.checked })}
+          />
+          <span>
+            <strong>Hoger contrast voor buiten</strong>
+            <small>Maakt teksten, randen en panelen duidelijker in fel licht.</small>
+          </span>
+        </label>
       </section>
 
       <section className="card settings-section stack">

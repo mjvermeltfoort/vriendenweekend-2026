@@ -72,7 +72,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   return (
     <PageShell title="Opdracht" backTo={`/stop/${currentStop.id}`} navigation={false}>
       <p className="eyebrow center">{currentStop.order} / {pack.stops.length}</p>
-      <section className="parchment-card stack stack--large">
+      <section className="parchment-card challenge-card stack stack--large">
         {isFinal ? (
           <AudioPlayer
             source={narrationAudio.finale}

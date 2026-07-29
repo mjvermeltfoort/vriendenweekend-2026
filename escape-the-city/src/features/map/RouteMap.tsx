@@ -211,7 +211,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
           id: 'route-accuracy',
           type: 'fill',
           source: 'route-accuracy',
-          paint: { 'fill-color': mapColors.accuracy, 'fill-opacity': 0.16, 'fill-outline-color': mapColors.accuracy }
+          paint: { 'fill-color': mapColors.accuracy, 'fill-opacity': 0.14 }
+        });
+        map.addLayer({
+          id: 'route-accuracy-outline',
+          type: 'line',
+          source: 'route-accuracy',
+          paint: { 'line-color': mapColors.accuracy, 'line-width': 2, 'line-opacity': 0.82 }
         });
         map.addLayer({
           id: 'route-position',
@@ -234,7 +240,11 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
             (result, coordinate) => result.extend(coordinate),
             new maplibregl.LngLatBounds(coordinates[0], coordinates[0])
           );
-          map.fitBounds(bounds, { padding: 46, maxZoom: 15.8, duration: 0 });
+          map.fitBounds(bounds, {
+            padding: { top: 46, right: 46, bottom: 104, left: 46 },
+            maxZoom: 15.8,
+            duration: 0
+          });
         }
         updateMarkerPositions();
         setMode('live');

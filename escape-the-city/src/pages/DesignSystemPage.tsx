@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { DragonEmblem, GameIcon, HintDialog, PageShell, ProgressBar, TeamAvatar } from '../components/GameUi';
+import { DragonEmblem, GameIcon, HintDialog, PageShell, ProgressBar, SyncStatus, TeamAvatar } from '../components/GameUi';
+import { useGame } from '../app/gameContext';
 
 export function DesignSystemPage() {
   const [hintOpen, setHintOpen] = useState(false);
+  const { settings, updateSettings } = useGame();
 
   return (
     <PageShell title="Design preview" backTo="/" navigation={false}>
@@ -10,11 +12,15 @@ export function DesignSystemPage() {
         <section className="card">
           <p className="eyebrow">Kleuren</p>
           <div className="swatches" aria-label="Kleurstalen">
-            <span className="swatch" style={{ background: 'var(--color-surface-green)' }} />
-            <span className="swatch" style={{ background: 'var(--color-success)' }} />
-            <span className="swatch" style={{ background: 'var(--color-parchment)' }} />
-            <span className="swatch" style={{ background: 'var(--color-gold)' }} />
-            <span className="swatch" style={{ background: 'var(--color-background-deep)' }} />
+            {[
+              ['Achtergrond', 'var(--color-background)', false],
+              ['Oppervlak', 'var(--color-surface)', false],
+              ['Groen', 'var(--color-surface-green)', false],
+              ['Perkament', 'var(--color-parchment)', true],
+              ['Water', '#12565a', false]
+            ].map(([label, background, light]) => (
+              <span className={`swatch design-swatch${light ? ' design-swatch--light' : ''}`} style={{ background: String(background) }} key={String(label)}>{label}</span>
+            ))}
           </div>
         </section>
 
@@ -30,6 +36,8 @@ export function DesignSystemPage() {
           <button className="button primary">Primaire actie</button>
           <button className="button secondary">Secundaire actie</button>
           <button className="button ghost">Ghost actie</button>
+          <button className="button primary" disabled>Uitgeschakelde actie</button>
+          <a className="text-link" href="#focus-preview">Link met focus</a>
         </section>
 
         <section className="parchment-card">
@@ -37,6 +45,37 @@ export function DesignSystemPage() {
           <h2>Een verborgen verhaal</h2>
           <p>Donkere tekst blijft goed leesbaar op een warme, tactiele ondergrond.</p>
           <label className="field"><span>Antwoord</span><input placeholder="Vul antwoord in" /></label>
+          <label className="choice-option">
+            <input type="radio" defaultChecked name="design-choice" />
+            <span>Geselecteerd antwoord</span>
+          </label>
+        </section>
+
+        <section className="card stack" id="focus-preview">
+          <p className="eyebrow">States</p>
+          <div className="route-tabs" aria-label="Voorbeeld routeweergave">
+            <button className="is-active" type="button" aria-pressed="true">Lijst</button>
+            <button type="button" aria-pressed="false">Route</button>
+          </div>
+          <nav className="design-bottom-nav" aria-label="Navigatievoorbeeld">
+            <span className="bottom-nav__item is-active"><GameIcon name="location" />Route</span>
+            <span className="bottom-nav__item"><GameIcon name="team" />Team</span>
+          </nav>
+          {(['saved', 'local', 'syncing', 'failed', 'offline'] as const).map((status) => (
+            <SyncStatus key={status} status={status} message={`Status: ${status}`} />
+          ))}
+          <p className="error" role="alert">Foutmelding: synchronisatie mislukt.</p>
+          <p className="success" role="status">Succesmelding: voortgang opgeslagen.</p>
+          <p className="muted">Gedempte aanvullende tekst.</p>
+          <div className="design-map-label">Kaartlabel op waterkleur</div>
+          <label className="settings-toggle">
+            <input
+              type="checkbox"
+              checked={settings.highContrastEnabled}
+              onChange={(event) => updateSettings({ highContrastEnabled: event.target.checked })}
+            />
+            <span><strong>Hoogcontrastmodus</strong><small>Development-preview</small></span>
+          </label>
         </section>
 
         <section className="card center">

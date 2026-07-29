@@ -14,6 +14,7 @@ import { DesignSystemPage } from '../pages/DesignSystemPage';
 import { PageShell } from '../components/GameUi';
 import { scenicForPath } from '../features/audio/audioConfig';
 import { useAudio } from '../features/audio/audioContext';
+import { useGame } from './gameContext';
 
 function AudioSceneController() {
   const location = useLocation();
@@ -28,6 +29,27 @@ function AudioSceneController() {
   return null;
 }
 
+export function DocumentContrast({ enabled }: { enabled: boolean }) {
+  useEffect(() => {
+    if (enabled) {
+      document.documentElement.dataset.contrast = 'high';
+    } else {
+      delete document.documentElement.dataset.contrast;
+    }
+
+    return () => {
+      delete document.documentElement.dataset.contrast;
+    };
+  }, [enabled]);
+
+  return null;
+}
+
+function ContrastController() {
+  const { settings } = useGame();
+  return <DocumentContrast enabled={settings.highContrastEnabled} />;
+}
+
 export function App() {
   const validation = validateGamePack(gamePack);
   if (!validation.valid) {
@@ -37,6 +59,7 @@ export function App() {
   return (
     <>
       <AudioSceneController />
+      <ContrastController />
       <Routes>
         <Route path="/" element={<HomePage pack={gamePack} />} />
         <Route path="/team" element={<TeamPage pack={gamePack} />} />

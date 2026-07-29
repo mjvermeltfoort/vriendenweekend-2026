@@ -40,7 +40,7 @@ export function RoutePage({ pack }: { pack: GamePack }) {
       <ProgressBar value={completed} max={pack.stops.length} label="Herinneringen hersteld" />
 
       {view === 'list' ? (
-        <ol className="route-list" aria-label="Routepunten" style={{ marginTop: '1.25rem' }}>
+        <ol className="route-list route-list--spaced" aria-label="Routepunten">
           {visibleStops.map((stop) => {
             const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
             const unlocked = state !== 'locked';

@@ -11,6 +11,7 @@ const LAST_TEAM_KEY = 'moerasdraak-last-team';
 export interface StoredSettings {
   soundEnabled: boolean;
   backgroundMusicEnabled: boolean;
+  highContrastEnabled: boolean;
   installDismissedAt?: string;
   updateDismissedAt?: string;
 }
@@ -106,6 +107,7 @@ export function loadStoredSettings(): StoredSettings {
   return {
     soundEnabled: stored.soundEnabled ?? true,
     backgroundMusicEnabled: stored.backgroundMusicEnabled ?? true,
+    highContrastEnabled: stored.highContrastEnabled ?? false,
     installDismissedAt: stored.installDismissedAt,
     updateDismissedAt: stored.updateDismissedAt
   };
@@ -113,6 +115,12 @@ export function loadStoredSettings(): StoredSettings {
 
 export function saveStoredSettings(settings: StoredSettings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+export function updateStoredSettings(settings: StoredSettings, patch: Partial<StoredSettings>) {
+  const next = { ...settings, ...patch };
+  saveStoredSettings(next);
+  return next;
 }
 
 export function loadLastTeamId() {

@@ -248,7 +248,8 @@ export function HintDialog({
       <button className="dialog-close" type="button" aria-label="Hintvenster sluiten" onClick={close}>×</button>
       <span className="hint-dialog__icon"><GameIcon name="lightbulb" size={38} /></span>
       <h2 id="hint-title">Hint</h2>
-      <p>Een hint kost {penalty} punten. Weet je het zeker?</p>
+      <p>Weet je het zeker?</p>
+      <p className="hint-dialog__cost"><strong>Kosten:</strong> {penalty} punten</p>
       <button
         className="button primary"
         type="button"

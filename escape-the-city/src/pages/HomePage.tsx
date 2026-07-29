@@ -5,6 +5,10 @@ import { useInstallPrompt } from '../features/pwa/useInstallPrompt';
 import { AudioControl, GameIcon, SyncStatus } from '../components/GameUi';
 import { useAudio } from '../features/audio/audioContext';
 
+export function isHomeSyncStatusVisible(status: 'saved' | 'local' | 'syncing' | 'failed' | 'offline') {
+  return status !== 'saved';
+}
+
 export function HomePage({ pack }: { pack: GamePack }) {
   const { teams, activeTeam, progress, syncStatus, syncMessage } = useGame();
   const install = useInstallPrompt();
@@ -38,9 +42,11 @@ export function HomePage({ pack }: { pack: GamePack }) {
               {lastTeam ? <Link className="button secondary" to="/team">Nieuw team</Link> : null}
               <a className="text-link" href="#uitleg">Hoe werkt het?</a>
             </div>
-            <div style={{ marginTop: '1rem' }}>
-              <SyncStatus status={syncStatus} message={syncMessage} />
-            </div>
+            {isHomeSyncStatusVisible(syncStatus) ? (
+              <div className="home-sync-status">
+                <SyncStatus status={syncStatus} message={syncMessage} />
+              </div>
+            ) : null}
           </div>
         </section>
 
