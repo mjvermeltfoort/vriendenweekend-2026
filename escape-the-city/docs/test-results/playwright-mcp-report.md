@@ -39,6 +39,7 @@ Hertest uitgevoerd op 29 juli 2026 tegen de productiebuild van commits
 | Kaartcontrols | Geslaagd: locatie- en zoomknoppen zijn 44 px |
 | Kaartattributie-overlap | Geslaagd na cacheverversing: locatieknop eindigt op y=531, attributie begint op y=546 |
 | Favicon | Geslaagd: expliciete SVG-favicon staat in de live HTML en antwoordt HTTP 200 |
+| Drakenfontein-opdrachtcontrast | Geslaagd op 390×844 in normale en hoogcontrastmodus: het donkere illustratieblok gebruikt lichte tekst en de lege-hintstatus gebruikt donkere perkamenttekst |
 
 Na herstel:
 
@@ -232,6 +233,9 @@ achtergronden; daarvoor is geen algemene numerieke ratio geclaimd.
 - [Bellende engel mobiel](playwright-mcp/09-bell-puzzle-390x844.png)
 - [Instellingen](playwright-mcp/10-settings-normal.png)
 - [Contrastcontrole perkament](playwright-mcp/contrast-kruithuis-390x844.png)
+- [Drakenfontein vóór contrastfix](playwright-mcp/contrast-drakenfontein-game-before-390x844.png)
+- [Drakenfontein na contrastfix, normaal](playwright-mcp/contrast-drakenfontein-game-after-normal-390x844.png)
+- [Drakenfontein na contrastfix, hoogcontrast](playwright-mcp/contrast-drakenfontein-game-after-390x844.png)
 - [Resultaat mobiel](playwright-mcp/12-result-mobile.png)
 - [Resultaat desktop](playwright-mcp/12-result-desktop.png)
 
