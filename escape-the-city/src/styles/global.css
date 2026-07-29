@@ -1591,6 +1591,18 @@ input[type="checkbox"] {
 .challenge-card > .bell-challenge {
   margin-inline: var(--space-2);
 }
+.challenge-card > .audio-panel {
+  color: var(--color-text);
+}
+.challenge-card > .audio-panel strong {
+  color: var(--color-text-strong);
+}
+.challenge-card > .audio-panel p {
+  color: var(--color-text);
+}
+.challenge-card .muted {
+  color: #5f482e;
+}
 
 .bell-reference__button {
   min-height: 44px;
