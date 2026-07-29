@@ -143,6 +143,22 @@ describe('dashboard confirmations', () => {
     expect(onSubmit).toHaveBeenCalledOnce();
   });
 
+  it('names team and stop and requires a release reason', () => {
+    const selected = team({ name: 'Team Drakenvuur' });
+    act(() => root.render(
+      <DashboardDialog
+        state={{ kind: 'release', team: selected, stopName: 'De Drakenfontein' }}
+        busy={false}
+        error=""
+        onClose={vi.fn()}
+        onSubmit={vi.fn()}
+      />
+    ));
+    expect(container.textContent).toContain('De Drakenfontein');
+    expect(container.textContent).toContain('Team Drakenvuur');
+    expect(container.querySelector('textarea[name="reason"]')?.hasAttribute('required')).toBe(true);
+  });
+
   it('warns that rotating invalidates the old code', () => {
     act(() => root.render(
       <DashboardDialog

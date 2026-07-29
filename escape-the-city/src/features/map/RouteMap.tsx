@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import type { FilterSpecification, GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { GameIcon } from '../../components/GameUi';
-import { haversineDistanceMeters } from '../location/distance';
 import type { LocationOutcome, LocationResult } from '../location/provider';
+import { loadRouteGeoJson } from '../location/routeDistance';
 import { applyMoerasdraakTheme, legFilter, MAP_STYLE_URL, mapColors } from './mapStyle';
 import {
   createAccuracyPolygon,
@@ -14,7 +14,6 @@ import {
   markerStatus,
   shouldUseFallbackForMapError,
   startLocationPolling,
-  validateRouteGeoJson,
   type LngLat,
   type RouteGeoJson,
   type RouteMapProps
@@ -73,11 +72,6 @@ function polylinePoints(feature: RouteGeoJson['features'][number]) {
   }).join(' ');
 }
 
-function distanceLabel(distance: number) {
-  if (distance < 1000) return `${Math.round(distance)} meter`;
-  return `${(distance / 1000).toFixed(1).replace('.', ',')} km`;
-}
-
 function hiddenLegFilter() {
   return ['==', ['get', 'legIndex'], -1] as FilterSpecification;
 }
@@ -97,23 +91,10 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
 
   const selectedStop = visibleStops.find((stop) => stop.id === selectedStopId) ?? null;
   const selectedState = selectedStop ? progress?.stopProgress?.[selectedStop.id]?.state ?? 'locked' : 'locked';
-  const selectedDistance = selectedStop && location
-    ? haversineDistanceMeters(location, {
-      latitude: selectedStop.coordinates.latitude!,
-      longitude: selectedStop.coordinates.longitude!
-    })
-    : null;
-
   useEffect(() => {
     let cancelled = false;
-    void fetch(`${import.meta.env.BASE_URL}routes/moerasdraak-den-bosch.geojson`)
-      .then((response) => {
-        if (!response.ok) throw new Error('Het lokale routebestand kon niet worden geladen.');
-        return response.json();
-      })
-      .then((data) => {
-        if (!cancelled) setRoute(validateRouteGeoJson(data, gamePack));
-      })
+    void loadRouteGeoJson(gamePack)
+      .then((data) => { if (!cancelled) setRoute(data); })
       .catch(() => {
         if (!cancelled) setMode('fallback');
       });
@@ -407,7 +388,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
           </span>
           <h2>{selectedStop.title}</h2>
           <p>{selectedStop.navigation.clue}</p>
-          {selectedDistance !== null ? <p className="route-bottom-sheet__distance">Hemelsbreed: {distanceLabel(selectedDistance)}</p> : null}
           <div className="route-bottom-sheet__actions">
             <a
               className="button secondary"

@@ -18,7 +18,10 @@ export type TeamSyncErrorCode =
   | 'INVALID_GAME_RESULT'
   | 'INVALID_STEP_TRANSITION'
   | 'INVALID_LOCATION'
+  | 'LOCATION_OUT_OF_ORDER'
   | 'LOCATION_NOT_CURRENT'
+  | 'OBSERVATION_NOT_AVAILABLE'
+  | 'INVALID_OBSERVATION_ACTION'
   | 'OFFLINE_REQUIRED_ACTION'
   | 'SYNC_UNAVAILABLE'
   | 'UNKNOWN';
@@ -56,6 +59,22 @@ export interface TeamGameRun {
   completedAt?: string | null;
 }
 
+export interface TeamStopVerification {
+  stopId: string;
+  method: 'gps' | 'observation' | 'dashboard_override';
+  verifiedAt: string;
+  questionId?: string;
+}
+
+export interface StopObservation {
+  questionId: string;
+  question: string;
+  isBackup: boolean;
+  wrongAttempts: number;
+  hint?: string;
+  canSelectBackup: boolean;
+}
+
 export interface TeamState {
   team: TeamRecord;
   progress: GameProgress;
@@ -65,6 +84,9 @@ export interface TeamState {
   locationStatus: 'current' | 'stale';
   activeSessionCount: number;
   sessionStateAt: string;
+  verifications: TeamStopVerification[];
+  currentObservation: StopObservation | null;
+  observationStatus: 'available' | 'validation_required' | 'unavailable';
 }
 
 type RemoteTeamState = Omit<TeamState, 'progressVersion'> & {
@@ -127,7 +149,10 @@ const errorMessages: Record<Exclude<TeamSyncErrorCode, 'UNKNOWN'>, string> = {
   INVALID_GAME_RESULT: 'Dit spelresultaat kon niet worden verwerkt.',
   INVALID_STEP_TRANSITION: 'Deze stap kan nu niet worden uitgevoerd.',
   INVALID_LOCATION: 'Deze GPS-meting kon niet worden verwerkt.',
+  LOCATION_OUT_OF_ORDER: 'Een nieuwere GPS-meting is al verwerkt.',
   LOCATION_NOT_CURRENT: 'We ontvangen momenteel geen actuele locatie van het team.',
+  OBSERVATION_NOT_AVAILABLE: 'Deze observatievraag is nog niet beschikbaar.',
+  INVALID_OBSERVATION_ACTION: 'Dit observatieantwoord kon niet worden verwerkt.',
   OFFLINE_REQUIRED_ACTION: 'Je bent offline. Maak opnieuw verbinding om deze actie voor het team uit te voeren.',
   SYNC_UNAVAILABLE: 'Teamsynchronisatie is niet beschikbaar.'
 };
@@ -205,7 +230,10 @@ function normalizeTeamState(state: RemoteTeamState): TeamState {
     progressVersion: state.progressVersion ?? state.progress.version ?? 1,
     currentLocation: state.currentLocation
       ? { ...state.currentLocation, isCurrent: state.locationStatus === 'current' }
-      : null
+      : null,
+    verifications: state.verifications ?? [],
+    currentObservation: state.currentObservation ?? null,
+    observationStatus: state.observationStatus ?? 'unavailable'
   };
 }
 
@@ -266,6 +294,45 @@ export async function advanceTeamStep(input: AdvanceTeamStepInput) {
     p_target_step_id: input.targetStepId
   });
   return normalizeTeamState(response.state);
+}
+
+export async function verifyStopObservation(input: {
+  sessionId: string;
+  stopId: string;
+  questionId: string;
+  answer: string;
+  actionId: string;
+}) {
+  const response = await callRpc<{
+    ok: true;
+    verified: boolean;
+    observation?: StopObservation | null;
+    state: RemoteTeamState;
+  }>('verify_stop_observation', {
+    p_session_id: input.sessionId,
+    p_stop_id: input.stopId,
+    p_question_id: input.questionId,
+    p_answer: input.answer,
+    p_action_id: input.actionId
+  });
+  return { ...response, state: normalizeTeamState(response.state) };
+}
+
+export async function selectBackupStopObservation(input: {
+  sessionId: string;
+  stopId: string;
+  actionId: string;
+}) {
+  const response = await callRpc<{
+    ok: true;
+    observation: StopObservation | null;
+    state: RemoteTeamState;
+  }>('select_backup_stop_observation', {
+    p_session_id: input.sessionId,
+    p_stop_id: input.stopId,
+    p_action_id: input.actionId
+  });
+  return { ...response, state: normalizeTeamState(response.state) };
 }
 
 export async function startOrResumeTeamGame(input: StartOrResumeTeamGameInput) {

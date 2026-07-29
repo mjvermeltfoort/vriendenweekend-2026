@@ -12,7 +12,7 @@ export interface StopProgress {
   arrivedAt?: string;
   startedAt?: string;
   completedAt?: string;
-  unlockMethod?: 'gps' | 'manual';
+  unlockMethod?: 'gps' | 'observation' | 'dashboard_override';
 }
 
 export interface TeamRecord {
@@ -189,7 +189,7 @@ export function hasLocationUnlock(progress: GameProgress, stopId: string) {
   const stop = progress.stopProgress?.[stopId];
   return !!stop
     && statusOrder(stop.state) >= statusOrder('arrived')
-    && (stop.unlockMethod === 'gps' || stop.unlockMethod === 'manual');
+    && ['gps', 'observation', 'dashboard_override'].includes(stop.unlockMethod ?? '');
 }
 
 export function canAccessChallenge(progress: GameProgress, stopId: string) {

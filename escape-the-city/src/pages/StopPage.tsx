@@ -1,28 +1,72 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { canStartFinale, hasLocationUnlock, isFinaleLocationRevealed, nextStop, stopById } from '../features/game/gameState';
-import { browserLocationProvider } from '../features/location/browserProvider';
 import { createSimulatorProvider, defaultSimulatorState, type SimulatorState } from '../features/location/simulator';
-import { checkGeofence } from '../features/location/geolocation';
 import { GameIcon, PageShell } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
+import { ActiveStopIndicator } from '../features/location/ActiveStopIndicator';
+import {
+  observationFallbackAvailable,
+  OBSERVATION_FALLBACK_DELAY_MS
+} from '../features/location/observationFallback';
 
 export function StopPage({ pack }: { pack: GamePack }) {
   const navigate = useNavigate();
   const { stopId } = useParams();
-  const { progress, unlockStop, startStop, teamLocation, activeGameRun } = useGame();
+  const {
+    progress,
+    startStop,
+    teamLocation,
+    activeGameRun,
+    locationError,
+    currentObservation,
+    observationStatus,
+    submitObservation,
+    selectBackupObservation,
+    submitSimulatedLocation
+  } = useGame();
   const stop = stopId ? stopById(pack, stopId) : null;
   const [gpsMessage, setGpsMessage] = useState('');
-  const [gpsBusy, setGpsBusy] = useState(false);
+  const [fallbackReady, setFallbackReady] = useState(false);
+  const [answer, setAnswer] = useState('');
+  const [observationBusy, setObservationBusy] = useState(false);
   const [devState, setDevState] = useState<SimulatorState>(defaultSimulatorState);
-  const provider = useMemo(() => (import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true') ? createSimulatorProvider(() => devState) : browserLocationProvider, [devState]);
+  const fallbackStartedAtRef = useRef(Date.now());
   const hiddenFinale = Boolean(stop?.isFinal && (!progress || !isFinaleLocationRevealed(progress, pack)));
 
   useEffect(() => {
     if (stop) document.title = hiddenFinale ? 'Finale vergrendeld' : stop.title;
   }, [hiddenFinale, stop]);
+
+  useEffect(() => {
+    setFallbackReady(false);
+    if (!stop || progress?.stopProgress[stop.id]?.state !== 'available') {
+      fallbackStartedAtRef.current = Date.now();
+      return;
+    }
+    if (teamLocation?.isCurrent && teamLocation.accuracyM <= 40) {
+      fallbackStartedAtRef.current = Date.now();
+      return;
+    }
+    const update = () => setFallbackReady(observationFallbackAvailable({
+      now: Date.now(),
+      waitingSince: fallbackStartedAtRef.current,
+      errorKind: locationError?.kind,
+      location: teamLocation
+    }));
+    update();
+    const elapsed = Date.now() - fallbackStartedAtRef.current;
+    const timer = window.setTimeout(update, Math.max(0, OBSERVATION_FALLBACK_DELAY_MS - elapsed));
+    return () => window.clearTimeout(timer);
+  }, [
+    locationError?.kind,
+    progress?.stopProgress[stop?.id ?? '']?.state,
+    stop?.id,
+    teamLocation?.accuracyM,
+    teamLocation?.isCurrent
+  ]);
 
   if (!stop) return <PageShell title="Verhaal" backTo="/route"><p>Stop niet gevonden.</p></PageShell>;
   if (hiddenFinale) {
@@ -48,54 +92,43 @@ export function StopPage({ pack }: { pack: GamePack }) {
     ? stopById(pack, activeGameRun.gameId)
     : null;
 
-  async function checkGps() {
-    setGpsBusy(true);
-    setGpsMessage('Je locatie wordt bepaald…');
+  async function sendSimulatedLocation() {
+    const provider = createSimulatorProvider(() => devState);
+    const result = await provider.getCurrentPosition();
+    if ('kind' in result) {
+      setGpsMessage(result.message);
+      return;
+    }
     try {
-      const result = isDev
-        ? await provider.getCurrentPosition({ timeout: 8000, enableHighAccuracy: true })
-        : teamLocation?.isCurrent
-          ? {
-              latitude: teamLocation.latitude,
-              longitude: teamLocation.longitude,
-              accuracy: teamLocation.accuracyM,
-              capturedAt: teamLocation.capturedAt
-            }
-          : { kind: 'unavailable' as const, message: 'We ontvangen momenteel geen actuele locatie van het team.' };
-      if ('kind' in result) {
-        setGpsMessage(result.message);
-        return;
+      await submitSimulatedLocation(result);
+      setGpsMessage('Gesimuleerde GPS-meting is via de teamsynchronisatie verstuurd.');
+    } catch (error) {
+      setGpsMessage(error instanceof Error ? error.message : 'De GPS-meting kon niet worden verstuurd.');
+    }
+  }
+
+  async function checkObservation() {
+    if (!currentObservation || !answer.trim()) return;
+    setObservationBusy(true);
+    setGpsMessage('');
+    try {
+      const result = await submitObservation(
+        currentStop.id,
+        currentObservation.questionId,
+        answer
+      );
+      if (result.pending) {
+        setGpsMessage('Je antwoord is bewaard. Zodra er verbinding is, controleren we de locatie.');
+      } else if (!result.verified) {
+        setGpsMessage('Dat antwoord klopt nog niet. Kijk nog eens goed naar het detail.');
+      } else {
+        setGpsMessage('Locatie bereikt. De opdracht is vrijgegeven voor het hele team.');
       }
-      const target = currentStop.coordinates.latitude !== null && currentStop.coordinates.longitude !== null
-        ? {
-            latitude: currentStop.coordinates.latitude,
-            longitude: currentStop.coordinates.longitude,
-            radiusMeters: currentStop.coordinates.radiusMeters,
-            maximumAccuracyMeters: currentStop.coordinates.maximumAccuracyMeters
-          }
-        : null;
-      if (!target) {
-        setGpsMessage('Deze plek gebruikt handmatige locatiecontrole.');
-        await unlockStop(currentStop.id, 'manual');
-        return;
-      }
-      const check = checkGeofence(result, target);
-      if (!check.accuracyOk) {
-        setGpsMessage(`Je locatiesignaal is nog te onnauwkeurig (${Math.round(result.accuracy)} meter). Probeer het buiten opnieuw.`);
-        return;
-      }
-      if (!check.withinRadius) {
-        const roundedDistance = Math.round(check.distanceMeters);
-        const distance = roundedDistance >= 1000
-          ? `${(roundedDistance / 1000).toLocaleString('nl-NL', { maximumFractionDigits: 1 })} kilometer`
-          : `${roundedDistance} meter`;
-        setGpsMessage(`Je bent nog ongeveer ${distance} van deze plek verwijderd.`);
-        return;
-      }
-      setGpsMessage('Locatie gevonden. De opdracht is ontgrendeld.');
-      await unlockStop(currentStop.id, 'gps');
+      setAnswer('');
+    } catch (error) {
+      setGpsMessage(error instanceof Error ? error.message : 'Het antwoord kon niet worden gecontroleerd.');
     } finally {
-      setGpsBusy(false);
+      setObservationBusy(false);
     }
   }
 
@@ -124,21 +157,69 @@ export function StopPage({ pack }: { pack: GamePack }) {
         <p>{currentStop.navigation.clue}</p>
         <p className="muted small">{currentStop.locationName}</p>
 
-        {gpsMessage ? (
+        {progress?.currentStopId === currentStop.id
+          ? <ActiveStopIndicator pack={pack} progress={progress} location={teamLocation} />
+          : null}
+
+        {gpsMessage || (!canPlay && locationError) ? (
           <div className="location-status" role="status" aria-live="polite">
-            <GameIcon name={gpsMessage.startsWith('Locatie gevonden') ? 'check' : 'location'} />
-            <p>{gpsMessage}</p>
+            <GameIcon name={canPlay ? 'check' : 'location'} />
+            <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
           </div>
         ) : null}
 
         {!isCompleted ? (
           <>
-            <button className="button primary" disabled={gpsBusy || isCompleted} onClick={() => void checkGps()}>
-              <GameIcon name="location" size={18} /> {gpsBusy ? 'Locatie bepalen…' : 'GPS controleren'}
-            </button>
+            {!canPlay ? <p className="muted">We controleren automatisch de beste actuele GPS van jullie team.</p> : null}
             {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
-            {isDev ? <button className="button ghost" onClick={() => void unlockStop(currentStop.id, 'manual')}>Handmatig controleren (development)</button> : null}
           </>
+        ) : null}
+
+        {!canPlay && fallbackReady ? (
+          <section className="observation-fallback stack" aria-label="Locatie bevestigen zonder GPS">
+            <h3>Locatie bevestigen zonder GPS</h3>
+            {currentObservation ? (
+              <>
+                <p>{currentObservation.question}</p>
+                <label className="field">
+                  <span>Jullie antwoord</span>
+                  <input
+                    value={answer}
+                    onChange={(event) => setAnswer(event.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+                {currentObservation.hint ? <p className="hint">Hint: {currentObservation.hint}</p> : null}
+                <button
+                  className="button primary"
+                  type="button"
+                  disabled={observationBusy || !answer.trim()}
+                  onClick={() => void checkObservation()}
+                >
+                  {observationBusy ? 'Controleren…' : 'Antwoord controleren'}
+                </button>
+                {currentObservation.canSelectBackup ? (
+                  <button
+                    className="button secondary"
+                    type="button"
+                    onClick={() => void selectBackupObservation(currentStop.id).catch((error) => {
+                      setGpsMessage(error instanceof Error ? error.message : 'De reservevraag kon niet worden geladen.');
+                    })}
+                  >
+                    Detail niet zichtbaar
+                  </button>
+                ) : currentObservation.isBackup ? (
+                  <p>Vraag de organisatie om deze stop vrij te geven als ook dit detail niet zichtbaar is.</p>
+                ) : null}
+              </>
+            ) : (
+              <p>
+                {observationStatus === 'validation_required'
+                  ? 'De vragen voor deze plek worden nog fysiek gecontroleerd. Vraag de organisatie om deze stop vrij te geven.'
+                  : 'Vraag de organisatie om deze stop vrij te geven.'}
+              </p>
+            )}
+          </section>
         ) : null}
 
         {isDev ? (
@@ -157,6 +238,9 @@ export function StopPage({ pack }: { pack: GamePack }) {
               <label className="field"><span>Latitude</span><input value={devState.latitude} onChange={(e) => setDevState((state) => ({ ...state, latitude: Number(e.target.value) }))} /></label>
               <label className="field"><span>Longitude</span><input value={devState.longitude} onChange={(e) => setDevState((state) => ({ ...state, longitude: Number(e.target.value) }))} /></label>
               <label className="field"><span>Nauwkeurigheid</span><input value={devState.accuracy} onChange={(e) => setDevState((state) => ({ ...state, accuracy: Number(e.target.value) }))} /></label>
+              <button className="button secondary" type="button" onClick={() => void sendSimulatedLocation()}>
+                GPS-meting versturen
+              </button>
             </div>
           </details>
         ) : null}
@@ -185,7 +269,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
                 if (started) navigate(`/challenge/${currentStop.id}`);
               }).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.'))}
             >
-              Opdracht starten
+              Opdracht openen
             </button>
           </>
         )}

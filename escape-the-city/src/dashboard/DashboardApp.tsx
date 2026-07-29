@@ -28,6 +28,7 @@ type DialogState =
   | { kind: 'reset'; team: DashboardTeam }
   | { kind: 'abandon'; team: DashboardTeam }
   | { kind: 'revoke'; team: DashboardTeam; participant: DashboardParticipant }
+  | { kind: 'release'; team: DashboardTeam; stopName: string }
   | null;
 
 const stopById = new Map(gamePack.stops.map((stop) => [stop.id, stop]));
@@ -115,7 +116,13 @@ export function DashboardDialog({ state, busy, error, onClose, onSubmit }: {
     disable: ['Team uitschakelen', 'Alle actieve teamsessies worden ingetrokken. Resultaten blijven bewaard.'],
     reset: ['Voortgang resetten', state.kind === 'reset' ? `Weet je zeker dat je de volledige voortgang van ${state.team.name} wilt resetten?` : ''],
     abandon: ['Actieve opdracht beëindigen', 'De actieve opdracht wordt als afgebroken opgeslagen. Er wordt geen score toegekend.'],
-    revoke: ['Sessie stoppen', 'Dit apparaat kan daarna niet meer schrijven en keert bij de volgende synchronisatie terug naar het codescherm.']
+    revoke: ['Sessie stoppen', 'Dit apparaat kan daarna niet meer schrijven en keert bij de volgende synchronisatie terug naar het codescherm.'],
+    release: [
+      'Actuele stop vrijgeven',
+      state.kind === 'release'
+        ? `Geef ${state.stopName} vrij voor ${state.team.name}.`
+        : ''
+    ]
   }[state.kind];
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => {
@@ -136,10 +143,16 @@ export function DashboardDialog({ state, busy, error, onClose, onSubmit }: {
         {state.kind === 'rename' ? (
           <label>Teamnaam<input name="name" minLength={2} maxLength={80} required defaultValue={state.team.name} autoFocus /></label>
         ) : null}
+        {state.kind === 'release' ? (
+          <label>
+            Reden
+            <textarea name="reason" minLength={3} maxLength={500} required autoFocus />
+          </label>
+        ) : null}
         {error ? <p className="dialog-error" role="alert">{error}</p> : null}
         <div className="dialog-actions">
           <button type="button" onClick={onClose} disabled={busy}>Annuleren</button>
-          <button className={['disable', 'reset', 'abandon', 'revoke'].includes(state.kind) ? 'danger' : 'primary'} disabled={busy}>
+          <button className={['disable', 'reset', 'abandon', 'revoke', 'release'].includes(state.kind) ? 'danger' : 'primary'} disabled={busy}>
             {busy ? 'Bezig…' : state.kind === 'create' ? 'Team aanmaken' : 'Bevestigen'}
           </button>
         </div>
@@ -247,6 +260,11 @@ export function DashboardApp() {
         updated = await dashboardActions.resetProgress(dialog.team.id);
       } else if (dialog.kind === 'abandon') {
         updated = await dashboardActions.abandonGame(dialog.team.id);
+      } else if (dialog.kind === 'release') {
+        updated = await dashboardActions.releaseCurrentStop(
+          dialog.team.id,
+          String(formData.get('reason') ?? '')
+        );
       } else {
         updated = await dashboardActions.revokeSession(dialog.team.id, dialog.participant.sessionId);
       }
@@ -267,6 +285,9 @@ export function DashboardApp() {
 
   const selectedParticipants = selectedTeam ? activeParticipants(selectedTeam, now) : [];
   const selectedStop = selectedTeam?.currentStopId ? stopById.get(selectedTeam.currentStopId) : null;
+  const selectedStopProgress = selectedTeam?.currentStopId
+    ? selectedTeam.stopProgress.find((item) => item.stopId === selectedTeam.currentStopId)
+    : null;
 
   return (
     <>
@@ -335,6 +356,19 @@ export function DashboardApp() {
                   {selectedTeam.activeGame
                     ? <button className="danger" type="button" onClick={() => setDialog({ kind: 'abandon', team: selectedTeam })}>Opdracht beëindigen</button>
                     : null}
+                  {selectedStop && selectedStopProgress?.state === 'available' ? (
+                    <button
+                      className="danger"
+                      type="button"
+                      onClick={() => setDialog({
+                        kind: 'release',
+                        team: selectedTeam,
+                        stopName: selectedStop.title
+                      })}
+                    >
+                      Actuele stop vrijgeven
+                    </button>
+                  ) : null}
                 </div>
               </div>
               <div className="detail-columns">

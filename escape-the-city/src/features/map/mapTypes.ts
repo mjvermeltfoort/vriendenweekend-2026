@@ -138,8 +138,7 @@ export function getRoutePresentation(gamePack: GamePack, progress: GameProgress 
   const firstUnfinishedIndex = gamePack.stops.findIndex(
     (stop) => progress?.stopProgress?.[stop.id]?.state !== 'completed'
   );
-  let activeLegIndex: number | null = firstUnfinishedIndex <= 1 ? 0 : firstUnfinishedIndex - 1;
-  if (firstUnfinishedIndex < 0) activeLegIndex = null;
+  let activeLegIndex: number | null = firstUnfinishedIndex > 0 ? firstUnfinishedIndex - 1 : null;
   if (activeLegIndex === finalLegIndex && !finalLegVisible) activeLegIndex = null;
 
   return {

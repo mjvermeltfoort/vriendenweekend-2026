@@ -40,6 +40,26 @@ describe('dashboard API', () => {
     );
   });
 
+  it('sends a mandatory dashboard release reason with the stable client id', async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        id: 'team-1',
+        name: 'Team Draak',
+        code: 'ABC234',
+        status: 'active',
+        stopProgress: [],
+        participants: []
+      },
+      error: null
+    });
+    await dashboardActions.releaseCurrentStop('team-1', 'GPS en detail onbruikbaar');
+    expect(mocks.rpc).toHaveBeenCalledWith('dashboard_release_current_stop', expect.objectContaining({
+      p_team_id: 'team-1',
+      p_reason: 'GPS en detail onbruikbaar',
+      p_client_id: expect.any(String)
+    }));
+  });
+
   it('opens one channel, reports reconnect state and cleans it up once', () => {
     const onStatus = vi.fn();
     const cleanup = subscribeToDashboard(vi.fn(), onStatus);

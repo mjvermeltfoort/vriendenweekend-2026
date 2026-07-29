@@ -63,6 +63,10 @@ export const dashboardActions = {
   revokeSession: (teamId: string, sessionId: string) => mutate(
     'dashboard_revoke_team_session',
     { p_team_id: teamId, p_session_id: sessionId }
+  ),
+  releaseCurrentStop: (teamId: string, reason: string) => mutate(
+    'dashboard_release_current_stop',
+    { p_team_id: teamId, p_reason: reason }
   )
 };
 

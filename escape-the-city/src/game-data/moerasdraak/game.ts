@@ -26,7 +26,7 @@ export const gamePack: GamePack = {
       title: 'De Drakenfontein',
       shortTitle: 'Start',
       locationName: 'Drakenfontein, Stationsplein',
-      coordinates: { latitude: 51.690506, longitude: 5.296208, radiusMeters: 50, maximumAccuracyMeters: 100, needsOnSiteVerification: true },
+      coordinates: { latitude: 51.690506, longitude: 5.296208, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
       intro: { title: 'De draak ontwaakt', text: 'De Moerasdraak heeft zeven herinneringen uit de stad losgemaakt. Vind de eerste bij de fontein.', audioSrc: audioAsset('01-drakenfontein.mp3'), transcript: audioTranscripts.drakenfontein },
       navigation: { clue: 'Zoek het water en de stenen koppen. De eerste herinnering sluimert bij de draak.', fallbackDirections: 'Ga naar de fontein bij station Den Bosch.', externalMapsQuery: 'Drakenfontein Den Bosch' },
       challenge: {
@@ -50,7 +50,7 @@ export const gamePack: GamePack = {
       title: 'Zoete Lieve Gerritje',
       shortTitle: 'Gerritje',
       locationName: 'Hoek Lepelstraat en Korenbrugstraat',
-      coordinates: { latitude: 51.689817, longitude: 5.299926, radiusMeters: 55, maximumAccuracyMeters: 110, needsOnSiteVerification: true },
+      coordinates: { latitude: 51.689817, longitude: 5.299926, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
       intro: { title: 'Tegenstrijdige getuigen', text: 'Een detail in de straat ontmaskert één verklaring.', audioSrc: audioAsset('02-zoete-lieve-gerritje.mp3'), transcript: audioTranscripts.zoeteLieveGerritje },
       navigation: { clue: 'Let op gevels en details rond Gerritje.', fallbackDirections: 'Loop naar Zoete Lieve Gerritje.', externalMapsQuery: 'Zoete Lieve Gerritje Den Bosch' },
       challenge: {
@@ -73,8 +73,8 @@ export const gamePack: GamePack = {
       slug: 'binnendieze',
       title: 'De Verdwenen Stroom',
       shortTitle: 'Water',
-      locationName: 'Waterpoort, Herman Moerkerkplein',
-      coordinates: { latitude: 51.689641, longitude: 5.305190, radiusMeters: 60, maximumAccuracyMeters: 120, needsOnSiteVerification: true },
+      locationName: 'Waterpoort, Herman Moerkerkpark',
+      coordinates: { latitude: 51.689641, longitude: 5.305190, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
       intro: { title: 'Onder de stad', text: 'Zet de waterstromen in juiste volgorde.', audioSrc: audioAsset('03-binnendieze.mp3'), transcript: audioTranscripts.binnendieze },
       navigation: { clue: 'Volg het water waar de stad haar geheimen bewaart.', fallbackDirections: 'Zoek een toegangspunt tot de Binnendieze.', externalMapsQuery: 'Binnendieze Den Bosch' },
       challenge: {
@@ -94,7 +94,7 @@ export const gamePack: GamePack = {
       title: 'Het Monster van Bosch',
       shortTitle: 'Wezen',
       locationName: 'Huis van Bosch, Markt 29',
-      coordinates: { latitude: 51.688968, longitude: 5.304617, radiusMeters: 55, maximumAccuracyMeters: 110, needsOnSiteVerification: true },
+      coordinates: { latitude: 51.688968, longitude: 5.304617, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
       intro: { title: 'Gevels worden lichaam', text: 'Stel een fantasiewezen samen uit drie delen.', audioSrc: audioAsset('04-jheronimus-bosch.mp3'), transcript: audioTranscripts.jheronimusBosch },
       navigation: { clue: 'Combineer wat je op gevels herkent.', fallbackDirections: 'Ga naar de Markt en kijk rond.', externalMapsQuery: 'Markt Den Bosch' },
       challenge: {
@@ -123,7 +123,7 @@ export const gamePack: GamePack = {
       title: 'Het Hemelse Bericht',
       shortTitle: 'Boodschap',
       locationName: 'Sint-Janskathedraal, Paradezijde',
-      coordinates: { latitude: 51.687992, longitude: 5.308464, radiusMeters: 75, maximumAccuracyMeters: 120, needsOnSiteVerification: true },
+      coordinates: { latitude: 51.687992, longitude: 5.308464, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
       intro: { title: 'Bellende engel', text: 'Luister naar het patroon en noteer de code.', audioSrc: audioAsset('05-sint-jan.mp3'), transcript: audioTranscripts.bellendeEngel },
       navigation: { clue: 'Een bericht verstopt zich in klank en ritme.', fallbackDirections: 'Bezoek de Sint-Jan.', externalMapsQuery: 'Sint Jan Den Bosch' },
       challenge: {
@@ -144,7 +144,7 @@ export const gamePack: GamePack = {
       title: 'Vuur en Water',
       shortTitle: 'Balans',
       locationName: 'Kruithuis, Citadellaan 7',
-      coordinates: { latitude: 51.693656, longitude: 5.305112, radiusMeters: 65, maximumAccuracyMeters: 120, needsOnSiteVerification: true },
+      coordinates: { latitude: 51.693656, longitude: 5.305112, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
       intro: { title: 'Vuur, water en verdediging', text: 'Breng drie krachten in balans.', audioSrc: audioAsset('06-kruithuis.mp3'), transcript: audioTranscripts.kruithuis },
       navigation: { clue: 'Zoek baksteen, water en muur.', fallbackDirections: 'Ga naar het Kruithuis of Citadel.', externalMapsQuery: 'Kruithuis Den Bosch' },
       challenge: {
@@ -168,7 +168,7 @@ export const gamePack: GamePack = {
       title: 'De Brouwcode',
       shortTitle: 'Finish',
       locationName: 'Bossche Brouwers, Tramkade 29',
-      coordinates: { latitude: 51.696900, longitude: 5.299290, radiusMeters: 75, maximumAccuracyMeters: 120, needsOnSiteVerification: true },
+      coordinates: { latitude: 51.696900, longitude: 5.299290, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
       intro: { title: 'De finale', text: 'Zet het brouwproces in juiste volgorde.', audioSrc: audioAsset('07-tramkade.mp3'), transcript: audioTranscripts.tramkade },
       navigation: { clue: 'De laatste herinnering eindigt bij de brouwers.', fallbackDirections: 'Ga naar Bossche Brouwers.', externalMapsQuery: 'Bossche Brouwers Den Bosch' },
       challenge: {

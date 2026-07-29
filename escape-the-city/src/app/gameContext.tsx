@@ -6,14 +6,17 @@ import {
   clearSensitiveSessionData,
   deleteTeam,
   getOrCreateDeviceId,
+  deleteQueueItem,
   loadLastTeamId,
   loadProgress,
+  loadQueueItems,
   loadStoredSettings,
   loadTeam,
   loadTeamSession,
   loadTeamSnapshot,
   loadTeams,
   saveTeam,
+  saveQueueItem,
   saveTeamSession,
   saveTeamSnapshotIfNewer,
   updateStoredSettings,
@@ -21,25 +24,28 @@ import {
   type StoredTeamSession
 } from '../features/offline/storage';
 import {
-  advanceTeamStep,
   completeTeamGame,
   getTeamState,
   heartbeatTeamSession,
   isSupabaseAvailable,
   joinTeamByCode,
   revokeTeamSession,
+  selectBackupStopObservation,
   startOrResumeTeamGame,
   subscribeToTeamState,
   TeamSyncError,
   updateTeamGameState,
   updateTeamLocation,
+  verifyStopObservation,
   type TeamGameRun,
   type TeamLocation,
+  type StopObservation,
   type TeamState
 } from '../lib/supabase/sync';
 import type { ChallengeConfig } from '../features/game/gameTypes';
 import { browserLocationProvider } from '../features/location/browserProvider';
 import { shouldSendLocation, type LastSentLocation } from '../features/location/locationThrottle';
+import type { LocationErrorResult, LocationResult } from '../features/location/provider';
 
 interface GameContextValue {
   loading: boolean;
@@ -52,11 +58,16 @@ interface GameContextValue {
   teamLocation: TeamLocation | null;
   activeSessionCount: number;
   activeGameRun: TeamGameRun | null;
+  locationError: LocationErrorResult | null;
+  currentObservation: StopObservation | null;
+  observationStatus: TeamState['observationStatus'];
   resumeWithJoinCode: (code: string) => Promise<string>;
   removeActiveTeam: () => Promise<void>;
   updateSettings: (patch: Partial<StoredSettings>) => void;
   syncNow: () => Promise<void>;
-  unlockStop: (stopId: string, method: 'gps' | 'manual') => Promise<void>;
+  submitObservation: (stopId: string, questionId: string, answer: string) => Promise<{ verified: boolean; pending?: boolean }>;
+  selectBackupObservation: (stopId: string) => Promise<void>;
+  submitSimulatedLocation: (location: LocationResult) => Promise<void>;
   startStop: (stopId: string) => Promise<boolean>;
   useHint: (stopId: string, hintId: string) => Promise<void>;
   attemptAnswer: (stopId: string, challenge: ChallengeConfig, answer: unknown) => Promise<{ correct: boolean; message: string }>;
@@ -77,6 +88,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [teamLocation, setTeamLocation] = useState<TeamLocation | null>(null);
   const [activeSessionCount, setActiveSessionCount] = useState(0);
   const [activeGameRun, setActiveGameRun] = useState<TeamGameRun | null>(null);
+  const [locationError, setLocationError] = useState<LocationErrorResult | null>(null);
+  const [currentObservation, setCurrentObservation] = useState<StopObservation | null>(null);
+  const [observationStatus, setObservationStatus] = useState<TeamState['observationStatus']>('unavailable');
   const [session, setSession] = useState<StoredTeamSession | null>(null);
   const sessionRef = useRef<StoredTeamSession | null>(null);
   const progressRef = useRef<GameProgress | null>(null);
@@ -109,6 +123,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setProgress(serverProgress);
     setTeamLocation(state.currentLocation);
     setActiveSessionCount(state.activeSessionCount);
+    setCurrentObservation(state.currentObservation);
+    setObservationStatus(state.observationStatus);
     setTeams((items) => [state.team, ...items.filter((item) => item.id !== state.team.id)]);
     setSyncStatus('saved');
     setSyncMessage(state.activeSessionCount > 1 ? `${state.activeSessionCount} spelers actief` : 'Alles opgeslagen');
@@ -140,6 +156,43 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setSyncStatus('failed');
       setSyncMessage(error instanceof Error ? error.message : 'Synchroniseren is mislukt.');
       throw error;
+    }
+  }, [applyServerState]);
+
+  const replayObservationQueue = useCallback(async (sessionId: string) => {
+    const teamId = sessionRef.current?.teamId;
+    if (!teamId || !navigator.onLine) return;
+    const items = (await loadQueueItems(teamId))
+      .filter((item) => item.eventType === 'verify_stop_observation')
+      .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
+    for (const item of items) {
+      const stopId = item.stopId;
+      if (!stopId) {
+        await deleteQueueItem(item.id);
+        continue;
+      }
+      const currentState = progressRef.current?.stopProgress[stopId]?.state;
+      if (currentState && ['arrived', 'started', 'completed'].includes(currentState)) {
+        await deleteQueueItem(item.id);
+        continue;
+      }
+      try {
+        const result = await verifyStopObservation({
+          sessionId,
+          stopId,
+          questionId: String(item.payload.questionId ?? ''),
+          answer: String(item.payload.answer ?? ''),
+          actionId: item.id
+        });
+        await applyServerState(result.state);
+        await deleteQueueItem(item.id);
+      } catch (error) {
+        if (error instanceof TeamSyncError && !['UNKNOWN', 'SYNC_UNAVAILABLE'].includes(error.code)) {
+          await deleteQueueItem(item.id);
+          continue;
+        }
+        break;
+      }
     }
   }, [applyServerState]);
 
@@ -211,6 +264,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (disposed || !navigator.onLine) return;
       try {
         await fetchServerState(session.id);
+        await replayObservationQueue(session.id);
+        await fetchServerState(session.id);
         if (!disposed && generation === reconnectGeneration) {
           unsubscribe = subscribeToTeamState(activeTeam.id, () => { void fetchServerState(session.id); });
         }
@@ -244,7 +299,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('offline', onOffline);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [activeTeam?.id, session?.id, fetchServerState]);
+  }, [activeTeam?.id, session?.id, fetchServerState, replayObservationQueue]);
 
   useEffect(() => {
     if (!session || !browserLocationProvider.watchPosition) return;
@@ -253,7 +308,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     let lastSent: LastSentLocation | null = null;
 
     const stopWatching = browserLocationProvider.watchPosition((outcome) => {
-      if (disposed || sending || !navigator.onLine || 'kind' in outcome) return;
+      if (disposed) return;
+      if ('kind' in outcome) {
+        setLocationError(outcome);
+        return;
+      }
+      setLocationError(null);
+      if (sending || !navigator.onLine) return;
       const now = Date.now();
       if (!shouldSendLocation(lastSent, outcome, now)) return;
       sending = true;
@@ -269,6 +330,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }).then((location) => {
         if (!disposed) setTeamLocation(location);
         lastSent = { location: outcome, sentAt: Date.now() };
+        return fetchServerState(session.id);
       }).catch((error) => {
         if (error instanceof TeamSyncError && (error.code === 'SESSION_REVOKED' || error.code === 'SESSION_NOT_FOUND')) {
           sessionRef.current = null;
@@ -283,7 +345,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       disposed = true;
       stopWatching();
     };
-  }, [session?.id]);
+  }, [session?.id, fetchServerState]);
 
   async function resumeWithJoinCode(code: string) {
     const normalized = normalizeJoinCode(code);
@@ -302,7 +364,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       currentLocation: remote.currentLocation ?? null,
       locationStatus: remote.locationStatus ?? 'stale',
       activeSessionCount: remote.activeSessionCount ?? 1,
-      sessionStateAt: remote.sessionStateAt
+      sessionStateAt: remote.sessionStateAt,
+      verifications: remote.verifications ?? [],
+      currentObservation: remote.currentObservation ?? null,
+      observationStatus: remote.observationStatus ?? 'unavailable'
     }, remote.session);
     return remote.team.id;
   }
@@ -330,6 +395,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setActiveTeam(null);
     setProgress(null);
     setTeamLocation(null);
+    setLocationError(null);
+    setCurrentObservation(null);
+    setObservationStatus('unavailable');
     setActiveSessionCount(0);
     setTeams(await loadTeams());
     setSyncStatus('saved');
@@ -386,21 +454,66 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     await fetchServerState();
   }
 
-  async function unlockStop(stopId: string, _method: 'gps' | 'manual') {
+  async function submitObservation(stopId: string, questionId: string, answer: string) {
     const activeSession = sessionRef.current;
-    const currentProgress = progressRef.current;
-    if (!activeSession || !currentProgress) return;
-    try {
-      const state = await advanceTeamStep({
-        sessionId: activeSession.id,
-        expectedVersion: currentProgress.version,
-        targetStepId: stopId
+    const teamId = activeSession?.teamId;
+    if (!activeSession || !teamId) throw new Error('Voer de teamcode opnieuw in.');
+    const actionId = crypto.randomUUID();
+    if (!navigator.onLine) {
+      await saveQueueItem({
+        id: actionId,
+        teamId,
+        eventType: 'verify_stop_observation',
+        stopId,
+        payload: { questionId, answer },
+        occurredAt: new Date().toISOString(),
+        attempts: 0,
+        status: 'pending'
       });
-      await applyServerState(state);
+      return { verified: false, pending: true };
+    }
+    try {
+      const result = await verifyStopObservation({
+        sessionId: activeSession.id,
+        stopId,
+        questionId,
+        answer,
+        actionId
+      });
+      await applyServerState(result.state);
+      return { verified: result.verified };
     } catch (error) {
-      if (error instanceof TeamSyncError && error.code === 'VERSION_CONFLICT') await fetchServerState(activeSession.id);
       throw error;
     }
+  }
+
+  async function selectBackupObservation(stopId: string) {
+    const activeSession = sessionRef.current;
+    if (!activeSession || !navigator.onLine) {
+      throw new Error('Maak verbinding om de reservevraag te laden.');
+    }
+    const result = await selectBackupStopObservation({
+      sessionId: activeSession.id,
+      stopId,
+      actionId: crypto.randomUUID()
+    });
+    await applyServerState(result.state);
+  }
+
+  async function submitSimulatedLocation(location: LocationResult) {
+    const activeSession = sessionRef.current;
+    if (!activeSession) throw new Error('Voer de teamcode opnieuw in.');
+    await updateTeamLocation({
+      sessionId: activeSession.id,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      accuracyM: location.accuracy,
+      altitudeM: location.altitude,
+      headingDeg: location.heading,
+      speedMps: location.speed,
+      capturedAt: location.capturedAt ?? new Date().toISOString()
+    });
+    await fetchServerState(activeSession.id);
   }
 
   async function startStop(stopId: string) {
@@ -496,16 +609,21 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     teamLocation,
     activeSessionCount,
     activeGameRun,
+    locationError,
+    currentObservation,
+    observationStatus,
     resumeWithJoinCode,
     removeActiveTeam,
     updateSettings,
     syncNow,
-    unlockStop,
+    submitObservation,
+    selectBackupObservation,
+    submitSimulatedLocation,
     startStop,
     useHint,
     attemptAnswer,
     completeFinale
-  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun]);
+  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun, locationError, currentObservation, observationStatus]);
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

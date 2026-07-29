@@ -46,6 +46,10 @@ describe('gameState', () => {
     stop.unlockMethod = 'gps';
     expect(hasLocationUnlock(progress, gamePack.startStopId)).toBe(true);
     expect(canAccessChallenge(progress, gamePack.startStopId)).toBe(true);
+    for (const method of ['observation', 'dashboard_override'] as const) {
+      stop.unlockMethod = method;
+      expect(hasLocationUnlock(progress, gamePack.startStopId)).toBe(true);
+    }
   });
 
   it('accepts bell code 3142 and rejects the old five-digit pattern', () => {

@@ -6,6 +6,7 @@ import { canStartFinale, isFinaleLocationRevealed } from '../features/game/gameS
 import { GameIcon, PageShell, ProgressBar, SyncStatus } from '../components/GameUi';
 import { RouteMap } from '../features/map/RouteMap';
 import type { LocationProvider } from '../features/location/provider';
+import { ActiveStopIndicator } from '../features/location/ActiveStopIndicator';
 
 const statusLabels = {
   locked: 'Vergrendeld',
@@ -52,6 +53,7 @@ export function RoutePage({ pack }: { pack: GamePack }) {
         </button>
       </div>
       <ProgressBar value={completed} max={pack.stops.length} label="Herinneringen hersteld" />
+      <ActiveStopIndicator pack={pack} progress={progress} location={teamLocation} />
 
       {view === 'list' ? (
         <ol className="route-list route-list--spaced" aria-label="Routepunten">

@@ -47,11 +47,11 @@ describe('route GeoJSON', () => {
 });
 
 describe('route presentation', () => {
-  it('selects only the first leg for a new game', () => {
+  it('does not invent an incoming leg for the start stop', () => {
     const progress = createInitialProgress('team', gamePack);
 
     expect(getRoutePresentation(gamePack, progress)).toEqual({
-      activeLegIndex: 0,
+      activeLegIndex: null,
       completedLegIndices: [],
       finalLegVisible: false,
       fullRouteVisible: false
