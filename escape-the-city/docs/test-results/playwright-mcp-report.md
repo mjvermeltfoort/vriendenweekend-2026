@@ -20,6 +20,33 @@
 - P3: 0
 - Eindoordeel: afkeuren voor een volledige spelronde. De locatiepoort is te omzeilen, de voorgeschreven code van opdracht 5 wordt afgewezen en een onvoltooid spel kan rechtstreeks als voltooid resultaat worden geopend en geëxporteerd.
 
+## Hertest na herstel
+
+Hertest uitgevoerd op 29 juli 2026 tegen de productiebuild van commits
+`79ce82a`, `bccaf61` en `85030fc`.
+
+| Bevinding | Hertestresultaat |
+|---|---|
+| Resultaatroute vóór finale | Geslaagd: `#/resultaat` stuurt bij 4/7 terug naar `#/route` |
+| Directe challenge zonder unlock | Geslaagd: toont “Controleer eerst jullie locatie” |
+| Buiten geofence | Geslaagd: 5.769 km wordt leesbaar getoond en “Opdracht starten” is disabled |
+| Bellende-engelcode `3142` | Geslaagd: opdracht 5 wordt voltooid en opdracht 6 ontgrendeld |
+| Reguliere audio | Geslaagd: Kruithuis speelt, pauzeknop verschijnt en duur is 0:33 |
+| Hoogcontrastmodus | Geslaagd: `data-contrast="high"` blijft na reload behouden |
+| “Hoe werkt het?” | Geslaagd: 44 px hoog en focus gaat naar “Jullie avontuur” |
+| Teamvalidatie | Geslaagd: alert en `aria-describedby` verdwijnen bij geldige invoer |
+| Manifesticon | Geslaagd: juiste URL en HTTP 200 `image/svg+xml` |
+| Kaartcontrols | Geslaagd: locatie- en zoomknoppen zijn 44 px |
+| Kaartattributie-overlap | Geslaagd na cacheverversing: locatieknop eindigt op y=531, attributie begint op y=546 |
+| Favicon | Geslaagd: expliciete SVG-favicon staat in de live HTML en antwoordt HTTP 200 |
+
+Na herstel:
+
+- `npm run lint`: geslaagd.
+- `npm run test`: 16 testbestanden en 53 tests geslaagd.
+- `npm run build`: geslaagd; alleen de bestaande waarschuwing voor chunks groter dan 500 kB blijft.
+- Offline-contextwissel blijft door de gebruikte MCP-transportconfiguratie niet betrouwbaar automatiseerbaar.
+
 ## Blokkerende problemen
 
 ### [P0] Bellende-engelcode 3142 wordt afgewezen
