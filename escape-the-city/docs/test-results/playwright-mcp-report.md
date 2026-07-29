@@ -139,9 +139,20 @@ Steekproef op de gerenderde hoofdachtergrond `#030806`. Transparante en gradient
 | Gouden titel | `#e0bc78` | `#030806` | 11.17:1 | 3:1 | Geslaagd |
 | Sectielabel goud | `#c4974d` | `#030806` | 7.57:1 | 4.5:1 | Geslaagd |
 | Muted tekst | `#ad9a74` | `#030806` | 7.35:1 | 4.5:1 | Geslaagd |
-| Primaire knoptekst | `#e0bc78` | semitransparant donkergroen | n.v.t. | 4.5:1 | Visueel voldoende; exacte compositing niet betrouwbaar gemeten |
+| Placeholder | `#a99a7b` | `#08130f` | 6.84:1 | 4.5:1 | Geslaagd |
+| Disabled knoptekst | `#93886f` | `#111914` | 5.11:1 | 4.5:1 | Geslaagd |
+| Perkamenttekst | `#352617` | `#d7c097` | 8.24:1 | 4.5:1 | Geslaagd |
+| Perkamenttitel | `#314b32` | `#d7c097` | 5.44:1 | 3:1 | Geslaagd |
+| Hoogcontrast bodytekst | `#f1dfba` | `#000302` | 15.78:1 | 4.5:1 | Geslaagd |
+| Hoogcontrast muted tekst | `#d4c39e` | `#000302` | 11.93:1 | 4.5:1 | Geslaagd |
 
-Niet gemeten door ontbrekende toestand: hoogcontrastmodus. Kaartlabels gebruiken raster/vectorlagen met variabele samengestelde achtergronden en zijn visueel beoordeeld.
+Aanvullende live hertest op 29 juli 2026: de laagste reguliere gemeten
+tekstverhouding op home, team en instellingen was 6.46:1. Hoogcontrastmodus
+activeert `data-contrast="high"` en bleef na herladen behouden. Het perkament
+is aanvullend visueel beoordeeld omdat het meerdere gradients en een
+pseudo-element combineert. De tekst bleef op 390×844 overal leesbaar.
+Kaartlabels gebruiken raster/vectorlagen met variabele samengestelde
+achtergronden; daarvoor is geen algemene numerieke ratio geclaimd.
 
 ## Responsive bevindingen
 
@@ -220,6 +231,7 @@ Niet gemeten door ontbrekende toestand: hoogcontrastmodus. Kaartlabels gebruiken
 - [Hintdialog](playwright-mcp/08-hint-dialog.png)
 - [Bellende engel mobiel](playwright-mcp/09-bell-puzzle-390x844.png)
 - [Instellingen](playwright-mcp/10-settings-normal.png)
+- [Contrastcontrole perkament](playwright-mcp/contrast-kruithuis-390x844.png)
 - [Resultaat mobiel](playwright-mcp/12-result-mobile.png)
 - [Resultaat desktop](playwright-mcp/12-result-desktop.png)
 
