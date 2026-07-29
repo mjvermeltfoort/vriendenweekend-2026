@@ -1,20 +1,36 @@
 import { useEffect, useState } from 'react';
+import { isStandalone as getIsStandalone } from './pwaUtils';
 
 export function useInstallPrompt() {
   const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(getIsStandalone);
 
   useEffect(() => {
-    const handler = (e: Event) => {
+    const displayMode = window.matchMedia('(display-mode: standalone)');
+    const handlePrompt = (e: Event) => {
       e.preventDefault();
       setEvent(e as BeforeInstallPromptEvent);
     };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    const handleInstalled = () => {
+      setEvent(null);
+      setIsStandalone(true);
+    };
+    const handleDisplayMode = () => setIsStandalone(getIsStandalone());
+
+    window.addEventListener('beforeinstallprompt', handlePrompt);
+    window.addEventListener('appinstalled', handleInstalled);
+    displayMode.addEventListener('change', handleDisplayMode);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handlePrompt);
+      window.removeEventListener('appinstalled', handleInstalled);
+      displayMode.removeEventListener('change', handleDisplayMode);
+    };
   }, []);
 
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-  const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !('MSStream' in window);
+  const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   return {
     event,
@@ -27,6 +43,7 @@ export function useInstallPrompt() {
       await event.prompt();
       const result = await event.userChoice;
       setEvent(null);
+      if (result.outcome === 'accepted') setIsStandalone(true);
       return result.outcome === 'accepted';
     }
   };

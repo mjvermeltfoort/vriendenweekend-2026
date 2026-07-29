@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { useInstallPrompt } from '../features/pwa/useInstallPrompt';
 import { AudioControl, GameIcon, SyncStatus } from '../components/GameUi';
 import { useAudio } from '../features/audio/audioContext';
 
@@ -11,7 +10,6 @@ export function isHomeSyncStatusVisible(status: 'saved' | 'local' | 'syncing' | 
 
 export function HomePage({ pack }: { pack: GamePack }) {
   const { teams, activeTeam, progress, syncStatus, syncMessage } = useGame();
-  const install = useInstallPrompt();
   const { unlockAudio } = useAudio();
   const current = activeTeam && progress ? { team: activeTeam, progress } : null;
   const lastTeam = current ?? (teams[0] ? { team: teams[0], progress: null } : null);
@@ -76,21 +74,6 @@ export function HomePage({ pack }: { pack: GamePack }) {
             <p>Reis door Den Bosch, vind bijzondere plekken en ontrafel het verhaal van de Moerasdraak. De eindlocatie wordt pas na alle opdrachten onthuld.</p>
             <Link className="button primary" to={lastTeam ? '/voorbereiden' : '/team'}>{lastTeam ? 'Verder spelen' : 'Team maken'}</Link>
           </section>
-
-          {!install.isStandalone && !install.dismissed ? (
-            <section className="card stack" aria-labelledby="install-title">
-              <div className="row">
-                <GameIcon name="dragon" size={32} />
-                <div>
-                  <h2 id="install-title">Installeer de Moerasdraak</h2>
-                  <p className="muted small">Sneller openen en beter offline spelen.</p>
-                </div>
-              </div>
-              {install.isiOS ? <p>Open het deelmenu en kies ‘Zet op beginscherm’.</p> : null}
-              {!install.isiOS && install.event ? <button className="button primary" onClick={() => void install.prompt()}>Installeren</button> : null}
-              <button className="button ghost" onClick={() => install.setDismissed(true)}>Later</button>
-            </section>
-          ) : null}
 
           {lastTeam ? (
             <section className="card stack">

@@ -15,6 +15,7 @@ import { PageShell } from '../components/GameUi';
 import { scenicForPath } from '../features/audio/audioConfig';
 import { useAudio } from '../features/audio/audioContext';
 import { useGame } from './gameContext';
+import { InstallBanner } from '../features/pwa/InstallBanner';
 
 function AudioSceneController() {
   const location = useLocation();
@@ -60,6 +61,7 @@ export function App() {
     <>
       <AudioSceneController />
       <ContrastController />
+      <InstallBanner />
       <Routes>
         <Route path="/" element={<HomePage pack={gamePack} />} />
         <Route path="/team" element={<TeamPage pack={gamePack} />} />
