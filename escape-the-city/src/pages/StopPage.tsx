@@ -12,7 +12,7 @@ import { AudioPlayer } from '../components/AudioPlayer';
 export function StopPage({ pack }: { pack: GamePack }) {
   const navigate = useNavigate();
   const { stopId } = useParams();
-  const { progress, unlockStop, startStop } = useGame();
+  const { progress, unlockStop, startStop, teamLocation, activeGameRun } = useGame();
   const stop = stopId ? stopById(pack, stopId) : null;
   const [gpsMessage, setGpsMessage] = useState('');
   const [gpsBusy, setGpsBusy] = useState(false);
@@ -44,12 +44,24 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const finaleEligibility = currentStop.isFinal && progress ? canStartFinale(progress, pack) : { eligible: true, missingCount: 0, missingTitles: [] as string[] };
   const isDev = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true';
   const followingStop = nextStop(pack, currentStop.id);
+  const otherActiveGame = activeGameRun?.status === 'active' && activeGameRun.gameId !== currentStop.id
+    ? stopById(pack, activeGameRun.gameId)
+    : null;
 
   async function checkGps() {
     setGpsBusy(true);
     setGpsMessage('Je locatie wordt bepaald…');
     try {
-      const result = await provider.getCurrentPosition({ timeout: 8000, enableHighAccuracy: true });
+      const result = isDev
+        ? await provider.getCurrentPosition({ timeout: 8000, enableHighAccuracy: true })
+        : teamLocation?.isCurrent
+          ? {
+              latitude: teamLocation.latitude,
+              longitude: teamLocation.longitude,
+              accuracy: teamLocation.accuracyM,
+              capturedAt: teamLocation.capturedAt
+            }
+          : { kind: 'unavailable' as const, message: 'We ontvangen momenteel geen actuele locatie van het team.' };
       if ('kind' in result) {
         setGpsMessage(result.message);
         return;
@@ -125,7 +137,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
               <GameIcon name="location" size={18} /> {gpsBusy ? 'Locatie bepalen…' : 'GPS controleren'}
             </button>
             {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
-            <button className="button ghost" onClick={() => void unlockStop(currentStop.id, 'manual')}>GPS werkt niet? Handmatig controleren</button>
+            {isDev ? <button className="button ghost" onClick={() => void unlockStop(currentStop.id, 'manual')}>Handmatig controleren (development)</button> : null}
           </>
         ) : null}
 
@@ -156,15 +168,26 @@ export function StopPage({ pack }: { pack: GamePack }) {
             <p><strong>{currentStop.reward.title}</strong><br />{currentStop.reward.text}</p>
           </div>
         ) : (
-          <button
-            className="button primary"
-            disabled={!canPlay || !finaleEligibility.eligible}
-            onClick={() => void startStop(currentStop.id).then((started) => {
-              if (started) navigate(`/challenge/${currentStop.id}`);
-            })}
-          >
-            Opdracht starten
-          </button>
+          <>
+            {otherActiveGame ? (
+              <div className="location-status" role="status">
+                <GameIcon name="team" />
+                <p>Jullie team is al bezig met een andere opdracht. Rond die opdracht eerst af.</p>
+                <button className="button secondary" onClick={() => navigate(`/challenge/${otherActiveGame.id}`)}>
+                  Ga naar actieve opdracht
+                </button>
+              </div>
+            ) : null}
+            <button
+              className="button primary"
+              disabled={!canPlay || !finaleEligibility.eligible || Boolean(otherActiveGame)}
+              onClick={() => void startStop(currentStop.id).then((started) => {
+                if (started) navigate(`/challenge/${currentStop.id}`);
+              }).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.'))}
+            >
+              Opdracht starten
+            </button>
+          </>
         )}
 
         {currentStop.isFinal && !finaleEligibility.eligible ? <p className="error">Nog {finaleEligibility.missingCount} opdrachten te voltooien.</p> : null}

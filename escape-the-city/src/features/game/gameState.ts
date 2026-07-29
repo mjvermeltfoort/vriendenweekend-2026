@@ -20,12 +20,53 @@ export interface TeamRecord {
   gameSlug: string;
   gameVersion: number;
   name: string;
-  joinCode: string;
+  joinCode?: string;
   memberNames: string[];
   createdAt: string;
   updatedAt: string;
   lastActivityAt: string;
   privacyAccepted: boolean;
+}
+
+export interface TeamSession {
+  id: string;
+  teamId: string;
+  deviceId: string;
+  joinedAt: string;
+  lastSeenAt: string;
+}
+
+export interface TeamLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  capturedAt: string;
+  selectedAt: string;
+  sourceSessionId: string;
+  fresh: boolean;
+}
+
+export interface TeamGameRun {
+  id: string;
+  teamId: string;
+  gameId: string;
+  status: 'active' | 'completed' | 'abandoned';
+  state: Record<string, unknown>;
+  result?: Record<string, unknown>;
+  version: number;
+  startedAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+export interface TeamStateSnapshot {
+  team: TeamRecord;
+  session: TeamSession;
+  progress: GameProgress;
+  activeGameRun: TeamGameRun | null;
+  teamLocation: TeamLocation | null;
+  activeSessionCount: number;
+  lastSyncedAt: string;
 }
 
 export interface SyncQueueItem {
@@ -63,6 +104,8 @@ export interface GameProgress {
   totalHintsUsed: number;
   totalScore: number;
   finalized: boolean;
+  version: number;
+  updatedAt?: string;
   finalResult?: ResultData;
   lastSyncedAt?: string;
 }
@@ -124,7 +167,8 @@ export function createInitialProgress(teamId: string, game: GamePack): GameProgr
     wrongAttempts: 0,
     totalHintsUsed: 0,
     totalScore: 0,
-    finalized: false
+    finalized: false,
+    version: 1
   };
 }
 
