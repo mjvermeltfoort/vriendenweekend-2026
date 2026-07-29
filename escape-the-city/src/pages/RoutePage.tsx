@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { canStartFinale, isFinaleLocationRevealed } from '../features/game/gameState';
 import { GameIcon, PageShell, ProgressBar, SyncStatus } from '../components/GameUi';
 import { RouteMap } from '../features/map/RouteMap';
-import { browserLocationProvider } from '../features/location/browserProvider';
+import type { LocationProvider } from '../features/location/provider';
 
 const statusLabels = {
   locked: 'Vergrendeld',
@@ -16,18 +16,32 @@ const statusLabels = {
 };
 
 export function RoutePage({ pack }: { pack: GamePack }) {
-  const { activeTeam, progress, syncStatus, syncMessage } = useGame();
+  const { activeTeam, progress, syncStatus, syncMessage, teamLocation, activeSessionCount } = useGame();
   const [view, setView] = useState<'list' | 'route'>('route');
   const finale = progress ? canStartFinale(progress, pack) : { eligible: false, missingCount: pack.stops.length - 1, missingTitles: [] as string[] };
   const finaleLocationRevealed = progress ? isFinaleLocationRevealed(progress, pack) : false;
   const completed = pack.stops.filter((stop) => progress?.stopProgress?.[stop.id]?.state === 'completed').length;
   const visibleStops = finaleLocationRevealed ? pack.stops : pack.stops.filter((stop) => !stop.isFinal);
+  const teamLocationProvider = useMemo<LocationProvider>(() => ({
+    async getCurrentPosition() {
+      if (!teamLocation?.isCurrent) {
+        return { kind: 'unavailable', message: 'Laatst bekende locatie — we wachten op een actuele teammeting.' };
+      }
+      return {
+        latitude: teamLocation.latitude,
+        longitude: teamLocation.longitude,
+        accuracy: teamLocation.accuracyM,
+        capturedAt: teamLocation.capturedAt
+      };
+    }
+  }), [teamLocation]);
 
   return (
     <PageShell title="Route" backTo="/">
       <div className="route-summary">
         <span>{activeTeam?.name ?? 'Geen actief team'}</span>
         <SyncStatus status={syncStatus} message={syncMessage} />
+        {activeSessionCount > 0 ? <span className="muted small">{activeSessionCount} speler{activeSessionCount === 1 ? '' : 's'} actief</span> : null}
       </div>
       <div className="route-tabs" aria-label="Routeweergave">
         <button className={view === 'list' ? 'is-active' : ''} type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
@@ -70,7 +84,7 @@ export function RoutePage({ pack }: { pack: GamePack }) {
           gamePack={pack}
           progress={progress}
           visibleStops={visibleStops}
-          locationProvider={browserLocationProvider}
+          locationProvider={teamLocationProvider}
         />
       )}
 

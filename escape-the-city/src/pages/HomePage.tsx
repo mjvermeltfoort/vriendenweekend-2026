@@ -35,9 +35,8 @@ export function HomePage({ pack }: { pack: GamePack }) {
               {lastTeam ? (
                 <Link className="button primary" to="/voorbereiden" onClick={unlockAudio}>Verder met team {lastTeam.team.name}</Link>
               ) : (
-                <Link className="button primary" to="/team" onClick={unlockAudio}>Begin avontuur</Link>
+                <Link className="button primary" to="/team" onClick={unlockAudio}>Deelnemen met teamcode</Link>
               )}
-              {lastTeam ? <Link className="button secondary" to="/team">Nieuw team</Link> : null}
               <button
                 className="text-link"
                 type="button"
@@ -72,7 +71,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
             <p className="eyebrow">De legende</p>
             <h2>Herstel zeven herinneringen</h2>
             <p>Reis door Den Bosch, vind bijzondere plekken en ontrafel het verhaal van de Moerasdraak. De eindlocatie wordt pas na alle opdrachten onthuld.</p>
-            <Link className="button primary" to={lastTeam ? '/voorbereiden' : '/team'}>{lastTeam ? 'Verder spelen' : 'Team maken'}</Link>
+            <Link className="button primary" to={lastTeam ? '/voorbereiden' : '/team'}>{lastTeam ? 'Verder spelen' : 'Teamcode invoeren'}</Link>
           </section>
 
           {lastTeam ? (

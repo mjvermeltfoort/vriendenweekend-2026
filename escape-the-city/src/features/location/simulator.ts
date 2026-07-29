@@ -22,7 +22,12 @@ export function createSimulatorProvider(getState: () => SimulatorState): Locatio
       if (state.mode === 'timeout') return { kind: 'timeout', message: 'Locatie duurde te lang.' };
       if (state.mode === 'unavailable') return { kind: 'unavailable', message: 'Locatie niet beschikbaar.' };
       const adjust = state.mode === 'outside' ? 0.01 : 0;
-      return { latitude: state.latitude + adjust, longitude: state.longitude + adjust, accuracy: state.accuracy };
+      return {
+        latitude: state.latitude + adjust,
+        longitude: state.longitude + adjust,
+        accuracy: state.accuracy,
+        capturedAt: new Date().toISOString()
+      };
     }
   };
 }

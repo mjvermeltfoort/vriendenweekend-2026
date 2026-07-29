@@ -1,86 +1,47 @@
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { normalizeJoinCode } from '../features/game/gameState';
 import { isSupabaseAvailable } from '../lib/supabase/sync';
 import { useGame } from '../app/gameContext';
-import { GameIcon, PageShell, ProgressBar, SyncStatus, TeamAvatar } from '../components/GameUi';
+import { PageShell, ProgressBar, SyncStatus, TeamAvatar } from '../components/GameUi';
 
 export function TeamPage({ pack }: { pack: GamePack }) {
   const navigate = useNavigate();
-  const { createTeam, resumeWithJoinCode, activeTeam, progress, syncStatus, syncMessage, syncNow } = useGame();
-  const [name, setName] = useState('');
-  const [members, setMembers] = useState('');
-  const [privacyAccepted, setPrivacyAccepted] = useState(true);
+  const { resumeWithJoinCode, removeActiveTeam, activeTeam, progress, syncStatus, syncMessage } = useGame();
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [codeMessage, setCodeMessage] = useState('');
 
   useEffect(() => { document.title = `Team · ${pack.title}`; }, [pack.title]);
 
-  async function submitCreate() {
-    const trimmed = name.trim();
-    if (trimmed.length < 2 || trimmed.length > 40) {
-      setError('Teamnaam moet 2 tot 40 tekens zijn.');
-      return;
-    }
-    if (!privacyAccepted) {
-      setError('Bevestig privacyuitleg om verder te gaan.');
+  async function submitJoin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const code = normalizeJoinCode(joinCode);
+    if (!code) {
+      setError('Voer jullie teamcode in.');
       return;
     }
     setBusy(true);
     setError('');
     try {
-      await createTeam({ name: trimmed, members: members.split(',').map((item) => item.trim()).filter(Boolean), privacyAccepted });
-      navigate('/voorbereiden');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Team kon niet worden aangemaakt.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function submitJoin() {
-    setBusy(true);
-    setError('');
-    try {
-      const code = normalizeJoinCode(joinCode);
       await resumeWithJoinCode(code);
       navigate('/route');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Teamcode kon niet worden geladen.');
+      setError(err instanceof Error ? err.message : 'Deze teamcode is niet geldig.');
     } finally {
       setBusy(false);
     }
   }
 
-  async function shareCode() {
-    if (!activeTeam) return;
-    const text = `Speel mee met ${activeTeam.name}. Teamcode: ${activeTeam.joinCode}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Moerasdraak team', text });
-      } catch {
-        setCodeMessage('Delen geannuleerd.');
-      }
-      return;
-    }
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(activeTeam.joinCode);
-      setCodeMessage('Teamcode gekopieerd.');
-    } else {
-      setCodeMessage(`Teamcode: ${activeTeam.joinCode}`);
-    }
-  }
-
-  async function retrySync() {
+  async function leaveTeam() {
     setBusy(true);
     setError('');
     try {
-      await syncNow();
+      await removeActiveTeam();
+      setJoinCode('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Synchroniseren is mislukt.');
+      setError(err instanceof Error ? err.message : 'Het team kon niet worden verlaten.');
     } finally {
       setBusy(false);
     }
@@ -108,66 +69,53 @@ export function TeamPage({ pack }: { pack: GamePack }) {
             ))}
           </div>
           <ProgressBar value={progress?.collectedRewards.length ?? 0} max={pack.stops.length} label="Voortgang" />
-          <div>
-            <p className="eyebrow">Teamcode</p>
-            <div className="join-code">{activeTeam.joinCode}</div>
-            <p className="muted small">
-              {syncStatus === 'saved'
-                ? 'Met deze code kan jullie team op een ander toestel worden hersteld.'
-                : 'Synchroniseer het team eerst voordat je deze code deelt.'}
-            </p>
-            <button className="button secondary" disabled={busy || syncStatus !== 'saved'} onClick={() => void shareCode()}>
-              <GameIcon name="team" size={18} /> Teamcode delen
-            </button>
-            {syncStatus === 'failed' ? (
-              <button className="button primary" disabled={busy} onClick={() => void retrySync()}>
-                <GameIcon name="sync" size={18} /> Opnieuw synchroniseren
-              </button>
-            ) : null}
-            {codeMessage ? <p className="status" role="status">{codeMessage}</p> : null}
-          </div>
+          <button className="button danger" disabled={busy} onClick={() => void leaveTeam()}>
+            {busy ? 'Team verlaten…' : 'Team verlaten'}
+          </button>
+          {error ? <p className="error" role="alert">{error}</p> : null}
         </section>
-      ) : null}
-
-      <section className="card stack" style={{ marginTop: activeTeam ? '1rem' : 0 }}>
-        <p className="eyebrow">{activeTeam ? 'Nieuw avontuur' : 'Begin avontuur'}</p>
-        <h2>Team aanmaken</h2>
-        <label className="field">
-          <span>Teamnaam</span>
-          <input
-            value={name}
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? 'team-create-error' : undefined}
-            onChange={(event) => {
-              setName(event.target.value);
-              if (error) setError('');
-            }}
-            maxLength={40}
-            autoComplete="organization"
-          />
-        </label>
-        <label className="field">
-          <span>Namen teamleden, optioneel</span>
-          <input value={members} onChange={(event) => setMembers(event.target.value)} placeholder="Anna, Bas, Noor" />
-        </label>
-        <label className="row">
-          <input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.target.checked)} />
-          <span className="small">Akkoord met privacyuitleg</span>
-        </label>
-        <button className="button primary" disabled={busy} onClick={() => void submitCreate()}>Team maken</button>
-        {error ? <p className="error" id="team-create-error" role="alert">{error}</p> : null}
-      </section>
-
-      <section className="card stack" style={{ marginTop: '1rem' }}>
-        <p className="eyebrow">Verder op ander toestel</p>
-        <h2>Teamcode gebruiken</h2>
-        <p className="muted small">{isSupabaseAvailable() ? 'Cloudherstel is beschikbaar.' : 'Cloudherstel is niet beschikbaar; lokaal spelen blijft werken.'}</p>
-        <label className="field">
-          <span>Code van 6 tekens</span>
-          <input className="code-input" value={joinCode} onChange={(event) => setJoinCode(event.target.value.toUpperCase())} placeholder="ABC123" maxLength={6} />
-        </label>
-        <button className="button secondary" disabled={busy || !isSupabaseAvailable()} onClick={() => void submitJoin()}>Met code laden</button>
-      </section>
+      ) : (
+        <section className="card stack">
+          <p className="eyebrow">Deelnemen</p>
+          <h1>Voer jullie teamcode in</h1>
+          <p>Gebruik de code die jullie van de spelleider hebben ontvangen.</p>
+          <p className="muted small">
+            Na deelname vragen we locatietoestemming om te bepalen of jullie bij de volgende opdracht zijn.
+            Bij meerdere telefoons gebruiken we automatisch de nauwkeurigste actuele locatie.
+          </p>
+          <form className="stack" onSubmit={(event) => void submitJoin(event)} aria-busy={busy}>
+            <label className="field" htmlFor="team-code">
+              <span>Teamcode</span>
+            </label>
+            <input
+              id="team-code"
+              className="code-input"
+              value={joinCode}
+              onChange={(event) => {
+                setJoinCode(event.target.value.toUpperCase());
+                if (error) setError('');
+              }}
+              placeholder="ABC123"
+              maxLength={12}
+              autoComplete="one-time-code"
+              autoCapitalize="characters"
+              spellCheck={false}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'team-code-error' : 'team-code-help'}
+              disabled={busy}
+            />
+            <p className="muted small" id="team-code-help">Spaties en koppeltekens mogen worden gebruikt.</p>
+            <button className="button primary" type="submit" disabled={busy || !isSupabaseAvailable()}>
+              {busy ? 'Teamcode controleren…' : 'Deelnemen'}
+            </button>
+            {!isSupabaseAvailable() ? <p className="error" role="status">Deelnemen is nu niet beschikbaar. Controleer jullie internetverbinding.</p> : null}
+            {error ? <p className="error" id="team-code-error" role="alert">{error}</p> : null}
+            <p className="status" role="status" aria-live="polite">
+              {busy ? 'Teamcode wordt gecontroleerd.' : ''}
+            </p>
+          </form>
+        </section>
+      )}
     </PageShell>
   );
 }
