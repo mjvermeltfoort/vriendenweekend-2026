@@ -766,7 +766,7 @@ summary:focus-visible {
 .map-location-button {
   position: absolute;
   z-index: 7;
-  bottom: max(3.25rem, calc(env(safe-area-inset-bottom) + 2.5rem));
+  bottom: max(5rem, calc(env(safe-area-inset-bottom) + 4.25rem));
   left: max(0.75rem, env(safe-area-inset-left));
   min-height: 42px;
   display: inline-flex;
