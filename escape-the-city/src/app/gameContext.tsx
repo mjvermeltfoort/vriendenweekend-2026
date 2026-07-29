@@ -39,6 +39,7 @@ import {
 } from '../lib/supabase/sync';
 import type { ChallengeConfig } from '../features/game/gameTypes';
 import { browserLocationProvider } from '../features/location/browserProvider';
+import { shouldSendLocation, type LastSentLocation } from '../features/location/locationThrottle';
 
 interface GameContextValue {
   loading: boolean;
@@ -249,14 +250,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!session || !browserLocationProvider.watchPosition) return;
     let disposed = false;
     let sending = false;
-    let lastSentAt = 0;
-    let lastAccuracy = Number.POSITIVE_INFINITY;
+    let lastSent: LastSentLocation | null = null;
 
     const stopWatching = browserLocationProvider.watchPosition((outcome) => {
       if (disposed || sending || !navigator.onLine || 'kind' in outcome) return;
       const now = Date.now();
-      const accuracyImproved = outcome.accuracy + 10 < lastAccuracy;
-      if (!accuracyImproved && now - lastSentAt < 5_000) return;
+      if (!shouldSendLocation(lastSent, outcome, now)) return;
       sending = true;
       void updateTeamLocation({
         sessionId: session.id,
@@ -269,8 +268,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         capturedAt: outcome.capturedAt ?? new Date().toISOString()
       }).then((location) => {
         if (!disposed) setTeamLocation(location);
-        lastSentAt = Date.now();
-        lastAccuracy = outcome.accuracy;
+        lastSent = { location: outcome, sentAt: Date.now() };
       }).catch((error) => {
         if (error instanceof TeamSyncError && (error.code === 'SESSION_REVOKED' || error.code === 'SESSION_NOT_FOUND')) {
           sessionRef.current = null;

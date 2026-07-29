@@ -29,10 +29,15 @@ De GitHub Pages-workflow gebruikt de repositoryvariabelen `SUPABASE_URL` en `SUP
 ## Supabase
 - Zet `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY`
 - Schakel Anonymous auth in
-- Run `supabase/migrations/015_city_game_schema.sql`
-- Run `supabase/migrations/016_city_game_sync_rpcs.sql`
-- Run `supabase/migrations/017_enforce_city_game_rpc_only.sql`
+- Run de rootmigrations `015` t/m `019` op volgorde
 - Lees `docs/supabase-setup.md`
+
+## Openbaar teamdashboard
+
+- Open `/escape-the-city/dashboard.html` rechtstreeks op desktop
+- Het dashboard heeft bewust geen zichtbare login en is niet vanuit de spelersapp gelinkt
+- Iedereen met de URL kan alle dashboardgegevens zien en beheeracties uitvoeren
+- Zie `docs/public-dashboard.md` voor werking en beveiligingsbeperkingen
 
 ## Teamflow
 - Nieuw team maken
@@ -47,6 +52,7 @@ De GitHub Pages-workflow gebruikt de repositoryvariabelen `SUPABASE_URL` en `SUP
 - Browser geolocation
 - Dev simulator in development
 - Kalibratie: `docs/gps-calibration.md`
+- Teamlocatie-sync: minimaal 5 seconden tussen writes, eerder bij 8 meter verplaatsing of 10 meter betere accuracy, uiterlijk na 10 seconden
 
 ## Build / test / lint
 ```bash
@@ -61,6 +67,5 @@ npm run build
 - Custom domain en Pages-instellingen blijven repo-breed
 
 ## Bekende beperkingen
-- Echte GPS-coördinaten nog placeholders
-- Echte audio-opnames ontbreken
+- Het dashboard is openbaar voor iedereen die de URL kent
 - Resultaatkaart export is functioneel maar eenvoudig

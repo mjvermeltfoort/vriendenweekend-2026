@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const { version: appVersion } = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8')
@@ -19,6 +20,8 @@ export default defineConfig({
         cacheId: `escape-the-city-v${appVersion}`,
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,geojson,woff2}'],
+        globIgnores: ['dashboard.html', 'assets/dashboard-*.{js,css}'],
+        navigateFallbackDenylist: [/\/dashboard\.html$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -55,5 +58,13 @@ export default defineConfig({
         ]
       }
     })
-  ]
+  ],
+  build: {
+    rollupOptions: {
+      input: {
+        index: resolve(import.meta.dirname, 'index.html'),
+        dashboard: resolve(import.meta.dirname, 'dashboard.html')
+      }
+    }
+  }
 });
