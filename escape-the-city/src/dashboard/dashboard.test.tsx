@@ -154,8 +154,10 @@ describe('dashboard confirmations', () => {
         onSubmit={vi.fn()}
       />
     ));
+    expect(container.textContent).toContain('Stop vrijgeven');
     expect(container.textContent).toContain('De Drakenfontein');
     expect(container.textContent).toContain('Team Drakenvuur');
+    expect(container.textContent).toContain('opengezet voor het hele team');
     expect(container.querySelector('textarea[name="reason"]')?.hasAttribute('required')).toBe(true);
   });
 

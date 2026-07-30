@@ -88,6 +88,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const finaleEligibility = currentStop.isFinal && progress ? canStartFinale(progress, pack) : { eligible: true, missingCount: 0, missingTitles: [] as string[] };
   const isDev = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true';
   const followingStop = nextStop(pack, currentStop.id);
+  const currentStopIsActive = progress?.currentStopId === currentStop.id;
   const otherActiveGame = activeGameRun?.status === 'active' && activeGameRun.gameId !== currentStop.id
     ? stopById(pack, activeGameRun.gameId)
     : null;
@@ -262,15 +263,17 @@ export function StopPage({ pack }: { pack: GamePack }) {
                 </button>
               </div>
             ) : null}
-            <button
-              className="button primary"
-              disabled={!canPlay || !finaleEligibility.eligible || Boolean(otherActiveGame)}
-              onClick={() => void startStop(currentStop.id).then((started) => {
-                if (started) navigate(`/challenge/${currentStop.id}`);
-              }).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.'))}
-            >
-              Opdracht openen
-            </button>
+            {!currentStopIsActive || !canPlay ? (
+              <button
+                className="button primary"
+                disabled={!canPlay || !finaleEligibility.eligible || Boolean(otherActiveGame)}
+                onClick={() => void startStop(currentStop.id).then((started) => {
+                  if (started) navigate(`/challenge/${currentStop.id}`);
+                }).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.'))}
+              >
+                Opdracht openen
+              </button>
+            ) : null}
           </>
         )}
 

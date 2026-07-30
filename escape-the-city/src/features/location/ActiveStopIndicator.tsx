@@ -94,7 +94,7 @@ export function ActiveStopIndicator({
         )}
         {!verified ? <p className="muted small">{gpsStatus}</p> : null}
       </div>
-      {verified ? <Link className="button primary" to={`/stop/${stop.id}`}>Opdracht openen</Link> : null}
+      {verified ? <Link className="button primary" to={`/challenge/${stop.id}`}>Opdracht openen</Link> : null}
     </section>
   );
 }

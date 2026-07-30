@@ -118,9 +118,9 @@ export function DashboardDialog({ state, busy, error, onClose, onSubmit }: {
     abandon: ['Actieve opdracht beëindigen', 'De actieve opdracht wordt als afgebroken opgeslagen. Er wordt geen score toegekend.'],
     revoke: ['Sessie stoppen', 'Dit apparaat kan daarna niet meer schrijven en keert bij de volgende synchronisatie terug naar het codescherm.'],
     release: [
-      'Actuele stop vrijgeven',
+      'Stop vrijgeven',
       state.kind === 'release'
-        ? `Geef ${state.stopName} vrij voor ${state.team.name}.`
+        ? `Geef ${state.stopName} vrij voor ${state.team.name}. De opdracht wordt direct opengezet voor het hele team.`
         : ''
     ]
   }[state.kind];
@@ -366,7 +366,7 @@ export function DashboardApp() {
                         stopName: selectedStop.title
                       })}
                     >
-                      Actuele stop vrijgeven
+                      Stop vrijgeven
                     </button>
                   ) : null}
                 </div>
