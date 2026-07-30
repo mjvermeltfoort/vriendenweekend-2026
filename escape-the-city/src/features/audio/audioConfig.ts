@@ -30,10 +30,10 @@ export const bellChallengeAudio = {
     audioAsset('effects/bellende-engel/bell-4-schild.mp3')
   ],
   tones: [
-    audioAsset('effects/bellende-engel/520hz.wav'),
-    audioAsset('effects/bellende-engel/590hz.wav'),
-    audioAsset('effects/bellende-engel/660hz.wav'),
-    audioAsset('effects/bellende-engel/780hz.wav')
+    audioAsset('effects/bellende-engel/bell-1-engel.mp3'),
+    audioAsset('effects/bellende-engel/bell-2-draak.mp3'),
+    audioAsset('effects/bellende-engel/bell-3-sleutel.mp3'),
+    audioAsset('effects/bellende-engel/bell-4-schild.mp3')
   ],
   pattern: [3, 2, 1, 4, 3]
 } as const;

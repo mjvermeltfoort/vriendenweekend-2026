@@ -19,7 +19,7 @@ describe('audio configuration', () => {
     expect(allEffectAudio()).toHaveLength(10);
     expect(allBellChallengeImages()).toHaveLength(5);
     expect([...allStandaloneNarration(), ...allScenicAudio()].every((path) => path.endsWith('.mp3'))).toBe(true);
-    expect(allEffectAudio().every((path) => /\.(?:mp3|wav)$/.test(path))).toBe(true);
+    expect(allEffectAudio().every((path) => /\.mp3$/.test(path))).toBe(true);
     expect(allBellChallengeImages().every((path) => path.endsWith('.webp'))).toBe(true);
     expect(bellChallengeAudio.pattern).toEqual([3, 2, 1, 4, 3]);
     expect(new Set(bellChallengeAudio.pattern)).toEqual(new Set([1, 2, 3, 4]));
