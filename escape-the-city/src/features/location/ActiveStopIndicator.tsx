@@ -5,9 +5,9 @@ import type { TeamLocation } from '../../lib/supabase/sync';
 import {
   activeRouteLeg,
   filterWalkingDistance,
+  formattedWalkingDistance,
   loadRouteGeoJson,
   remainingRouteDistance,
-  roundedWalkingDistance,
   routeLegLength,
   walkingStatus,
   type DistanceFilterState
@@ -62,7 +62,6 @@ export function ActiveStopIndicator({
   if (!stop || state === 'locked') return null;
   const leg = route ? activeRouteLeg(route, stop.id) : null;
   const totalDistance = leg ? routeLegLength(leg) : 0;
-  const roundedDistance = displayedDistance === null ? null : roundedWalkingDistance(displayedDistance);
   const progressValue = displayedDistance === null || totalDistance === 0
     ? 0
     : Math.max(0, Math.min(100, (1 - displayedDistance / totalDistance) * 100));
@@ -86,9 +85,9 @@ export function ActiveStopIndicator({
             <p>Startlocatie: {stop.locationName}</p>
             <p className="active-stop-indicator__status">Bij de start controleren we je GPS automatisch.</p>
           </>
-        ) : roundedDistance !== null ? (
+        ) : displayedDistance !== null ? (
           <>
-            <p className="active-stop-indicator__distance">Nog ongeveer {roundedDistance} meter lopen</p>
+            <p className="active-stop-indicator__distance">Nog ongeveer {formattedWalkingDistance(displayedDistance!)} lopen</p>
             <progress max="100" value={progressValue} aria-label="Voortgang van de actieve etappe" />
             <p className="active-stop-indicator__status">{walkingStatus(displayedDistance!)}</p>
           </>

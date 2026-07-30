@@ -3,6 +3,7 @@ import type { RouteGeoJson } from '../map/mapTypes';
 import {
   activeRouteLeg,
   filterWalkingDistance,
+  formattedWalkingDistance,
   median,
   remainingRouteDistance,
   roundedWalkingDistance,
@@ -34,6 +35,14 @@ describe('walking route distance', () => {
     expect(activeRouteLeg(route, 'a')).toBeNull();
   });
 
+  it('includes perpendicular off-route distance in the total', () => {
+    const leg = activeRouteLeg(route, 'b')!;
+    // User 18 km north of the route (roughly 0.16 degrees latitude away)
+    const farAway = remainingRouteDistance(leg, { longitude: 5.3005, latitude: 51.85 });
+    // On-route projected distance is small, but off-route component pushes total >> 1000 m
+    expect(farAway).toBeGreaterThan(10_000);
+  });
+
   it('rounds, takes the median and applies status boundaries', () => {
     expect(roundedWalkingDistance(437)).toBe(440);
     expect(roundedWalkingDistance(83)).toBe(85);
@@ -41,6 +50,14 @@ describe('walking route distance', () => {
     expect([501, 500, 150, 60].map(walkingStatus)).toEqual([
       'Op weg', 'Je komt dichterbij', 'In de buurt', 'Bijna daar'
     ]);
+  });
+
+  it('formats distances as meters below 1 km and km above', () => {
+    expect(formattedWalkingDistance(80)).toBe('80 m');
+    expect(formattedWalkingDistance(437)).toBe('440 m');
+    expect(formattedWalkingDistance(1000)).toBe('1 km');
+    expect(formattedWalkingDistance(1300)).toBe('1,5 km');
+    expect(formattedWalkingDistance(18070)).toBe('18 km');
   });
 
   it('accepts decreases immediately and delays meaningful increases', () => {

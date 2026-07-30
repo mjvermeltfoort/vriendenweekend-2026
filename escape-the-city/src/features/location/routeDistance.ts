@@ -77,11 +77,12 @@ export function remainingRouteDistance(
     }
   }
 
+  const offRouteDistanceM = Math.sqrt(bestDistanceSquared);
   const segmentLength = haversineDistanceMeters(
     { longitude: coordinates[bestSegment][0], latitude: coordinates[bestSegment][1] },
     { longitude: coordinates[bestSegment + 1][0], latitude: coordinates[bestSegment + 1][1] }
   );
-  return segmentLength * (1 - bestFraction)
+  return offRouteDistanceM + segmentLength * (1 - bestFraction)
     + coordinates.slice(bestSegment + 2).reduce((total, coordinate, index) => (
       total + haversineDistanceMeters(
         {
@@ -100,6 +101,14 @@ export function activeRouteLeg(route: RouteGeoJson, currentStopId: string) {
 export function roundedWalkingDistance(distanceM: number) {
   const interval = distanceM > 100 ? 10 : 5;
   return Math.max(0, Math.round(distanceM / interval) * interval);
+}
+
+export function formattedWalkingDistance(distanceM: number) {
+  if (distanceM >= 1000) {
+    const km = Math.round(distanceM / 500) * 0.5;
+    return `${km.toLocaleString('nl-NL', { minimumFractionDigits: km % 1 === 0 ? 0 : 1 })} km`;
+  }
+  return `${roundedWalkingDistance(distanceM)} m`;
 }
 
 export type WalkingStatus = 'Op weg' | 'Je komt dichterbij' | 'In de buurt' | 'Bijna daar';
