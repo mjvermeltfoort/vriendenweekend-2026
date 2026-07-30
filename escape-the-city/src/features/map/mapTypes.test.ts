@@ -13,7 +13,7 @@ import {
   startLocationPolling,
   validateRouteGeoJson
 } from './mapTypes';
-import { visibleRouteFeatures } from './RouteMap';
+import { autoSelectedStopId, visibleRouteFeatures } from './RouteMap';
 
 const routeData = JSON.parse(readFileSync(
   resolve(process.cwd(), 'public/routes/moerasdraak-den-bosch.geojson'),
@@ -96,6 +96,22 @@ describe('route presentation', () => {
 });
 
 describe('map helpers', () => {
+  it('auto-opens the bottom-sheet for the active stop unless it is locked', () => {
+    const progress = createInitialProgress('team', gamePack);
+
+    expect(autoSelectedStopId(progress.currentStopId, progress, gamePack.stops)).toBe(progress.currentStopId);
+
+    progress.stopProgress[progress.currentStopId].state = 'locked';
+    expect(autoSelectedStopId(progress.currentStopId, progress, gamePack.stops)).toBe(null);
+  });
+
+  it('does not auto-open for unknown or missing active stops', () => {
+    const progress = createInitialProgress('team', gamePack);
+
+    expect(autoSelectedStopId(undefined, progress, gamePack.stops)).toBe(null);
+    expect(autoSelectedStopId('onbekend', progress, gamePack.stops)).toBe(null);
+  });
+
   it('maps every marker state and keeps the finale visually distinct', () => {
     const stop = gamePack.stops[1];
     const statuses: StopStatus[] = ['locked', 'available', 'arrived', 'started', 'completed'];

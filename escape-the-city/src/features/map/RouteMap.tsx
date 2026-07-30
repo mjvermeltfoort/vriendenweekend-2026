@@ -76,6 +76,18 @@ function hiddenLegFilter() {
   return ['==', ['get', 'legIndex'], -1] as FilterSpecification;
 }
 
+export function autoSelectedStopId(
+  currentStopId: string | undefined,
+  progress: RouteMapProps['progress'],
+  visibleStops: RouteMapProps['visibleStops']
+) {
+  if (!currentStopId) return null;
+  const stop = visibleStops.find((item) => item.id === currentStopId);
+  if (!stop) return null;
+  const state = progress?.stopProgress?.[currentStopId]?.state ?? 'locked';
+  return state === 'locked' ? null : currentStopId;
+}
+
 export function RouteMap({ gamePack, progress, visibleStops, locationProvider }: RouteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -91,6 +103,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
 
   const selectedStop = visibleStops.find((stop) => stop.id === selectedStopId) ?? null;
   const selectedState = selectedStop ? progress?.stopProgress?.[selectedStop.id]?.state ?? 'locked' : 'locked';
+
+  useEffect(() => {
+    if (selectedStopId) return;
+    const suggestedStopId = autoSelectedStopId(progress?.currentStopId, progress, visibleStops);
+    if (suggestedStopId) setSelectedStopId(suggestedStopId);
+  }, [progress, selectedStopId, visibleStops]);
+
   useEffect(() => {
     let cancelled = false;
     void loadRouteGeoJson(gamePack)
