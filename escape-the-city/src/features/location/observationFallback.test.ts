@@ -29,4 +29,19 @@ describe('observation fallback timing', () => {
       location: { isCurrent: false, accuracyM: 12 }
     })).toBe(true);
   });
+
+  it('opens after 60 seconds when location is usable but outside stop radius', () => {
+    expect(observationFallbackAvailable({
+      now: 59_999,
+      waitingSince: 0,
+      location: { isCurrent: true, accuracyM: 12 },
+      outsideStopRadius: true
+    })).toBe(false);
+    expect(observationFallbackAvailable({
+      now: 60_000,
+      waitingSince: 0,
+      location: { isCurrent: true, accuracyM: 12 },
+      outsideStopRadius: true
+    })).toBe(true);
+  });
 });

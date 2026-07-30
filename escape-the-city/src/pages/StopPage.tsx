@@ -11,6 +11,7 @@ import {
   observationFallbackAvailable,
   OBSERVATION_FALLBACK_DELAY_MS
 } from '../features/location/observationFallback';
+import { haversineDistanceMeters } from '../features/location/distance';
 
 export function StopPage({ pack }: { pack: GamePack }) {
   const navigate = useNavigate();
@@ -54,7 +55,21 @@ export function StopPage({ pack }: { pack: GamePack }) {
       now: Date.now(),
       waitingSince: fallbackStartedAtRef.current,
       errorKind: locationError?.kind,
-      location: teamLocation
+      location: teamLocation,
+      outsideStopRadius: Boolean(
+        teamLocation?.isCurrent
+        && Number.isFinite(teamLocation.latitude)
+        && Number.isFinite(teamLocation.longitude)
+        && Number.isFinite(stop.coordinates.latitude)
+        && Number.isFinite(stop.coordinates.longitude)
+        && haversineDistanceMeters(
+          { latitude: teamLocation.latitude, longitude: teamLocation.longitude },
+          {
+            latitude: stop.coordinates.latitude!,
+            longitude: stop.coordinates.longitude!
+          }
+        ) > stop.coordinates.radiusMeters
+      )
     }));
     update();
     const elapsed = Date.now() - fallbackStartedAtRef.current;
@@ -159,7 +174,21 @@ export function StopPage({ pack }: { pack: GamePack }) {
         <p className="muted small">{currentStop.locationName}</p>
 
         {progress?.currentStopId === currentStop.id
-          ? <ActiveStopIndicator pack={pack} progress={progress} location={teamLocation} showOpenButton />
+          ? (
+            <ActiveStopIndicator
+              pack={pack}
+              progress={progress}
+              location={teamLocation}
+              showOpenButton
+              onOpenChallenge={() => {
+                void startStop(currentStop.id).then((started) => {
+                  if (started) navigate(`/challenge/${currentStop.id}`);
+                }).catch((error) => {
+                  setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.');
+                });
+              }}
+            />
+          )
           : null}
 
         {gpsMessage || (!canPlay && locationError) ? (
