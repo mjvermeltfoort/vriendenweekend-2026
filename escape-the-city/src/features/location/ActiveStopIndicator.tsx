@@ -18,11 +18,13 @@ import type { RouteGeoJson } from '../map/mapTypes';
 export function ActiveStopIndicator({
   pack,
   progress,
-  location
+  location,
+  showOpenButton = false
 }: {
   pack: GamePack;
   progress: GameProgress | null;
   location: TeamLocation | null;
+  showOpenButton?: boolean;
 }) {
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
   const [routeError, setRouteError] = useState(false);
@@ -94,7 +96,7 @@ export function ActiveStopIndicator({
         )}
         {!verified ? <p className="muted small">{gpsStatus}</p> : null}
       </div>
-      {verified ? <Link className="button primary" to={`/challenge/${stop.id}`}>Opdracht openen</Link> : null}
+      {verified && showOpenButton ? <Link className="button primary" to={`/challenge/${stop.id}`}>Opdracht openen</Link> : null}
     </section>
   );
 }

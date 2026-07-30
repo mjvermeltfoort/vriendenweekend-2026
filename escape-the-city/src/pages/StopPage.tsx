@@ -159,7 +159,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
         <p className="muted small">{currentStop.locationName}</p>
 
         {progress?.currentStopId === currentStop.id
-          ? <ActiveStopIndicator pack={pack} progress={progress} location={teamLocation} />
+          ? <ActiveStopIndicator pack={pack} progress={progress} location={teamLocation} showOpenButton />
           : null}
 
         {gpsMessage || (!canPlay && locationError) ? (
