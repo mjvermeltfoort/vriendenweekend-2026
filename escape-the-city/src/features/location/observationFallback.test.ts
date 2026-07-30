@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { observationFallbackAvailable } from './observationFallback';
+import {
+  observationFallbackAvailable,
+  observationFallbackDelayMs
+} from './observationFallback';
 
 describe('observation fallback timing', () => {
   it('opens immediately for denied/unavailable GPS without usable team location', () => {
@@ -43,5 +46,22 @@ describe('observation fallback timing', () => {
       location: { isCurrent: true, accuracyM: 12 },
       outsideStopRadius: true
     })).toBe(true);
+  });
+
+  it('exposes the active fallback delay for the timer', () => {
+    expect(observationFallbackDelayMs({
+      location: { isCurrent: true, accuracyM: 12 }
+    })).toBeNull();
+    expect(observationFallbackDelayMs({
+      errorKind: 'permission-denied',
+      location: null
+    })).toBe(0);
+    expect(observationFallbackDelayMs({
+      location: { isCurrent: false, accuracyM: 12 }
+    })).toBe(25_000);
+    expect(observationFallbackDelayMs({
+      location: { isCurrent: true, accuracyM: 12 },
+      outsideStopRadius: true
+    })).toBe(60_000);
   });
 });

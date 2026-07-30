@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { hasLocationUnlock, type GameProgress } from '../game/gameState';
 import type { GamePack } from '../game/gameTypes';
 import type { TeamLocation } from '../../lib/supabase/sync';
@@ -19,12 +18,14 @@ export function ActiveStopIndicator({
   pack,
   progress,
   location,
-  showOpenButton = false
+  showOpenButton = false,
+  onOpenChallenge
 }: {
   pack: GamePack;
   progress: GameProgress | null;
   location: TeamLocation | null;
   showOpenButton?: boolean;
+  onOpenChallenge?: () => void;
 }) {
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
   const [routeError, setRouteError] = useState(false);
@@ -96,7 +97,11 @@ export function ActiveStopIndicator({
         )}
         {!verified ? <p className="muted small">{gpsStatus}</p> : null}
       </div>
-      {verified && showOpenButton ? <Link className="button primary" to={`/challenge/${stop.id}`}>Opdracht openen</Link> : null}
+      {verified && showOpenButton ? (
+        <button className="button primary" type="button" onClick={onOpenChallenge}>
+          Opdracht openen
+        </button>
+      ) : null}
     </section>
   );
 }

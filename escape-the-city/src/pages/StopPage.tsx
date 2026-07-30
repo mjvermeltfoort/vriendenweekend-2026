@@ -9,7 +9,7 @@ import { AudioPlayer } from '../components/AudioPlayer';
 import { ActiveStopIndicator } from '../features/location/ActiveStopIndicator';
 import {
   observationFallbackAvailable,
-  OBSERVATION_FALLBACK_DELAY_MS
+  observationFallbackDelayMs
 } from '../features/location/observationFallback';
 import { haversineDistanceMeters } from '../features/location/distance';
 
@@ -31,11 +31,34 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const stop = stopId ? stopById(pack, stopId) : null;
   const [gpsMessage, setGpsMessage] = useState('');
   const [fallbackReady, setFallbackReady] = useState(false);
+  const [fallbackNow, setFallbackNow] = useState(() => Date.now());
   const [answer, setAnswer] = useState('');
   const [observationBusy, setObservationBusy] = useState(false);
   const [devState, setDevState] = useState<SimulatorState>(defaultSimulatorState);
   const fallbackStartedAtRef = useRef(Date.now());
   const hiddenFinale = Boolean(stop?.isFinal && (!progress || !isFinaleLocationRevealed(progress, pack)));
+  const outsideStopRadius = Boolean(
+    stop
+    && teamLocation?.isCurrent
+    && Number.isFinite(teamLocation.latitude)
+    && Number.isFinite(teamLocation.longitude)
+    && Number.isFinite(stop.coordinates.latitude)
+    && Number.isFinite(stop.coordinates.longitude)
+    && haversineDistanceMeters(
+      { latitude: teamLocation.latitude, longitude: teamLocation.longitude },
+      {
+        latitude: stop.coordinates.latitude!,
+        longitude: stop.coordinates.longitude!
+      }
+    ) > stop.coordinates.radiusMeters
+  );
+  const fallbackDelayMs = stop
+    ? observationFallbackDelayMs({
+      errorKind: locationError?.kind,
+      location: teamLocation,
+      outsideStopRadius
+    })
+    : null;
 
   useEffect(() => {
     if (stop) document.title = hiddenFinale ? 'Finale vergrendeld' : stop.title;
@@ -47,7 +70,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
       fallbackStartedAtRef.current = Date.now();
       return;
     }
-    if (teamLocation?.isCurrent && teamLocation.accuracyM <= 40) {
+    if (fallbackDelayMs === null) {
       fallbackStartedAtRef.current = Date.now();
       return;
     }
@@ -56,31 +79,34 @@ export function StopPage({ pack }: { pack: GamePack }) {
       waitingSince: fallbackStartedAtRef.current,
       errorKind: locationError?.kind,
       location: teamLocation,
-      outsideStopRadius: Boolean(
-        teamLocation?.isCurrent
-        && Number.isFinite(teamLocation.latitude)
-        && Number.isFinite(teamLocation.longitude)
-        && Number.isFinite(stop.coordinates.latitude)
-        && Number.isFinite(stop.coordinates.longitude)
-        && haversineDistanceMeters(
-          { latitude: teamLocation.latitude, longitude: teamLocation.longitude },
-          {
-            latitude: stop.coordinates.latitude!,
-            longitude: stop.coordinates.longitude!
-          }
-        ) > stop.coordinates.radiusMeters
-      )
+      outsideStopRadius
     }));
     update();
     const elapsed = Date.now() - fallbackStartedAtRef.current;
-    const timer = window.setTimeout(update, Math.max(0, OBSERVATION_FALLBACK_DELAY_MS - elapsed));
+    const timer = window.setTimeout(update, Math.max(0, fallbackDelayMs - elapsed));
     return () => window.clearTimeout(timer);
   }, [
+    fallbackDelayMs,
     locationError?.kind,
     progress?.stopProgress[stop?.id ?? '']?.state,
     stop?.id,
     teamLocation?.accuracyM,
-    teamLocation?.isCurrent
+    teamLocation?.isCurrent,
+    outsideStopRadius
+  ]);
+
+  useEffect(() => {
+    if (!stop || progress?.stopProgress[stop.id]?.state !== 'available' || fallbackReady || fallbackDelayMs === null || fallbackDelayMs === 0) {
+      return;
+    }
+    setFallbackNow(Date.now());
+    const timer = window.setInterval(() => setFallbackNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, [
+    fallbackDelayMs,
+    fallbackReady,
+    progress?.stopProgress[stop?.id ?? '']?.state,
+    stop?.id
   ]);
 
   if (!stop) return <PageShell title="Verhaal" backTo="/route"><p>Stop niet gevonden.</p></PageShell>;
@@ -151,6 +177,10 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const mapsUrl = currentStop.navigation.externalMapsQuery
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentStop.navigation.externalMapsQuery)}`
     : null;
+  const observationFallbackVisible = fallbackReady || fallbackDelayMs === 0;
+  const fallbackRemainingSeconds = fallbackDelayMs === null
+    ? null
+    : Math.max(0, Math.ceil((fallbackDelayMs - (fallbackNow - fallbackStartedAtRef.current)) / 1000));
 
   return (
     <PageShell title={isCompleted ? 'Herinnering' : 'Verhaal'} backTo="/route">
@@ -205,10 +235,16 @@ export function StopPage({ pack }: { pack: GamePack }) {
           </>
         ) : null}
 
-        {!canPlay && fallbackReady ? (
+        {!canPlay && fallbackDelayMs !== null ? (
           <section className="observation-fallback stack" aria-label="Locatie bevestigen zonder GPS">
             <h3>Locatie bevestigen zonder GPS</h3>
-            {currentObservation ? (
+            {!observationFallbackVisible ? (
+              <p>
+                {fallbackRemainingSeconds && fallbackRemainingSeconds > 0
+                  ? `Verificatievragen verschijnen over ${fallbackRemainingSeconds} seconden.`
+                  : 'Verificatievragen verschijnen bijna.'}
+              </p>
+            ) : currentObservation ? (
               <>
                 <p>{currentObservation.question}</p>
                 <label className="field">
