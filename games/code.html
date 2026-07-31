@@ -468,7 +468,7 @@
       <a class="close-link" id="close-link" href="../index.html">Sluit spel</a>
     </header>
 
-    <p class="intro" id="game-description">Vind de code met aanwijzingen uit eerdere spellen.</p>
+    <p class="intro" id="game-description">Kraak de viercijferige code met logisch redeneren.</p>
 
     <section class="stats stats-2" aria-label="Spelstatus">
       <div class="stat">
@@ -580,8 +580,16 @@
     const PLAYER_NAME = RAW_STORED_PLAYER_NAME || RAW_URL_PLAYER_NAME;
     const GAME_ID = "code";
 
-    // Pas hier de geheime code aan.
-    const CORRECT_CODE = "4564";
+    // De geheime code wordt willekeurig gegenereerd bij elke start/replay.
+    function generateRandomCode(length) {
+      let code = "";
+      for (let index = 0; index < length; index += 1) {
+        code += String(Math.floor(Math.random() * 10));
+      }
+      return code;
+    }
+
+    const CORRECT_CODE = generateRandomCode(4);
 
     let startedAt = Date.now();
     let attempts = 0;
