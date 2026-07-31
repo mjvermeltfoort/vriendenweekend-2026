@@ -34,10 +34,14 @@ describe('FloatingTeamRadio', () => {
     actEnvironment.IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it('closes from the close button', () => {
+  it('uses the provided Meldkamer icon and closes from the close button', () => {
     act(() => root.render(<FloatingTeamRadio />));
 
     const openButton = container.querySelector<HTMLButtonElement>('[aria-label="Meldkamer openen"]');
+    const icon = openButton?.querySelector('img');
+    expect(icon?.getAttribute('src')).toContain('assets/icons/meldkamer-audio-64.png');
+    expect(openButton?.querySelector('source')?.getAttribute('srcset')).toContain('assets/icons/meldkamer-audio-64.webp');
+    expect(icon?.getAttribute('alt')).toBe('');
     act(() => openButton?.click());
     expect(container.querySelector('[role="dialog"]')).not.toBeNull();
 

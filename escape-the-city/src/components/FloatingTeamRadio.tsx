@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { useGame } from '../app/gameContext';
-import { GameIcon } from './GameUi';
+import { MeldkamerAudioIcon } from './MeldkamerAudioIcon';
 import { TeamRadioPanel } from './TeamRadioPanel';
 
 export function FloatingTeamRadio() {
@@ -62,7 +62,7 @@ export function FloatingTeamRadio() {
           onClick={onOpen}
           onKeyDown={onToggleKeyDown}
         >
-          <GameIcon name="walkie" />
+          <MeldkamerAudioIcon className="meldkamer-audio-icon" />
           <span className="floating-team-radio__toggle-text">Meldkamer</span>
         </button>
       ) : (
@@ -85,4 +85,3 @@ export function FloatingTeamRadio() {
     </div>
   );
 }
-
