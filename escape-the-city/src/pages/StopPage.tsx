@@ -40,12 +40,16 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const [devState, setDevState] = useState<SimulatorState>(defaultSimulatorState);
   const fallbackStartedAtRef = useRef(Date.now());
   const selectedBonusRef = useRef('');
+  const selectingBonusRef = useRef('');
   const hiddenFinale = Boolean(stop?.isFinal && (!progress || !isFinaleLocationRevealed(progress, pack)));
 
   useEffect(() => {
-    if (stop && isBonusLocation(stop) && selectedBonusRef.current !== stop.id) {
-      selectedBonusRef.current = stop.id;
-      void selectBonus(stop.id).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De bonuslocatie kon niet worden geselecteerd.'));
+    if (stop && isBonusLocation(stop) && selectedBonusRef.current !== stop.id && selectingBonusRef.current !== stop.id) {
+      selectingBonusRef.current = stop.id;
+      void selectBonus(stop.id)
+        .then(() => { selectedBonusRef.current = stop.id; })
+        .catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De bonuslocatie kon niet worden geselecteerd.'))
+        .finally(() => { selectingBonusRef.current = ''; });
     }
   }, [stop?.id, selectBonus]);
   const outsideStopRadius = Boolean(
@@ -260,7 +264,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
           </>
         ) : null}
 
-        {!canPlay && fallbackDelayMs !== null ? (
+        {!isBonusLocation(currentStop) && !canPlay && fallbackDelayMs !== null ? (
           <section className="observation-fallback stack" aria-label="Locatie bevestigen zonder GPS">
             <h3>Locatie bevestigen zonder GPS</h3>
             {!observationFallbackVisible ? (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
@@ -18,6 +18,7 @@ const statusLabels = {
 export function RoutePage({ pack }: { pack: GamePack }) {
   const { activeTeam, progress, syncStatus, syncMessage, teamLocation, activeSessionCount } = useGame();
   const [view, setView] = useState<'list' | 'route'>('route');
+  const [bonusIntroSeen, setBonusIntroSeen] = useState(true);
   const finale = progress ? canStartFinale(progress, pack) : { eligible: false, missingCount: pack.stops.length - 1, missingTitles: [] as string[] };
   const finaleLocationRevealed = progress ? isFinaleLocationRevealed(progress, pack) : false;
   const completed = pack.stops.filter((stop) => progress?.stopProgress?.[stop.id]?.state === 'completed').length;
@@ -36,6 +37,17 @@ export function RoutePage({ pack }: { pack: GamePack }) {
       };
     }
   }), [teamLocation]);
+  const bonusIntroKey = activeTeam ? `moerasdraak-bonus-intro:${activeTeam.id}` : '';
+
+  useEffect(() => {
+    if (!bonusIntroKey) return;
+    setBonusIntroSeen(localStorage.getItem(bonusIntroKey) === 'seen');
+  }, [bonusIntroKey]);
+
+  function dismissBonusIntro() {
+    if (bonusIntroKey) localStorage.setItem(bonusIntroKey, 'seen');
+    setBonusIntroSeen(true);
+  }
 
   return (
     <PageShell title="Route" backTo="/">
@@ -53,6 +65,13 @@ export function RoutePage({ pack }: { pack: GamePack }) {
         </button>
       </div>
       <ProgressBar value={completed} max={pack.stops.length} label="Herinneringen hersteld" />
+
+      {completed >= 1 && pack.bonusLocations?.length && !bonusIntroSeen ? (
+        <section className="card stack" aria-label="Introductie Verborgen Schubben">
+          <p>Niet alle herinneringen liggen op de hoofdroute. In de stad zijn zes verborgen Drakenschubben achtergebleven. Ze zijn niet nodig om het avontuur te voltooien, maar oplettende teams kunnen er extra punten mee verdienen.</p>
+          <button className="button primary" type="button" onClick={dismissBonusIntro}>BEKIJK DE VERBORGEN SCHUBBEN</button>
+        </section>
+      ) : null}
 
       {view === 'list' ? (
         <ol className="route-list route-list--spaced" aria-label="Routepunten">
