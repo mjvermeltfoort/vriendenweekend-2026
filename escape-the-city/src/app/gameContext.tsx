@@ -551,7 +551,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     const fallbackType = audio.type || 'audio/webm';
     const extension = fallbackType.includes('ogg') ? 'ogg' : fallbackType.includes('wav') ? 'wav' : 'webm';
-    const path = `team-radio-messages/${activeTeam.id}/${activeSession.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    // `storage.from(bucket)` already selects the bucket. The storage policy
+    // therefore expects the object path to start with the team UUID.
+    const path = `${activeTeam.id}/${activeSession.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
     await uploadTeamRadioRecording(path, audio);
     await sendTeamRadioMessage({
       sessionId: activeSession.id,
