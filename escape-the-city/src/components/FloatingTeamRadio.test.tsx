@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockUseGame = vi.fn();
+const mockMarkTeamRadioRead = vi.fn();
 
 vi.mock('../app/gameContext', () => ({
   useGame: () => mockUseGame()
@@ -23,9 +24,14 @@ describe('FloatingTeamRadio', () => {
   const root = createRoot(container);
 
   beforeEach(() => {
+    vi.clearAllMocks();
     actEnvironment.IS_REACT_ACT_ENVIRONMENT = true;
     container.innerHTML = '';
-    mockUseGame.mockReturnValue({ activeTeam: { id: 'team-1' } });
+    mockUseGame.mockReturnValue({
+      activeTeam: { id: 'team-1' },
+      hasUnreadTeamRadio: false,
+      markTeamRadioRead: mockMarkTeamRadioRead
+    });
   });
 
   afterEach(() => {
@@ -43,10 +49,23 @@ describe('FloatingTeamRadio', () => {
     expect(openButton?.querySelector('source')?.getAttribute('srcset')).toContain('assets/icons/meldkamer-audio-64.webp');
     expect(icon?.getAttribute('alt')).toBe('');
     act(() => openButton?.click());
+    expect(mockMarkTeamRadioRead).toHaveBeenCalledOnce();
     expect(container.querySelector('[role="dialog"]')).not.toBeNull();
 
     const closeButton = container.querySelector<HTMLButtonElement>('[aria-label="Meldkamer sluiten"]');
     act(() => closeButton?.click());
     expect(container.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('shows a badge for a new recording', () => {
+    mockUseGame.mockReturnValue({
+      activeTeam: { id: 'team-1' },
+      hasUnreadTeamRadio: true,
+      markTeamRadioRead: mockMarkTeamRadioRead
+    });
+    act(() => root.render(<FloatingTeamRadio />));
+
+    expect(container.querySelector('.floating-team-radio__badge')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Meldkamer openen, nieuwe opname"]')).not.toBeNull();
   });
 });

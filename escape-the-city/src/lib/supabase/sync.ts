@@ -69,8 +69,9 @@ export interface TeamStopVerification {
 export interface TeamRadioMessage {
   id: string;
   teamId: string;
-  sessionId: string;
+  sessionId: string | null;
   senderAlias: string;
+  senderKind: 'team' | 'dashboard';
   storagePath: string;
   mimeType: string;
   durationMs: number | null;

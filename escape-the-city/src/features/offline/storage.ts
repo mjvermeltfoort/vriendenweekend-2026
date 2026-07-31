@@ -11,6 +11,7 @@ const SNAPSHOT_STORE = 'team-snapshots';
 const DEVICE_KEY = 'current';
 const SETTINGS_KEY = 'moerasdraak-settings';
 const LAST_TEAM_KEY = 'moerasdraak-last-team';
+const TEAM_RADIO_SEEN_PREFIX = 'moerasdraak-team-radio-seen:';
 
 export interface StoredSettings {
   soundEnabled: boolean;
@@ -269,4 +270,12 @@ export function loadLastTeamId() {
 
 export function clearLastTeamId() {
   localStorage.removeItem(LAST_TEAM_KEY);
+}
+
+export function loadTeamRadioSeenAt(teamId: string) {
+  return localStorage.getItem(`${TEAM_RADIO_SEEN_PREFIX}${teamId}`) ?? '';
+}
+
+export function saveTeamRadioSeenAt(teamId: string, createdAt: string) {
+  localStorage.setItem(`${TEAM_RADIO_SEEN_PREFIX}${teamId}`, createdAt);
 }

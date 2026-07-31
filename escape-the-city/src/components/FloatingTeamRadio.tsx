@@ -4,7 +4,7 @@ import { MeldkamerAudioIcon } from './MeldkamerAudioIcon';
 import { TeamRadioPanel } from './TeamRadioPanel';
 
 export function FloatingTeamRadio() {
-  const { activeTeam } = useGame();
+  const { activeTeam, hasUnreadTeamRadio, markTeamRadioRead } = useGame();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -35,6 +35,7 @@ export function FloatingTeamRadio() {
 
   function onOpen() {
     if (!activeTeam) return;
+    markTeamRadioRead();
     setOpen(true);
   }
 
@@ -58,11 +59,12 @@ export function FloatingTeamRadio() {
           ref={triggerRef}
           type="button"
           className="icon-button floating-team-radio__toggle"
-          aria-label="Meldkamer openen"
+          aria-label={hasUnreadTeamRadio ? 'Meldkamer openen, nieuwe opname' : 'Meldkamer openen'}
           onClick={onOpen}
           onKeyDown={onToggleKeyDown}
         >
           <MeldkamerAudioIcon className="meldkamer-audio-icon" />
+          {hasUnreadTeamRadio ? <span className="floating-team-radio__badge" aria-hidden="true" /> : null}
           <span className="floating-team-radio__toggle-text">Meldkamer</span>
         </button>
       ) : (

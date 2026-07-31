@@ -12,10 +12,12 @@ import {
   loadQueueItems,
   loadStoredSettings,
   loadTeam,
+  loadTeamRadioSeenAt,
   loadTeamSession,
   loadTeamSnapshot,
   loadTeams,
   saveTeam,
+  saveTeamRadioSeenAt,
   saveQueueItem,
   saveTeamSession,
   saveTeamSnapshotIfNewer,
@@ -67,6 +69,8 @@ interface GameContextValue {
   currentObservation: StopObservation | null;
   observationStatus: TeamState['observationStatus'];
   teamRadioMessages: TeamRadioMessage[];
+  hasUnreadTeamRadio: boolean;
+  markTeamRadioRead: () => void;
   resumeWithJoinCode: (code: string) => Promise<string>;
   removeActiveTeam: () => Promise<void>;
   updateSettings: (patch: Partial<StoredSettings>) => void;
@@ -99,10 +103,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [currentObservation, setCurrentObservation] = useState<StopObservation | null>(null);
   const [observationStatus, setObservationStatus] = useState<TeamState['observationStatus']>('unavailable');
   const [teamRadioMessages, setTeamRadioMessages] = useState<TeamRadioMessage[]>([]);
+  const [teamRadioSeenAt, setTeamRadioSeenAt] = useState('');
   const [session, setSession] = useState<StoredTeamSession | null>(null);
   const sessionRef = useRef<StoredTeamSession | null>(null);
   const progressRef = useRef<GameProgress | null>(null);
   const gameRunRef = useRef<TeamGameRun | null>(null);
+
+  useEffect(() => {
+    setTeamRadioSeenAt(activeTeam ? loadTeamRadioSeenAt(activeTeam.id) : '');
+  }, [activeTeam?.id]);
 
   const applyServerState = useCallback(async (state: TeamState, stateSession = sessionRef.current) => {
     if (!stateSession) return false;
@@ -152,6 +161,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       // Radio messages are optional to the game loop; keep it silent.
     }
   }, []);
+
+  const markTeamRadioRead = useCallback(() => {
+    if (!activeTeam) return;
+    const newest = teamRadioMessages.reduce<string>((latest, message) => (
+      !latest || Date.parse(message.createdAt) > Date.parse(latest) ? message.createdAt : latest
+    ), '');
+    if (!newest) return;
+    saveTeamRadioSeenAt(activeTeam.id, newest);
+    setTeamRadioSeenAt(newest);
+  }, [activeTeam, teamRadioMessages]);
+
+  const hasUnreadTeamRadio = useMemo(() => teamRadioMessages.some((message) => {
+    if (message.isMine) return false;
+    if (!teamRadioSeenAt) return true;
+    return Date.parse(message.createdAt) > Date.parse(teamRadioSeenAt);
+  }), [teamRadioMessages, teamRadioSeenAt]);
 
   const fetchServerState = useCallback(async (sessionId = sessionRef.current?.id) => {
     if (!sessionId || !isSupabaseAvailable() || !navigator.onLine) return null;
@@ -671,6 +696,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     currentObservation,
     observationStatus,
     sendRadioMessage,
+    hasUnreadTeamRadio,
+    markTeamRadioRead,
     resumeWithJoinCode,
     removeActiveTeam,
     updateSettings,
@@ -682,7 +709,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     useHint,
     attemptAnswer,
     completeFinale
-  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun, locationError, teamRadioMessages, currentObservation, observationStatus, sendRadioMessage]);
+  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun, locationError, teamRadioMessages, currentObservation, observationStatus, sendRadioMessage, hasUnreadTeamRadio, markTeamRadioRead]);
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

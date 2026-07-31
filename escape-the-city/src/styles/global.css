@@ -419,12 +419,24 @@ summary:focus-visible {
   bottom: calc(82px + env(safe-area-inset-bottom));
 }
 .floating-team-radio__toggle {
+  position: relative;
   width: 56px;
   height: 56px;
   color: var(--color-gold-light);
   background: linear-gradient(180deg, rgba(17, 70, 52, 0.95), rgba(10, 32, 23, 0.96));
   border: 1px solid var(--color-gold);
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
+}
+.floating-team-radio__badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 11px;
+  height: 11px;
+  background: var(--color-error);
+  border: 2px solid #0d2e23;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(255, 215, 204, 0.16);
 }
 .floating-team-radio__toggle .meldkamer-audio-icon,
 .floating-team-radio__toggle .meldkamer-audio-icon img {

@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { ensureAnonymousSession, supabase } from '../lib/supabase/client';
+import { getTeamRadioMessageUrl, type TeamRadioMessage } from '../lib/supabase/sync';
 import { normalizeDashboardSnapshot, normalizeDashboardTeam, type DashboardSnapshot, type DashboardTeam } from './types';
 
 export class DashboardApiError extends Error {
@@ -70,6 +71,58 @@ export const dashboardActions = {
   )
 };
 
+export interface DashboardRadioMessage extends TeamRadioMessage {
+  audioUrl: string;
+}
+
+function radioExtension(mimeType: string) {
+  if (mimeType.includes('ogg')) return 'ogg';
+  if (mimeType.includes('wav')) return 'wav';
+  return 'webm';
+}
+
+export async function getDashboardTeamRadioMessages(teamId: string): Promise<DashboardRadioMessage[]> {
+  const client = requireClient();
+  await ensureAnonymousSession();
+  const { data, error } = await client.rpc('dashboard_get_team_radio_messages', {
+    p_team_id: teamId,
+    p_limit: 50
+  });
+  if (error) throw new DashboardApiError(error.message, error.code);
+  const messages = data && typeof data === 'object' && 'messages' in data
+    ? (data as { messages?: TeamRadioMessage[] }).messages ?? []
+    : [];
+  return messages.map((message) => ({
+    ...message,
+    audioUrl: getTeamRadioMessageUrl(message.storagePath)
+  }));
+}
+
+export async function sendDashboardTeamRadioMessage(teamId: string, audio: Blob, durationMs: number) {
+  const client = requireClient();
+  await ensureAnonymousSession();
+  const mimeType = audio.type || 'audio/webm';
+  const storagePath = `${teamId}/dashboard/${Date.now()}-${crypto.randomUUID()}.${radioExtension(mimeType)}`;
+  const { error: uploadError } = await client.storage
+    .from('team-radio-messages')
+    .upload(storagePath, audio, {
+      upsert: false,
+      contentType: mimeType,
+      cacheControl: '3600'
+    });
+  if (uploadError) throw new DashboardApiError(uploadError.message, uploadError.name || 'UPLOAD_FAILED');
+
+  const { data, error } = await client.rpc('dashboard_send_team_radio_message', {
+    p_team_id: teamId,
+    p_storage_path: storagePath,
+    p_mime_type: mimeType,
+    p_duration_ms: durationMs,
+    p_client_id: dashboardClientId()
+  });
+  if (error) throw new DashboardApiError(error.message, error.code);
+  return data;
+}
+
 export type RealtimeStatus = 'connected' | 'disconnected';
 
 export function subscribeToDashboard(
@@ -90,6 +143,25 @@ export function subscribeToDashboard(
     .subscribe((status) => {
       onStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
     });
+
+  return () => {
+    if (!channel) return;
+    const current = channel;
+    channel = null;
+    void client.removeChannel(current);
+  };
+}
+
+export function subscribeToDashboardRadio(teamId: string, onChange: () => void) {
+  const client = requireClient();
+  let channel: RealtimeChannel | null = client
+    .channel(`moerasdraak-dashboard-radio:${teamId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'city_game', table: 'team_radio_messages', filter: `team_id=eq.${teamId}` },
+      onChange
+    )
+    .subscribe();
 
   return () => {
     if (!channel) return;

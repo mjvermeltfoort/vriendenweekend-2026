@@ -184,7 +184,7 @@ export function TeamRadioPanel() {
                 <AudioPlayer
                   key={message.id}
                   source={message.audioUrl}
-                  title={`Spraakbericht · ${formatMessageTime(message.createdAt)}${message.isMine ? ' · jij' : ''}`}
+                  title={`${message.senderKind === 'dashboard' ? 'Meldkamerbericht' : 'Spraakbericht'} · ${formatMessageTime(message.createdAt)}${message.isMine ? ' · jij' : ''}`}
                   transcript={message.transcript || 'Geen transcriptie beschikbaar.'}
                   showTranscript={false}
                   durationSeconds={message.durationMs ? message.durationMs / 1000 : undefined}
@@ -192,7 +192,7 @@ export function TeamRadioPanel() {
               )
               : (
                 <p className="muted small" key={message.id}>
-                  Spraakbericht · {formatMessageTime(message.createdAt)}{message.isMine ? ' · jij' : ''}: opname is niet beschikbaar.
+                  {message.senderKind === 'dashboard' ? 'Meldkamerbericht' : 'Spraakbericht'} · {formatMessageTime(message.createdAt)}{message.isMine ? ' · jij' : ''}: opname is niet beschikbaar.
                 </p>
               )
           ))}

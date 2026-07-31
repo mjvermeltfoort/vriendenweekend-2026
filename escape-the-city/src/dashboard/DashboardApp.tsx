@@ -7,6 +7,7 @@ import {
   type RealtimeStatus
 } from './api';
 import { DashboardMap } from './DashboardMap';
+import { DashboardRadioPanel } from './DashboardRadioPanel';
 import { dashboardReducer, initialDashboardState } from './store';
 import {
   ACCURATE_LOCATION_M,
@@ -415,6 +416,7 @@ export function DashboardApp() {
                   {selectedParticipants.length === 0 ? <p>Geen actieve deelnemers.</p> : null}
                 </div>
               </div>
+              <DashboardRadioPanel teamId={selectedTeam.id} teamName={selectedTeam.name} />
             </>
           ) : <p>Selecteer een team voor details.</p>}
         </section>

@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => {
   channel.subscribe.mockReturnValue(channel);
   return {
     rpc: vi.fn(),
+    getPublicUrl: vi.fn((path: string) => ({ data: { publicUrl: `https://example.test/${path}` } })),
+    upload: vi.fn(),
     removeChannel: vi.fn().mockResolvedValue(undefined),
     channelFactory: vi.fn(() => channel),
     channel
@@ -19,12 +21,13 @@ vi.mock('../lib/supabase/client', () => ({
   ensureAnonymousSession: vi.fn().mockResolvedValue({ user: { id: 'anonymous' } }),
   supabase: {
     rpc: mocks.rpc,
+    storage: { from: vi.fn(() => ({ getPublicUrl: mocks.getPublicUrl, upload: mocks.upload })) },
     channel: mocks.channelFactory,
     removeChannel: mocks.removeChannel
   }
 }));
 
-import { DashboardApiError, dashboardActions, subscribeToDashboard } from './api';
+import { DashboardApiError, dashboardActions, getDashboardTeamRadioMessages, subscribeToDashboard } from './api';
 
 describe('dashboard API', () => {
   beforeEach(() => {
@@ -71,5 +74,25 @@ describe('dashboard API', () => {
     cleanup();
     cleanup();
     expect(mocks.removeChannel).toHaveBeenCalledOnce();
+  });
+
+  it('loads team radio messages with public audio URLs', async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        messages: [{
+          id: 'message-1', teamId: 'team-1', sessionId: null, senderAlias: 'Meldkamer',
+          senderKind: 'dashboard', storagePath: 'team-1/dashboard/message.webm', mimeType: 'audio/webm',
+          durationMs: 1_000, transcript: null, createdAt: '2026-08-01T12:00:00.000Z', expiresAt: null
+        }]
+      },
+      error: null
+    });
+
+    const messages = await getDashboardTeamRadioMessages('team-1');
+
+    expect(mocks.rpc).toHaveBeenCalledWith('dashboard_get_team_radio_messages', {
+      p_team_id: 'team-1', p_limit: 50
+    });
+    expect(messages[0].audioUrl).toBe('https://example.test/team-1/dashboard/message.webm');
   });
 });

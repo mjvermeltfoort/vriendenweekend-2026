@@ -197,6 +197,21 @@ p { line-height: 1.45; }
 .participant span, .participant em { color: #ad9a74; font-size: 0.68rem; font-style: normal; }
 .participant em { color: #35d4c7; }
 .participant button { min-height: 28px; white-space: nowrap; font-size: 0.68rem; }
+.dashboard-radio {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(196, 151, 77, 0.22);
+}
+.dashboard-radio h3 { font-size: 0.95rem; }
+.dashboard-radio > p { margin: 0; color: #d7c097; font-size: 0.8rem; }
+.dashboard-radio > button { width: fit-content; min-height: 44px; }
+.dashboard-radio__error { color: #ffb7a6 !important; }
+.dashboard-radio__messages { display: grid; gap: 0.55rem; max-height: 260px; overflow-y: auto; }
+.dashboard-radio__message { display: grid; gap: 0.35rem; padding: 0.65rem 0.75rem; background: #07100d; border: 1px solid rgba(196, 151, 77, 0.2); border-radius: 6px; }
+.dashboard-radio__message strong { color: #ead8af; font-size: 0.78rem; }
+.dashboard-radio__message audio { width: min(100%, 480px); height: 34px; }
 .dashboard-shell footer { padding: 1rem 0 0.25rem; color: #a98b5c; font-size: 0.72rem; text-align: center; }
 .dashboard-loading { display: grid; min-height: 100vh; padding: 2rem; place-content: center; text-align: center; }
 .empty-state { padding: 2rem; color: #ad9a74; text-align: center; }
