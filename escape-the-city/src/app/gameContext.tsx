@@ -25,15 +25,20 @@ import {
 } from '../features/offline/storage';
 import {
   completeTeamGame,
+  fetchTeamRadioMessages,
   getTeamState,
   heartbeatTeamSession,
+  getTeamRadioMessageUrl,
   isSupabaseAvailable,
   joinTeamByCode,
+  sendTeamRadioMessage,
+  uploadTeamRadioRecording,
   revokeTeamSession,
   selectBackupStopObservation,
   startOrResumeTeamGame,
   subscribeToTeamState,
   TeamSyncError,
+  type TeamRadioMessage,
   updateTeamGameState,
   updateTeamLocation,
   verifyStopObservation,
@@ -61,6 +66,7 @@ interface GameContextValue {
   locationError: LocationErrorResult | null;
   currentObservation: StopObservation | null;
   observationStatus: TeamState['observationStatus'];
+  teamRadioMessages: TeamRadioMessage[];
   resumeWithJoinCode: (code: string) => Promise<string>;
   removeActiveTeam: () => Promise<void>;
   updateSettings: (patch: Partial<StoredSettings>) => void;
@@ -68,6 +74,7 @@ interface GameContextValue {
   submitObservation: (stopId: string, questionId: string, answer: string) => Promise<{ verified: boolean; pending?: boolean }>;
   selectBackupObservation: (stopId: string) => Promise<void>;
   submitSimulatedLocation: (location: LocationResult) => Promise<void>;
+  sendRadioMessage: (payload: { audio: Blob; durationMs: number; transcript?: string }) => Promise<void>;
   startStop: (stopId: string) => Promise<boolean>;
   useHint: (stopId: string, hintId: string) => Promise<void>;
   attemptAnswer: (stopId: string, challenge: ChallengeConfig, answer: unknown) => Promise<{ correct: boolean; message: string }>;
@@ -91,6 +98,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [locationError, setLocationError] = useState<LocationErrorResult | null>(null);
   const [currentObservation, setCurrentObservation] = useState<StopObservation | null>(null);
   const [observationStatus, setObservationStatus] = useState<TeamState['observationStatus']>('unavailable');
+  const [teamRadioMessages, setTeamRadioMessages] = useState<TeamRadioMessage[]>([]);
   const [session, setSession] = useState<StoredTeamSession | null>(null);
   const sessionRef = useRef<StoredTeamSession | null>(null);
   const progressRef = useRef<GameProgress | null>(null);
@@ -131,6 +139,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
+  const refreshTeamRadioMessages = useCallback(async (sessionId = sessionRef.current?.id) => {
+    if (!sessionId || !navigator.onLine) return;
+    try {
+      const current = await fetchTeamRadioMessages(sessionId);
+      setTeamRadioMessages(current.map((message) => ({
+        ...message,
+        isMine: message.sessionId === sessionId,
+        audioUrl: getTeamRadioMessageUrl(message.storagePath)
+      })));
+    } catch {
+      // Radio messages are optional to the game loop; keep it silent.
+    }
+  }, []);
+
   const fetchServerState = useCallback(async (sessionId = sessionRef.current?.id) => {
     if (!sessionId || !isSupabaseAvailable() || !navigator.onLine) return null;
     setSyncStatus('syncing');
@@ -138,6 +160,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     try {
       const state = await getTeamState(sessionId);
       await applyServerState(state);
+      await refreshTeamRadioMessages(sessionId);
       return state;
     } catch (error) {
       if (error instanceof TeamSyncError && (error.code === 'SESSION_REVOKED' || error.code === 'SESSION_NOT_FOUND')) {
@@ -150,6 +173,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setActiveGameRun(null);
         setTeamLocation(null);
         setActiveSessionCount(0);
+        setTeamRadioMessages([]);
         clearLastTeamId();
         await clearSensitiveSessionData();
       }
@@ -157,7 +181,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       setSyncMessage(error instanceof Error ? error.message : 'Synchroniseren is mislukt.');
       throw error;
     }
-  }, [applyServerState]);
+  }, [applyServerState, refreshTeamRadioMessages]);
 
   const replayObservationQueue = useCallback(async (sessionId: string) => {
     const teamId = sessionRef.current?.teamId;
@@ -252,6 +276,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           sessionRef.current = null;
           setSession(null);
           setActiveGameRun(null);
+          setTeamRadioMessages([]);
           await clearSensitiveSessionData(activeTeam.id);
         }
       }
@@ -335,6 +360,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         if (error instanceof TeamSyncError && (error.code === 'SESSION_REVOKED' || error.code === 'SESSION_NOT_FOUND')) {
           sessionRef.current = null;
           setSession(null);
+          setTeamRadioMessages([]);
         }
       }).finally(() => {
         sending = false;
@@ -369,6 +395,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       currentObservation: remote.currentObservation ?? null,
       observationStatus: remote.observationStatus ?? 'unavailable'
     }, remote.session);
+    await refreshTeamRadioMessages(remote.session.id);
     return remote.team.id;
   }
 
@@ -399,6 +426,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setCurrentObservation(null);
     setObservationStatus('unavailable');
     setActiveSessionCount(0);
+    setTeamRadioMessages([]);
     setTeams(await loadTeams());
     setSyncStatus('saved');
     setSyncMessage('Alles opgeslagen');
@@ -516,6 +544,33 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     await fetchServerState(activeSession.id);
   }
 
+  async function sendRadioMessage({ audio, durationMs, transcript }: { audio: Blob; durationMs: number; transcript?: string }) {
+    const activeSession = sessionRef.current;
+    if (!activeSession || !activeTeam) throw new Error('Voer de teamcode opnieuw in.');
+    if (!navigator.onLine) throw new Error('Je bent offline. Opnames worden direct verzonden als er netwerk is.');
+
+    const fallbackType = audio.type || 'audio/webm';
+    const extension = fallbackType.includes('ogg') ? 'ogg' : fallbackType.includes('wav') ? 'wav' : 'webm';
+    const path = `team-radio-messages/${activeTeam.id}/${activeSession.id}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    await uploadTeamRadioRecording(path, audio);
+    await sendTeamRadioMessage({
+      sessionId: activeSession.id,
+      storagePath: path,
+      mimeType: fallbackType,
+      durationMs,
+      senderAlias: `Pionier ${activeSession.id.slice(0, 4).toUpperCase()}`,
+      transcript
+    } satisfies {
+      sessionId: string;
+      storagePath: string;
+      mimeType: string;
+      durationMs: number;
+      senderAlias: string;
+      transcript?: string;
+    });
+    await refreshTeamRadioMessages(activeSession.id);
+  }
+
   async function startStop(stopId: string) {
     const currentProgress = progressRef.current;
     if (!currentProgress || !hasLocationUnlock(currentProgress, stopId)) return false;
@@ -610,8 +665,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     activeSessionCount,
     activeGameRun,
     locationError,
+    teamRadioMessages,
     currentObservation,
     observationStatus,
+    sendRadioMessage,
     resumeWithJoinCode,
     removeActiveTeam,
     updateSettings,
@@ -623,7 +680,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     useHint,
     attemptAnswer,
     completeFinale
-  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun, locationError, currentObservation, observationStatus]);
+  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun, locationError, teamRadioMessages, currentObservation, observationStatus, sendRadioMessage]);
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

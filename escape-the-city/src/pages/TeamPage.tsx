@@ -5,6 +5,7 @@ import { normalizeJoinCode } from '../features/game/gameState';
 import { isSupabaseAvailable } from '../lib/supabase/sync';
 import { useGame } from '../app/gameContext';
 import { PageShell, ProgressBar, SyncStatus, TeamAvatar } from '../components/GameUi';
+import { TeamRadioPanel } from '../components/TeamRadioPanel';
 
 export function TeamPage({ pack }: { pack: GamePack }) {
   const navigate = useNavigate();
@@ -69,6 +70,7 @@ export function TeamPage({ pack }: { pack: GamePack }) {
             ))}
           </div>
           <ProgressBar value={progress?.collectedRewards.length ?? 0} max={pack.stops.length} label="Voortgang" />
+          <TeamRadioPanel />
           <button className="button danger" disabled={busy} onClick={() => void leaveTeam()}>
             {busy ? 'Team verlaten…' : 'Team verlaten'}
           </button>

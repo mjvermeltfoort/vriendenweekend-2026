@@ -66,6 +66,21 @@ export interface TeamStopVerification {
   questionId?: string;
 }
 
+export interface TeamRadioMessage {
+  id: string;
+  teamId: string;
+  sessionId: string;
+  senderAlias: string;
+  storagePath: string;
+  mimeType: string;
+  durationMs: number | null;
+  transcript: string | null;
+  createdAt: string;
+  expiresAt: string | null;
+  isMine?: boolean;
+  audioUrl?: string;
+}
+
 export interface StopObservation {
   questionId: string;
   question: string;
@@ -116,6 +131,15 @@ export interface StartOrResumeTeamGameInput {
   gameId: string;
 }
 
+export interface SendTeamRadioMessageInput {
+  sessionId: string;
+  storagePath: string;
+  mimeType: string;
+  durationMs: number;
+  senderAlias: string;
+  transcript?: string;
+}
+
 export interface UpdateTeamGameStateInput {
   sessionId: string;
   runId: string;
@@ -133,6 +157,44 @@ export interface CompleteTeamGameInput {
 
 export function isSupabaseAvailable() {
   return Boolean(supabase);
+}
+
+export function getTeamRadioMessageUrl(path: string) {
+  if (!supabase) return '';
+  return supabase.storage.from('team-radio-messages').getPublicUrl(path).data.publicUrl;
+}
+
+export async function uploadTeamRadioRecording(storagePath: string, payload: Blob) {
+  if (!supabase) throw new TeamSyncError('SYNC_UNAVAILABLE', errorMessages.SYNC_UNAVAILABLE);
+  const { error } = await supabase.storage
+    .from('team-radio-messages')
+    .upload(storagePath, payload, {
+      upsert: false,
+      contentType: payload.type || 'audio/webm',
+      cacheControl: '3600'
+    });
+  if (error) {
+    throw new TeamSyncError('SYNC_UNAVAILABLE', error.message);
+  }
+}
+
+export async function fetchTeamRadioMessages(sessionId: string, limit = 20) {
+  const response = await callRpc<{ ok: true; messages: TeamRadioMessage[] }>('get_team_radio_messages', {
+    p_session_id: sessionId,
+    p_limit: limit
+  });
+  return response.messages;
+}
+
+export async function sendTeamRadioMessage(input: SendTeamRadioMessageInput) {
+  return callRpc<{ ok: true; message: TeamRadioMessage }>('send_team_radio_message', {
+    p_session_id: input.sessionId,
+    p_storage_path: input.storagePath,
+    p_mime_type: input.mimeType,
+    p_duration_ms: input.durationMs,
+    p_sender_alias: input.senderAlias,
+    p_transcript: input.transcript ?? null
+  });
 }
 
 const errorMessages: Record<Exclude<TeamSyncErrorCode, 'UNKNOWN'>, string> = {
@@ -394,7 +456,7 @@ export function subscribeToTeamState(
   const client = supabase;
   if (!client) return () => undefined;
   const channel = client.channel(`team-state:${teamId}`);
-  for (const table of ['progress', 'team_game_runs', 'team_current_location']) {
+  for (const table of ['progress', 'team_game_runs', 'team_current_location', 'team_radio_messages']) {
     channel.on(
       'postgres_changes',
       { event: '*', schema: 'city_game', table, filter: `team_id=eq.${teamId}` },
