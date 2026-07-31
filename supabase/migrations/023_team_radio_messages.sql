@@ -3,14 +3,18 @@
 create table if not exists city_game.team_radio_messages (
   id uuid primary key default gen_random_uuid(),
   team_id uuid not null references city_game.teams(id) on delete cascade,
-  session_id uuid not null references city_game.team_sessions(id, team_id) on delete cascade,
+  session_id uuid not null,
   sender_alias text not null check (length(trim(sender_alias)) > 0),
   storage_path text not null,
   mime_type text not null check (length(trim(mime_type)) > 0),
   duration_ms integer not null check (duration_ms >= 0),
   transcript text,
   created_at timestamptz not null default now(),
-  expires_at timestamptz
+  expires_at timestamptz,
+  constraint team_radio_messages_session_fkey
+    foreign key (session_id, team_id)
+    references city_game.team_sessions(id, team_id)
+    on delete cascade
 );
 
 create index if not exists team_radio_messages_team_id_created_idx
