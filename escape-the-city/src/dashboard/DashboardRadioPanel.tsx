@@ -153,7 +153,7 @@ export function DashboardRadioPanel({ teamId, teamName }: { teamId: string; team
         : 'Opname voor team starten';
 
   return (
-    <section className="dashboard-radio" aria-labelledby="dashboard-radio-title">
+    <section id="dashboard-radio-panel" className="dashboard-radio" aria-labelledby="dashboard-radio-title">
       <div>
         <p className="dashboard-eyebrow">Meldkamer</p>
         <h3 id="dashboard-radio-title">Berichten voor {teamName}</h3>

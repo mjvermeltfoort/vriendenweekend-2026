@@ -27,7 +27,7 @@ vi.mock('../lib/supabase/client', () => ({
   }
 }));
 
-import { DashboardApiError, dashboardActions, getDashboardTeamRadioMessages, subscribeToDashboard } from './api';
+import { DashboardApiError, dashboardActions, getDashboardTeamRadioMessages, subscribeToDashboard, subscribeToDashboardRadioNotifications } from './api';
 
 describe('dashboard API', () => {
   beforeEach(() => {
@@ -94,5 +94,17 @@ describe('dashboard API', () => {
       p_team_id: 'team-1', p_limit: 50
     });
     expect(messages[0].audioUrl).toBe('https://example.test/team-1/dashboard/message.webm');
+  });
+
+  it('notifies the dashboard only about newly inserted team recordings', () => {
+    const onMessage = vi.fn();
+    subscribeToDashboardRadioNotifications(onMessage);
+    const callback = mocks.channel.on.mock.calls[0][2] as (event: { new: unknown }) => void;
+
+    callback({ new: { team_id: 'team-1', sender_kind: 'team' } });
+    callback({ new: { team_id: 'team-1', sender_kind: 'dashboard' } });
+
+    expect(onMessage).toHaveBeenCalledTimes(1);
+    expect(onMessage).toHaveBeenCalledWith({ teamId: 'team-1' });
   });
 });

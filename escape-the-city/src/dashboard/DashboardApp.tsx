@@ -4,6 +4,7 @@ import {
   dashboardActions,
   initializeDashboard,
   subscribeToDashboard,
+  subscribeToDashboardRadioNotifications,
   type RealtimeStatus
 } from './api';
 import { DashboardMap } from './DashboardMap';
@@ -33,6 +34,23 @@ type DialogState =
   | null;
 
 const stopById = new Map(gamePack.stops.map((stop) => [stop.id, stop]));
+const RADIO_TOAST_DURATION_MS = 8_000;
+
+export function DashboardRadioToast({ teamName, onOpen, onClose }: {
+  teamName: string;
+  onOpen: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <aside className="dashboard-radio-toast" role="status" aria-live="polite">
+      <p>Nieuwe opname van <strong>{teamName}</strong></p>
+      <div>
+        <button className="primary" type="button" onClick={onOpen}>Open Meldkamer</button>
+        <button type="button" aria-label="Melding sluiten" onClick={onClose}>×</button>
+      </div>
+    </aside>
+  );
+}
 
 function statusLabel(team: DashboardTeam, now: number) {
   const health = teamHealth(team, now);
@@ -171,7 +189,12 @@ export function DashboardApp() {
   const [dialog, setDialog] = useState<DialogState>(null);
   const [actionError, setActionError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [radioToast, setRadioToast] = useState<{ teamId: string; teamName: string } | null>(null);
   const serverOffsetRef = useRef(0);
+  const teamsRef = useRef<DashboardTeam[]>([]);
+  const radioToastTimerRef = useRef<number | null>(null);
+
+  teamsRef.current = state.teams;
 
   useEffect(() => {
     let disposed = false;
@@ -235,6 +258,27 @@ export function DashboardApp() {
   }, []);
 
   useEffect(() => {
+    if (loading) return;
+    const clearRadioToast = () => {
+      if (radioToastTimerRef.current !== null) window.clearTimeout(radioToastTimerRef.current);
+      radioToastTimerRef.current = null;
+      setRadioToast(null);
+    };
+    const unsubscribe = subscribeToDashboardRadioNotifications(({ teamId }) => {
+      const team = teamsRef.current.find((item) => item.id === teamId);
+      if (!team) return;
+      if (radioToastTimerRef.current !== null) window.clearTimeout(radioToastTimerRef.current);
+      setRadioToast({ teamId, teamName: team.name });
+      radioToastTimerRef.current = window.setTimeout(clearRadioToast, RADIO_TOAST_DURATION_MS);
+    });
+    return () => {
+      unsubscribe();
+      if (radioToastTimerRef.current !== null) window.clearTimeout(radioToastTimerRef.current);
+      radioToastTimerRef.current = null;
+    };
+  }, [loading]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now() + serverOffsetRef.current), 1_000);
     return () => window.clearInterval(timer);
   }, []);
@@ -289,6 +333,19 @@ export function DashboardApp() {
   const selectedStopProgress = selectedTeam?.currentStopId
     ? selectedTeam.stopProgress.find((item) => item.stopId === selectedTeam.currentStopId)
     : null;
+
+  const dismissRadioToast = () => {
+    setRadioToast(null);
+    if (radioToastTimerRef.current !== null) window.clearTimeout(radioToastTimerRef.current);
+    radioToastTimerRef.current = null;
+  };
+
+  const openRadioToast = () => {
+    if (!radioToast) return;
+    dispatch({ type: 'select', teamId: radioToast.teamId });
+    dismissRadioToast();
+    window.requestAnimationFrame(() => document.getElementById('dashboard-radio-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
 
   return (
     <>
@@ -431,6 +488,7 @@ export function DashboardApp() {
         onClose={() => { setDialog(null); setActionError(''); }}
         onSubmit={(data) => { void performDialogAction(data); }}
       />
+      {radioToast ? <DashboardRadioToast teamName={radioToast.teamName} onOpen={openRadioToast} onClose={dismissRadioToast} /> : null}
     </>
   );
 }

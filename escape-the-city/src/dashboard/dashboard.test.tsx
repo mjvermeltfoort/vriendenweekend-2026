@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { DashboardDialog } from './DashboardApp';
+import { DashboardDialog, DashboardRadioToast } from './DashboardApp';
 import { accuracyFeatures, teamMarkerFeatures } from './mapData';
 import { dashboardReducer, initialDashboardState } from './store';
 import {
@@ -172,5 +172,17 @@ describe('dashboard confirmations', () => {
       />
     ));
     expect(container.textContent).toContain('De oude code werkt hierna niet meer');
+  });
+
+  it('shows a team recording notification with open and close actions', () => {
+    const onOpen = vi.fn();
+    const onClose = vi.fn();
+    act(() => root.render(<DashboardRadioToast teamName="Team Drakenvuur" onOpen={onOpen} onClose={onClose} />));
+
+    expect(container.textContent).toContain('Nieuwe opname van Team Drakenvuur');
+    act(() => container.querySelector<HTMLButtonElement>('.primary')?.click());
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Melding sluiten"]')?.click());
+    expect(onOpen).toHaveBeenCalledOnce();
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });

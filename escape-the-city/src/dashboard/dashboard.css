@@ -212,6 +212,22 @@ p { line-height: 1.45; }
 .dashboard-radio__message { display: grid; gap: 0.35rem; padding: 0.65rem 0.75rem; background: #07100d; border: 1px solid rgba(196, 151, 77, 0.2); border-radius: 6px; }
 .dashboard-radio__message strong { color: #ead8af; font-size: 0.78rem; }
 .dashboard-radio__message audio { width: min(100%, 480px); height: 34px; }
+.dashboard-radio-toast {
+  position: fixed;
+  z-index: 120;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: min(calc(100% - 2.5rem), 360px);
+  padding: 0.9rem 1rem;
+  color: #ead8af;
+  background: #10251c;
+  border: 1px solid #c4974d;
+  border-radius: 9px;
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.45);
+}
+.dashboard-radio-toast p { margin: 0 0 0.7rem; }
+.dashboard-radio-toast div { display: flex; justify-content: space-between; gap: 0.5rem; }
+.dashboard-radio-toast button { min-height: 34px; }
 .dashboard-shell footer { padding: 1rem 0 0.25rem; color: #a98b5c; font-size: 0.72rem; text-align: center; }
 .dashboard-loading { display: grid; min-height: 100vh; padding: 2rem; place-content: center; text-align: center; }
 .empty-state { padding: 2rem; color: #ad9a74; text-align: center; }

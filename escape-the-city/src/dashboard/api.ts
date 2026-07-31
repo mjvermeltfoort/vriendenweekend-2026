@@ -170,3 +170,31 @@ export function subscribeToDashboardRadio(teamId: string, onChange: () => void) 
     void client.removeChannel(current);
   };
 }
+
+export interface DashboardRadioNotification {
+  teamId: string;
+}
+
+export function subscribeToDashboardRadioNotifications(onMessage: (notification: DashboardRadioNotification) => void) {
+  const client = requireClient();
+  let channel: RealtimeChannel | null = client
+    .channel('moerasdraak-dashboard-radio-notifications')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'city_game', table: 'team_radio_messages' },
+      (event) => {
+        const record = event.new as { team_id?: unknown; sender_kind?: unknown };
+        if (typeof record.team_id === 'string' && record.sender_kind === 'team') {
+          onMessage({ teamId: record.team_id });
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (!channel) return;
+    const current = channel;
+    channel = null;
+    void client.removeChannel(current);
+  };
+}
