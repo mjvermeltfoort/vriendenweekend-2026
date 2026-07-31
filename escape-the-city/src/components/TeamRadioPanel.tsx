@@ -187,6 +187,7 @@ export function TeamRadioPanel() {
                   title={`Spraakbericht · ${formatMessageTime(message.createdAt)}${message.isMine ? ' · jij' : ''}`}
                   transcript={message.transcript || 'Geen transcriptie beschikbaar.'}
                   showTranscript={false}
+                  durationSeconds={message.durationMs ? message.durationMs / 1000 : undefined}
                 />
               )
               : (

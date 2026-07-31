@@ -7,12 +7,26 @@ function formatTime(seconds: number) {
   return `${minutes}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
 }
 
-export function AudioPlayer({ source, title, transcript, showTranscript = true }: { source: string; title: string; transcript: string; showTranscript?: boolean }) {
+interface AudioPlayerProps {
+  source: string;
+  title: string;
+  transcript: string;
+  showTranscript?: boolean;
+  durationSeconds?: number;
+}
+
+function validDuration(seconds: number) {
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+}
+
+export function AudioPlayer({ source, title, transcript, showTranscript = true, durationSeconds }: AudioPlayerProps) {
   const { narration, toggleNarration, seekNarration } = useAudio();
   const active = narration.source === source;
   const playing = active && narration.playing;
-  const currentTime = active ? narration.currentTime : 0;
-  const duration = active ? narration.duration : 0;
+  const currentTime = active && Number.isFinite(narration.currentTime) ? narration.currentTime : 0;
+  const nativeDuration = active ? validDuration(narration.duration) : 0;
+  const duration = nativeDuration || validDuration(durationSeconds ?? 0);
+  const displayedCurrentTime = duration ? Math.min(currentTime, duration) : currentTime;
 
   return (
     <section className="audio-player" aria-label={title}>
@@ -27,7 +41,7 @@ export function AudioPlayer({ source, title, transcript, showTranscript = true }
       <div className="audio-player__body">
         <div className="row row--between">
           <strong>{title}</strong>
-          <span className="audio-time">{formatTime(currentTime)} / {formatTime(duration)}</span>
+          <span className="audio-time">{formatTime(displayedCurrentTime)} / {formatTime(duration)}</span>
         </div>
         <input
           className="audio-progress"
@@ -35,7 +49,7 @@ export function AudioPlayer({ source, title, transcript, showTranscript = true }
           min={0}
           max={Math.max(duration, 1)}
           step={0.1}
-          value={Math.min(currentTime, Math.max(duration, 1))}
+          value={Math.min(displayedCurrentTime, Math.max(duration, 1))}
           aria-label={`Positie in ${title}`}
           disabled={!duration}
           onChange={(event) => seekNarration(Number(event.target.value))}

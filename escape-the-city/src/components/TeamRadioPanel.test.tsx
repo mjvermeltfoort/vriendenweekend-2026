@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockSendRadioMessage = vi.fn().mockResolvedValue(undefined);
 const mockUseGame = vi.fn();
+const mockNarration = { source: null as string | null, playing: false, currentTime: 0, duration: 0, error: '' };
 
 vi.mock('../app/gameContext', () => ({
   useGame: () => mockUseGame()
@@ -11,7 +12,7 @@ vi.mock('../app/gameContext', () => ({
 
 vi.mock('../features/audio/audioContext', () => ({
   useAudio: () => ({
-    narration: { source: null, playing: false, currentTime: 0, duration: 0, error: '' },
+    narration: mockNarration,
     toggleNarration: vi.fn(),
     seekNarration: vi.fn()
   })
@@ -54,6 +55,7 @@ describe('TeamRadioPanel', () => {
     actEnvironment.IS_REACT_ACT_ENVIRONMENT = true;
     container.innerHTML = '';
     vi.clearAllMocks();
+    Object.assign(mockNarration, { source: null, playing: false, currentTime: 0, duration: 0, error: '' });
     mockSendRadioMessage.mockResolvedValue(undefined);
     mockUseGame.mockReturnValue({
       activeTeam: { id: 'team-1' },
@@ -64,6 +66,7 @@ describe('TeamRadioPanel', () => {
         senderAlias: 'Pionier TEST',
         createdAt: '2026-07-31T12:00:00.000Z',
         isMine: false,
+        durationMs: 4_200,
         transcript: 'Deze tekst mag niet zichtbaar zijn.'
       }]
     });
@@ -88,6 +91,7 @@ describe('TeamRadioPanel', () => {
 
     expect(container.textContent).toContain('Wacht even tot de timer loopt voordat je spreekt');
     expect(container.textContent).toContain('Spraakbericht');
+    expect(container.textContent).toContain('0:00 / 0:04');
     expect(container.textContent).not.toContain('Pionier TEST');
     expect(container.textContent).not.toContain('Tekstversie');
     expect(container.textContent).not.toContain('Deze tekst mag niet zichtbaar zijn.');
@@ -99,5 +103,18 @@ describe('TeamRadioPanel', () => {
     await act(async () => button?.click());
     expect(mockSendRadioMessage).toHaveBeenCalledOnce();
     expect(stopTrack).toHaveBeenCalledOnce();
+  });
+
+  it('uses the recorded duration when the browser reports an invalid duration', () => {
+    Object.assign(mockNarration, {
+      source: 'https://example.test/radio.webm',
+      playing: true,
+      currentTime: 2.8,
+      duration: Number.POSITIVE_INFINITY
+    });
+
+    act(() => root.render(<TeamRadioPanel />));
+
+    expect(container.textContent).toContain('0:02 / 0:04');
   });
 });
