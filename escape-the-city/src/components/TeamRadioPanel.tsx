@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../app/gameContext';
 import { AudioPlayer } from './AudioPlayer';
 import { GameIcon } from './GameUi';
@@ -28,13 +28,10 @@ function hasAudioCapability() {
   return typeof navigator.mediaDevices?.getUserMedia === 'function';
 }
 
-function normalizeAlias(alias: string) {
-  return alias.trim() || 'Teamlid';
-}
-
 export function TeamRadioPanel() {
   const { sendRadioMessage, teamRadioMessages, activeTeam } = useGame();
   const [isRecording, setIsRecording] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const [recordingLabel, setRecordingLabel] = useState('0:00');
@@ -59,13 +56,14 @@ export function TeamRadioPanel() {
   }, []);
 
   async function startRecording() {
-    if (!activeTeam || isRecording || isUploading) return;
+    if (!activeTeam || isRecording || isStarting || isUploading) return;
     if (!hasAudioCapability()) {
       setError('Audio-opnames worden niet ondersteund op deze browser.');
       return;
     }
     setError('');
     setRecordingLabel('0:00');
+    setIsStarting(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -74,9 +72,9 @@ export function TeamRadioPanel() {
           autoGainControl: true
         }
       });
+      streamRef.current = stream;
       const mimeType = resolveMimeType();
       const recorder = new MediaRecorder(stream, { mimeType });
-      streamRef.current = stream;
       recorderRef.current = recorder;
       chunksRef.current = [];
       startedAtRef.current = Date.now();
@@ -106,12 +104,22 @@ export function TeamRadioPanel() {
       };
       recorder.start(300);
       setIsRecording(true);
+      setIsStarting(false);
       if (timerRef.current !== null) window.clearInterval(timerRef.current);
       timerRef.current = window.setInterval(() => {
         const seconds = Math.floor((Date.now() - startedAtRef.current) / 1000);
         setRecordingLabel(formatDuration(seconds));
       }, 500);
     } catch (audioError) {
+      const stream = streamRef.current;
+      if (stream) {
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
+        streamRef.current = null;
+      }
+      recorderRef.current = null;
+      setIsStarting(false);
       setError(audioError instanceof Error ? audioError.message : 'Microfoon startte niet op.');
     }
   }
@@ -133,39 +141,16 @@ export function TeamRadioPanel() {
       timerRef.current = null;
     }
     setIsRecording(false);
+    setIsUploading(true);
   }
 
-  function handlePressStart() {
-    void startRecording();
-  }
-
-  function handlePressEnd() {
-    stopRecording();
-  }
-
-  function stopIfRecording() {
-    if (isRecording) stopRecording();
-  }
-
-  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if ((event.key === ' ' || event.key === 'Enter') && !isRecording && !isUploading) {
-      event.preventDefault();
-      handlePressStart();
-    }
-  };
-
-  const onKeyUp = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if ((event.key === ' ' || event.key === 'Enter') && isRecording) {
-      event.preventDefault();
-      handlePressEnd();
-    }
-  };
-
-  const label = isUploading
+  const label = isStarting
+    ? 'Microfoon starten…'
+    : isUploading
     ? 'Verzenden…'
     : isRecording
-      ? `Opnemen ${recordingLabel}`
-      : 'Druk en houd vast om te spreken';
+      ? `Opnemen ${recordingLabel} · Klik om te stoppen`
+      : 'Klik om op te nemen';
 
   return (
     <section className="card stack">
@@ -173,19 +158,17 @@ export function TeamRadioPanel() {
         <p className="eyebrow">Teamradio</p>
         <h2>Meldkamer</h2>
       </div>
-      <p>Hou de knop vast om een kort stembericht op te nemen en direct met elkaar te delen.</p>
+      <p>Klik om een kort stembericht op te nemen. Wacht even tot de timer loopt voordat je spreekt, en klik opnieuw om te stoppen.</p>
       <button
         className={`button ${isRecording ? 'danger' : 'primary'}`}
         type="button"
         aria-live="polite"
         aria-label={isRecording ? 'Voice message opnemen stoppen' : 'Voice message opnemen starten'}
-        disabled={!activeTeam || isUploading}
-        onPointerDown={() => handlePressStart()}
-        onPointerUp={() => handlePressEnd()}
-        onPointerLeave={() => stopIfRecording()}
-        onPointerCancel={() => stopIfRecording()}
-        onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
+        disabled={!activeTeam || isStarting || isUploading}
+        onClick={() => {
+          if (isRecording) stopRecording();
+          else void startRecording();
+        }}
       >
         <span className="row row--between">
           <span>{isRecording ? <GameIcon name="sync" /> : <GameIcon name="volume" />}</span>
@@ -201,13 +184,14 @@ export function TeamRadioPanel() {
                 <AudioPlayer
                   key={message.id}
                   source={message.audioUrl}
-                  title={`${normalizeAlias(message.senderAlias)} · ${formatMessageTime(message.createdAt)}${message.isMine ? ' · jij' : ''}`}
+                  title={`Spraakbericht · ${formatMessageTime(message.createdAt)}${message.isMine ? ' · jij' : ''}`}
                   transcript={message.transcript || 'Geen transcriptie beschikbaar.'}
+                  showTranscript={false}
                 />
               )
               : (
                 <p className="muted small" key={message.id}>
-                  {normalizeAlias(message.senderAlias)} · {formatMessageTime(message.createdAt)}{message.isMine ? ' · jij' : ''}: opname is niet beschikbaar.
+                  Spraakbericht · {formatMessageTime(message.createdAt)}{message.isMine ? ' · jij' : ''}: opname is niet beschikbaar.
                 </p>
               )
           ))}

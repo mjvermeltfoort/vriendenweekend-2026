@@ -7,7 +7,7 @@ function formatTime(seconds: number) {
   return `${minutes}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
 }
 
-export function AudioPlayer({ source, title, transcript }: { source: string; title: string; transcript: string }) {
+export function AudioPlayer({ source, title, transcript, showTranscript = true }: { source: string; title: string; transcript: string; showTranscript?: boolean }) {
   const { narration, toggleNarration, seekNarration } = useAudio();
   const active = narration.source === source;
   const playing = active && narration.playing;
@@ -41,10 +41,12 @@ export function AudioPlayer({ source, title, transcript }: { source: string; tit
           onChange={(event) => seekNarration(Number(event.target.value))}
         />
         {active && narration.error ? <p className="audio-error" role="alert">{narration.error}</p> : null}
-        <details className="audio-transcript">
-          <summary>Tekstversie</summary>
-          <p>{transcript}</p>
-        </details>
+        {showTranscript ? (
+          <details className="audio-transcript">
+            <summary>Tekstversie</summary>
+            <p>{transcript}</p>
+          </details>
+        ) : null}
       </div>
     </section>
   );
