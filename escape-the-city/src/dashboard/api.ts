@@ -181,10 +181,10 @@ export function subscribeToDashboardRadioNotifications(onMessage: (notification:
     .channel('moerasdraak-dashboard-radio-notifications')
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'city_game', table: 'team_radio_messages' },
+      { event: 'INSERT', schema: 'public', table: 'dashboard_radio_notifications' },
       (event) => {
-        const record = event.new as { team_id?: unknown; sender_kind?: unknown };
-        if (typeof record.team_id === 'string' && record.sender_kind === 'team') {
+        const record = event.new as { team_id?: unknown };
+        if (typeof record.team_id === 'string') {
           onMessage({ teamId: record.team_id });
         }
       }

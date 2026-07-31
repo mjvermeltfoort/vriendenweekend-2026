@@ -96,13 +96,12 @@ describe('dashboard API', () => {
     expect(messages[0].audioUrl).toBe('https://example.test/team-1/dashboard/message.webm');
   });
 
-  it('notifies the dashboard only about newly inserted team recordings', () => {
+  it('notifies the dashboard from the public team-radio notification projection', () => {
     const onMessage = vi.fn();
     subscribeToDashboardRadioNotifications(onMessage);
     const callback = mocks.channel.on.mock.calls[0][2] as (event: { new: unknown }) => void;
 
-    callback({ new: { team_id: 'team-1', sender_kind: 'team' } });
-    callback({ new: { team_id: 'team-1', sender_kind: 'dashboard' } });
+    callback({ new: { team_id: 'team-1' } });
 
     expect(onMessage).toHaveBeenCalledTimes(1);
     expect(onMessage).toHaveBeenCalledWith({ teamId: 'team-1' });
