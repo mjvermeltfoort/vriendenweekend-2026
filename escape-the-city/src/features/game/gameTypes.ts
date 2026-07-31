@@ -58,6 +58,7 @@ export interface BonusLocation extends RouteStop {
   coordinates: RouteStop['coordinates'] & { discoveryRadiusMeters: number };
   estimatedDetourMinutes: number;
   maximumPoints: number;
+  visibleAfterStopId: string;
   recommendedBetween: {
     afterStopId: string;
     beforeStopId: string;

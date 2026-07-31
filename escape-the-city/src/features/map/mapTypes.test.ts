@@ -13,7 +13,7 @@ import {
   startLocationPolling,
   validateRouteGeoJson
 } from './mapTypes';
-import { autoSelectedStopId, visibleRouteFeatures } from './RouteMap';
+import { autoSelectedStopId, mapFocusStops, visibleRouteFeatures } from './RouteMap';
 
 const routeData = JSON.parse(readFileSync(
   resolve(process.cwd(), 'public/routes/moerasdraak-den-bosch.geojson'),
@@ -110,6 +110,13 @@ describe('map helpers', () => {
 
     expect(autoSelectedStopId(undefined, progress, gamePack.stops)).toBe(null);
     expect(autoSelectedStopId('onbekend', progress, gamePack.stops)).toBe(null);
+  });
+
+  it('focuses the current stop and the next route stop', () => {
+    const currentStop = gamePack.stops[2];
+
+    expect(mapFocusStops(currentStop.id, gamePack.stops)).toEqual(gamePack.stops.slice(2, 4));
+    expect(mapFocusStops('onbekend', gamePack.stops)).toEqual(gamePack.stops);
   });
 
   it('maps every marker state and keeps the finale visually distinct', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canAccessChallenge, canStartFinale, canViewResult, challengeAnswerIsCorrect, createInitialProgress, hasLocationUnlock, isFinaleLocationRevealed, normalizeJoinCode, readableJoinCode } from './gameState';
+import { canAccessChallenge, canStartFinale, canViewResult, challengeAnswerIsCorrect, createInitialProgress, hasLocationUnlock, isBonusVisible, isFinaleLocationRevealed, normalizeJoinCode, readableJoinCode, visibleBonusLocations } from './gameState';
 import { gamePack } from '../../game-data/moerasdraak/game';
 
 describe('gameState', () => {
@@ -50,6 +50,25 @@ describe('gameState', () => {
       stop.unlockMethod = method;
       expect(hasLocationUnlock(progress, gamePack.startStopId)).toBe(true);
     }
+  });
+
+  it('reveals bonus locations only after their prerequisite location is reached', () => {
+    const progress = createInitialProgress('team-1', gamePack);
+    const [b1, b2, b3, b4, b5, b6] = gamePack.bonusLocations!;
+    expect(visibleBonusLocations(gamePack, progress)).toEqual([]);
+
+    progress.stopProgress.drakenfontein.state = 'arrived';
+    expect(visibleBonusLocations(gamePack, progress).map((bonus) => bonus.id)).toEqual([b1.id, b2.id]);
+
+    progress.stopProgress['zoete-lieve-gerritje'].state = 'started';
+    expect(isBonusVisible(progress, b3)).toBe(true);
+    progress.stopProgress.binnendieze.state = 'completed';
+    expect(isBonusVisible(progress, b4)).toBe(true);
+    expect(isBonusVisible(progress, b5)).toBe(false);
+
+    progress.stopProgress.kruithuis.state = 'arrived';
+    expect(isBonusVisible(progress, b5)).toBe(true);
+    expect(isBonusVisible(progress, b6)).toBe(true);
   });
 
   it('accepts bell code 3142 and rejects the old five-digit pattern', () => {

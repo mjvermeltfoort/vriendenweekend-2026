@@ -39,7 +39,7 @@ export function validateGamePack(pack: GamePack) {
     const { latitude, longitude, radiusMeters, maximumAccuracyMeters, discoveryRadiusMeters } = bonus.coordinates;
     if (latitude === null || longitude === null || !Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) return { valid: false, message: `Ongeldige bonuscoördinaten voor ${bonus.id}` };
     if (radiusMeters <= 0 || maximumAccuracyMeters <= 0 || discoveryRadiusMeters < radiusMeters) return { valid: false, message: `Ongeldige bonusgeofence voor ${bonus.id}` };
-    if (!stopIds.has(bonus.recommendedBetween.afterStopId) || !stopIds.has(bonus.recommendedBetween.beforeStopId)) return { valid: false, message: `Ongeldige bonusrouteverwijzing voor ${bonus.id}` };
+    if (!stopIds.has(bonus.recommendedBetween.afterStopId) || !stopIds.has(bonus.recommendedBetween.beforeStopId) || !stopIds.has(bonus.visibleAfterStopId)) return { valid: false, message: `Ongeldige bonusrouteverwijzing voor ${bonus.id}` };
     if (bonus.maximumPoints <= 0 || !bonus.reward.id || !bonus.hints || !bonus.challenge) return { valid: false, message: `Onvolledige bonusconfiguratie voor ${bonus.id}` };
   }
   if (pack.bonusCompletionReward && pack.bonusCompletionReward.requiredCount !== bonusIds.size) return { valid: false, message: 'De Schubbenjagers-bonus past niet bij het aantal bonussen.' };

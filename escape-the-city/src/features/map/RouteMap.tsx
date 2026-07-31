@@ -20,6 +20,7 @@ import {
 } from './mapTypes';
 import { RouteMarker } from './RouteMarker';
 import { isBonusLocation, type BonusLocation, type RouteStop } from '../game/gameTypes';
+import { visibleBonusLocations } from '../game/gameState';
 
 type MapMode = 'loading' | 'live' | 'fallback';
 type MarkerPosition = { left: string; top: string };
@@ -89,6 +90,11 @@ export function autoSelectedStopId(
   return state === 'locked' ? null : currentStopId;
 }
 
+export function mapFocusStops(currentStopId: string | undefined, visibleStops: RouteStop[]) {
+  const currentIndex = visibleStops.findIndex((stop) => stop.id === currentStopId);
+  return currentIndex === -1 ? visibleStops : visibleStops.slice(currentIndex, currentIndex + 2);
+}
+
 export function RouteMap({ gamePack, progress, visibleStops, locationProvider }: RouteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -103,8 +109,8 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
 
   const mapLocations = useMemo<(RouteStop | BonusLocation)[]>(
-    () => [...visibleStops, ...(gamePack.bonusLocations ?? [])],
-    [gamePack.bonusLocations, visibleStops]
+    () => [...visibleStops, ...visibleBonusLocations(gamePack, progress)],
+    [gamePack, progress, visibleStops]
   );
   const selectedStop = mapLocations.find((stop) => stop.id === selectedStopId) ?? null;
   const selectedState = selectedStop ? progress?.stopProgress?.[selectedStop.id]?.state ?? 'locked' : 'locked';
@@ -236,7 +242,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
           }
         });
 
-        const coordinates = visibleStops.map((stop) => [
+        const coordinates = mapFocusStops(progress?.currentStopId, visibleStops).map((stop) => [
           stop.coordinates.longitude!,
           stop.coordinates.latitude!
         ] as LngLat);
@@ -247,7 +253,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
           );
           map.fitBounds(bounds, {
             padding: { top: 46, right: 46, bottom: 104, left: 46 },
-            maxZoom: 15.8,
+            maxZoom: 16.8,
             duration: 0
           });
         }

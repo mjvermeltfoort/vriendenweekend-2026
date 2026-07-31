@@ -2,7 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { canStartFinale, hasLocationUnlock, isFinaleLocationRevealed, locationById, nextStop, stopById } from '../features/game/gameState';
+import { canStartFinale, hasLocationUnlock, isBonusVisible, isFinaleLocationRevealed, locationById, nextStop, stopById } from '../features/game/gameState';
 import { isBonusLocation } from '../features/game/gameTypes';
 import { createSimulatorProvider, defaultSimulatorState, type SimulatorState } from '../features/location/simulator';
 import { GameIcon, PageShell } from '../components/GameUi';
@@ -13,6 +13,7 @@ import {
   observationFallbackDelayMs
 } from '../features/location/observationFallback';
 import { haversineDistanceMeters } from '../features/location/distance';
+import { formattedWalkingDistance } from '../features/location/routeDistance';
 
 export function StopPage({ pack }: { pack: GamePack }) {
   const navigate = useNavigate();
@@ -42,16 +43,17 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const selectedBonusRef = useRef('');
   const selectingBonusRef = useRef('');
   const hiddenFinale = Boolean(stop?.isFinal && (!progress || !isFinaleLocationRevealed(progress, pack)));
+  const bonusVisible = !stop || !isBonusLocation(stop) || isBonusVisible(progress, stop);
 
   useEffect(() => {
-    if (stop && isBonusLocation(stop) && selectedBonusRef.current !== stop.id && selectingBonusRef.current !== stop.id) {
+    if (stop && isBonusLocation(stop) && bonusVisible && selectedBonusRef.current !== stop.id && selectingBonusRef.current !== stop.id) {
       selectingBonusRef.current = stop.id;
       void selectBonus(stop.id)
         .then(() => { selectedBonusRef.current = stop.id; })
         .catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De bonuslocatie kon niet worden geselecteerd.'))
         .finally(() => { selectingBonusRef.current = ''; });
     }
-  }, [stop?.id, selectBonus]);
+  }, [bonusVisible, stop?.id, selectBonus]);
   const outsideStopRadius = Boolean(
     stop
     && teamLocation?.isCurrent
@@ -136,11 +138,29 @@ export function StopPage({ pack }: { pack: GamePack }) {
       </PageShell>
     );
   }
+  if (!bonusVisible) {
+    return <PageShell title="Verborgen schub" backTo="/route"><section className="card stack center"><GameIcon name="lock" size={32} /><h1>Deze schub is nog verborgen</h1><p>Bereik eerst de volgende hoofdlocatie om dit spoor te onthullen.</p></section></PageShell>;
+  }
 
   const currentStop = stop;
   const stopState = progress?.stopProgress[currentStop.id]?.state ?? 'locked';
   const canPlay = progress ? hasLocationUnlock(progress, currentStop.id) : false;
   const isCompleted = stopState === 'completed';
+  const bonusQuestionAvailable = Boolean(
+    isBonusLocation(currentStop)
+    && teamLocation?.isCurrent
+    && teamLocation.accuracyM <= currentStop.coordinates.maximumAccuracyMeters
+    && haversineDistanceMeters(
+      { latitude: teamLocation.latitude, longitude: teamLocation.longitude },
+      { latitude: currentStop.coordinates.latitude!, longitude: currentStop.coordinates.longitude! }
+    ) <= currentStop.coordinates.discoveryRadiusMeters
+  );
+  const bonusDistance = isBonusLocation(currentStop) && teamLocation?.isCurrent
+    ? haversineDistanceMeters(
+      { latitude: teamLocation.latitude, longitude: teamLocation.longitude },
+      { latitude: currentStop.coordinates.latitude!, longitude: currentStop.coordinates.longitude! }
+    )
+    : null;
   const finaleEligibility = currentStop.isFinal && progress ? canStartFinale(progress, pack) : { eligible: true, missingCount: 0, missingTitles: [] as string[] };
   const isDev = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true';
   const followingStop = isBonusLocation(currentStop) ? null : nextStop(pack, currentStop.id);
@@ -190,7 +210,10 @@ export function StopPage({ pack }: { pack: GamePack }) {
   }
 
   async function checkBonusObservation() {
-    if (!isBonusLocation(currentStop) || !answer.trim()) return;
+    if (!isBonusLocation(currentStop) || !bonusQuestionAvailable || !answer.trim()) {
+      setGpsMessage('Kom eerst dichter bij de schub om de vraag te beantwoorden.');
+      return;
+    }
     setObservationBusy(true);
     try {
       const result = await submitBonusObservation(currentStop.id, currentStop.manualVerification.questionId, answer);
@@ -232,7 +255,19 @@ export function StopPage({ pack }: { pack: GamePack }) {
         <p>{currentStop.navigation.clue}</p>
         <p className="muted small">{currentStop.locationName}</p>
 
-        {currentStopIsActive
+        {isBonusLocation(currentStop) ? (
+          <section className="active-stop-indicator" aria-label="Afstand tot verborgen schub">
+            <p className="eyebrow">Afstand tot schub</p>
+            {bonusDistance === null ? (
+              <p>Afstand bepalen…</p>
+            ) : (
+              <>
+                <p className="active-stop-indicator__distance">Nog ongeveer {formattedWalkingDistance(bonusDistance)} lopen</p>
+                <p className="muted small">Directe afstand vanaf jullie actuele GPS-locatie.</p>
+              </>
+            )}
+          </section>
+        ) : currentStopIsActive
           ? (
             <ActiveStopIndicator
               pack={pack}
@@ -318,12 +353,19 @@ export function StopPage({ pack }: { pack: GamePack }) {
         ) : null}
 
         {isBonusLocation(currentStop) && !canPlay ? (
-          <section className="observation-fallback stack" aria-label="Bonuslocatie handmatig bevestigen">
-            <h3>Locatie bevestigen zonder GPS</h3>
-            <p>{currentStop.manualVerification.question}</p>
-            <label className="field"><span>Jullie antwoord</span><input value={answer} onChange={(event) => setAnswer(event.target.value)} autoComplete="off" /></label>
-            <button className="button primary" type="button" disabled={observationBusy || !answer.trim()} onClick={() => void checkBonusObservation()}>{observationBusy ? 'Controleren…' : 'Antwoord controleren'}</button>
-          </section>
+          bonusQuestionAvailable ? (
+            <section className="observation-fallback stack" aria-label="Bonuslocatie handmatig bevestigen">
+              <h3>Locatie bevestigen zonder GPS</h3>
+              <p>{currentStop.manualVerification.question}</p>
+              <label className="field"><span>Jullie antwoord</span><input value={answer} onChange={(event) => setAnswer(event.target.value)} autoComplete="off" /></label>
+              <button className="button primary" type="button" disabled={observationBusy || !answer.trim()} onClick={() => void checkBonusObservation()}>{observationBusy ? 'Controleren…' : 'Antwoord controleren'}</button>
+            </section>
+          ) : (
+            <section className="location-status" aria-live="polite">
+              <GameIcon name="location" />
+              <p>Kom dichter bij de schub. De verificatievraag verschijnt zodra jullie in de buurt zijn.</p>
+            </section>
+          )
         ) : null}
 
         {isDev ? (

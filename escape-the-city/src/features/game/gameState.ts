@@ -205,6 +205,15 @@ export function statusOrder(status: StopStatus) {
   return ['locked', 'available', 'arrived', 'started', 'completed'].indexOf(status);
 }
 
+export function isBonusVisible(progress: GameProgress | null | undefined, bonus: BonusLocation) {
+  const prerequisite = progress?.stopProgress[bonus.visibleAfterStopId];
+  return !!prerequisite && statusOrder(prerequisite.state) >= statusOrder('arrived');
+}
+
+export function visibleBonusLocations(game: GamePack, progress: GameProgress | null | undefined) {
+  return (game.bonusLocations ?? []).filter((bonus) => isBonusVisible(progress, bonus));
+}
+
 export function hasLocationUnlock(progress: GameProgress, stopId: string) {
   const stop = progress.stopProgress?.[stopId];
   return !!stop
