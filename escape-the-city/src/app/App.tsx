@@ -16,6 +16,7 @@ import { scenicForPath } from '../features/audio/audioConfig';
 import { useAudio } from '../features/audio/audioContext';
 import { useGame } from './gameContext';
 import { InstallBanner } from '../features/pwa/InstallBanner';
+import { FloatingTeamRadio } from '../components/FloatingTeamRadio';
 
 function AudioSceneController() {
   const location = useLocation();
@@ -62,6 +63,7 @@ export function App() {
       <AudioSceneController />
       <ContrastController />
       <InstallBanner />
+      <FloatingTeamRadio />
       <Routes>
         <Route path="/" element={<HomePage pack={gamePack} />} />
         <Route path="/team" element={<TeamPage pack={gamePack} />} />

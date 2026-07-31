@@ -23,6 +23,7 @@ type IconName =
   | 'sync'
   | 'team'
   | 'time'
+  | 'walkie'
   | 'volume'
   | 'volume-off';
 
@@ -46,6 +47,7 @@ export function GameIcon({ name, size = 24 }: { name: IconName; size?: number })
     star: <path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" />,
     sync: <path d="M20 7v5h-5M4 17v-5h5M6.1 9a7 7 0 0 1 11.5-2L20 12M4 12l2.4 5a7 7 0 0 0 11.5-2" />,
     team: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 20c0-4 2.5-6 6-6s6 2 6 6M14 15c4-.8 7 1.3 7 5" /></>,
+    walkie: <><path d="M4 12h5M16 12h5M9 8v8M10 12h4M15 12v-6a1.5 1.5 0 0 1 1.5-1.5 1.5 1.5 0 0 1 1.5 1.5v2M12 6a3 3 0 0 1 0 12" /></>,
     time: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
     volume: <><path d="M5 10v4h3l4 4V6L8 10H5Z" /><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12" /></>,
     'volume-off': <><path d="M5 10v4h3l4 4V6L8 10H5ZM16 10l5 5M21 10l-5 5" /></>
