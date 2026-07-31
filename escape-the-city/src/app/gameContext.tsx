@@ -37,6 +37,8 @@ import {
   uploadTeamRadioRecording,
   revokeTeamSession,
   selectBackupStopObservation,
+  selectBonusLocation,
+  verifyBonusObservation,
   startOrResumeTeamGame,
   subscribeToTeamState,
   TeamSyncError,
@@ -77,6 +79,8 @@ interface GameContextValue {
   syncNow: () => Promise<void>;
   submitObservation: (stopId: string, questionId: string, answer: string) => Promise<{ verified: boolean; pending?: boolean }>;
   selectBackupObservation: (stopId: string) => Promise<void>;
+  selectBonus: (bonusId: string) => Promise<void>;
+  submitBonusObservation: (stopId: string, questionId: string, answer: string) => Promise<{ verified: boolean; pending?: boolean }>;
   submitSimulatedLocation: (location: LocationResult) => Promise<void>;
   sendRadioMessage: (payload: { audio: Blob; durationMs: number; transcript?: string }) => Promise<void>;
   startStop: (stopId: string) => Promise<boolean>;
@@ -212,7 +216,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const teamId = sessionRef.current?.teamId;
     if (!teamId || !navigator.onLine) return;
     const items = (await loadQueueItems(teamId))
-      .filter((item) => item.eventType === 'verify_stop_observation')
+      .filter((item) => item.eventType === 'verify_stop_observation' || item.eventType === 'verify_bonus_observation')
       .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
     for (const item of items) {
       const stopId = item.stopId;
@@ -226,13 +230,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         continue;
       }
       try {
-        const result = await verifyStopObservation({
-          sessionId,
-          stopId,
-          questionId: String(item.payload.questionId ?? ''),
-          answer: String(item.payload.answer ?? ''),
-          actionId: item.id
-        });
+        const input = { sessionId, stopId, questionId: String(item.payload.questionId ?? ''), answer: String(item.payload.answer ?? ''), actionId: item.id };
+        const result = item.eventType === 'verify_bonus_observation'
+          ? await verifyBonusObservation(input)
+          : await verifyStopObservation(input);
         await applyServerState(result.state);
         await deleteQueueItem(item.id);
       } catch (error) {
@@ -553,6 +554,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     await applyServerState(result.state);
   }
 
+  async function selectBonus(bonusId: string) {
+    const activeSession = sessionRef.current;
+    if (!activeSession) throw new Error('Voer de teamcode opnieuw in.');
+    if (!navigator.onLine) throw new Error('Maak verbinding om deze bonuslocatie als doel te kiezen.');
+    const state = await selectBonusLocation({ sessionId: activeSession.id, bonusId });
+    await applyServerState(state);
+  }
+
+  async function submitBonusObservation(stopId: string, questionId: string, answer: string) {
+    const activeSession = sessionRef.current;
+    if (!activeSession) throw new Error('Voer de teamcode opnieuw in.');
+    const actionId = crypto.randomUUID();
+    if (!navigator.onLine) {
+      await saveQueueItem({ id: actionId, teamId: activeSession.teamId, eventType: 'verify_bonus_observation', stopId, payload: { questionId, answer }, occurredAt: new Date().toISOString(), attempts: 0, status: 'pending' });
+      return { verified: false, pending: true };
+    }
+    const result = await verifyBonusObservation({ sessionId: activeSession.id, stopId, questionId, answer, actionId });
+    await applyServerState(result.state);
+    return { verified: result.verified };
+  }
+
   async function submitSimulatedLocation(location: LocationResult) {
     const activeSession = sessionRef.current;
     if (!activeSession) throw new Error('Voer de teamcode opnieuw in.');
@@ -704,6 +726,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     syncNow,
     submitObservation,
     selectBackupObservation,
+    selectBonus,
+    submitBonusObservation,
     submitSimulatedLocation,
     startStop,
     useHint,

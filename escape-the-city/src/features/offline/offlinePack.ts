@@ -12,6 +12,9 @@ export function buildAssetManifest(pack: GamePack) {
   for (const stop of pack.stops) {
     if (stop.intro.audioSrc) assets.add(stop.intro.audioSrc);
   }
+  for (const bonus of pack.bonusLocations ?? []) {
+    if (bonus.intro.audioSrc) assets.add(bonus.intro.audioSrc);
+  }
   for (const asset of allStandaloneNarration()) assets.add(asset);
   for (const asset of allScenicAudio()) assets.add(asset);
   for (const asset of allEffectAudio()) assets.add(asset);

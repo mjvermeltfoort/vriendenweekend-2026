@@ -2,7 +2,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { canStartFinale, hasLocationUnlock, isFinaleLocationRevealed, nextStop, stopById } from '../features/game/gameState';
+import { canStartFinale, hasLocationUnlock, isFinaleLocationRevealed, locationById, nextStop, stopById } from '../features/game/gameState';
+import { isBonusLocation } from '../features/game/gameTypes';
 import { createSimulatorProvider, defaultSimulatorState, type SimulatorState } from '../features/location/simulator';
 import { GameIcon, PageShell } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
@@ -26,9 +27,11 @@ export function StopPage({ pack }: { pack: GamePack }) {
     observationStatus,
     submitObservation,
     selectBackupObservation,
+    selectBonus,
+    submitBonusObservation,
     submitSimulatedLocation
   } = useGame();
-  const stop = stopId ? stopById(pack, stopId) : null;
+  const stop = stopId ? locationById(pack, stopId) : null;
   const [gpsMessage, setGpsMessage] = useState('');
   const [fallbackReady, setFallbackReady] = useState(false);
   const [fallbackNow, setFallbackNow] = useState(() => Date.now());
@@ -36,7 +39,15 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const [observationBusy, setObservationBusy] = useState(false);
   const [devState, setDevState] = useState<SimulatorState>(defaultSimulatorState);
   const fallbackStartedAtRef = useRef(Date.now());
+  const selectedBonusRef = useRef('');
   const hiddenFinale = Boolean(stop?.isFinal && (!progress || !isFinaleLocationRevealed(progress, pack)));
+
+  useEffect(() => {
+    if (stop && isBonusLocation(stop) && selectedBonusRef.current !== stop.id) {
+      selectedBonusRef.current = stop.id;
+      void selectBonus(stop.id).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De bonuslocatie kon niet worden geselecteerd.'));
+    }
+  }, [stop?.id, selectBonus]);
   const outsideStopRadius = Boolean(
     stop
     && teamLocation?.isCurrent
@@ -128,8 +139,8 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const isCompleted = stopState === 'completed';
   const finaleEligibility = currentStop.isFinal && progress ? canStartFinale(progress, pack) : { eligible: true, missingCount: 0, missingTitles: [] as string[] };
   const isDev = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true';
-  const followingStop = nextStop(pack, currentStop.id);
-  const currentStopIsActive = progress?.currentStopId === currentStop.id;
+  const followingStop = isBonusLocation(currentStop) ? null : nextStop(pack, currentStop.id);
+  const currentStopIsActive = !isBonusLocation(currentStop) && progress?.currentStopId === currentStop.id;
   const otherActiveGame = activeGameRun?.status === 'active' && activeGameRun.gameId !== currentStop.id
     ? stopById(pack, activeGameRun.gameId)
     : null;
@@ -174,6 +185,20 @@ export function StopPage({ pack }: { pack: GamePack }) {
     }
   }
 
+  async function checkBonusObservation() {
+    if (!isBonusLocation(currentStop) || !answer.trim()) return;
+    setObservationBusy(true);
+    try {
+      const result = await submitBonusObservation(currentStop.id, currentStop.manualVerification.questionId, answer);
+      setGpsMessage(result.pending ? 'Je antwoord is bewaard en wordt gecontroleerd zodra er verbinding is.' : result.verified ? 'Locatie bereikt. De bonusopdracht is vrijgegeven.' : 'Dat antwoord klopt nog niet. Kijk nog eens goed.');
+      setAnswer('');
+    } catch (error) {
+      setGpsMessage(error instanceof Error ? error.message : 'Het antwoord kon niet worden gecontroleerd.');
+    } finally {
+      setObservationBusy(false);
+    }
+  }
+
   const mapsUrl = currentStop.navigation.externalMapsQuery
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentStop.navigation.externalMapsQuery)}`
     : null;
@@ -185,7 +210,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
   return (
     <PageShell title={isCompleted ? 'Herinnering' : 'Verhaal'} backTo="/route">
       <section className="parchment-card stack">
-        <p className="eyebrow">Opdracht {currentStop.order} van {pack.stops.length}</p>
+        <p className="eyebrow">{isBonusLocation(currentStop) ? 'Verborgen vondst' : `Opdracht ${currentStop.order} van ${pack.stops.length}`}</p>
         <h1>{currentStop.intro.title}</h1>
         <p>{currentStop.intro.text}</p>
         {currentStop.intro.audioSrc ? (
@@ -203,7 +228,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
         <p>{currentStop.navigation.clue}</p>
         <p className="muted small">{currentStop.locationName}</p>
 
-        {progress?.currentStopId === currentStop.id
+        {currentStopIsActive
           ? (
             <ActiveStopIndicator
               pack={pack}
@@ -285,6 +310,15 @@ export function StopPage({ pack }: { pack: GamePack }) {
                   : 'Vraag de organisatie om deze stop vrij te geven.'}
               </p>
             )}
+          </section>
+        ) : null}
+
+        {isBonusLocation(currentStop) && !canPlay ? (
+          <section className="observation-fallback stack" aria-label="Bonuslocatie handmatig bevestigen">
+            <h3>Locatie bevestigen zonder GPS</h3>
+            <p>{currentStop.manualVerification.question}</p>
+            <label className="field"><span>Jullie antwoord</span><input value={answer} onChange={(event) => setAnswer(event.target.value)} autoComplete="off" /></label>
+            <button className="button primary" type="button" disabled={observationBusy || !answer.trim()} onClick={() => void checkBonusObservation()}>{observationBusy ? 'Controleren…' : 'Antwoord controleren'}</button>
           </section>
         ) : null}
 

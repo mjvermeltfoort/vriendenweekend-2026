@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { canAccessChallenge, isFinaleLocationRevealed, stopById } from '../features/game/gameState';
+import { canAccessChallenge, isFinaleLocationRevealed, locationById } from '../features/game/gameState';
+import { isBonusLocation } from '../features/game/gameTypes';
 import { GameIcon, HintDialog, PageShell } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { BellChallengeAudio } from '../components/BellChallengeAudio';
@@ -13,11 +14,13 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const { stopId } = useParams();
   const navigate = useNavigate();
   const { progress, attemptAnswer, useHint, completeFinale } = useGame();
-  const stop = stopId ? stopById(pack, stopId) : null;
+  const stop = stopId ? locationById(pack, stopId) : null;
   const [choice, setChoice] = useState('');
   const [code, setCode] = useState('');
   const [list, setList] = useState<string[]>(stop?.challenge.kind === 'reorder' ? [...stop.challenge.items] : []);
   const [composite, setComposite] = useState<Record<string, string>>({});
+  const [lensLeft, setLensLeft] = useState(0);
+  const [lensRight, setLensRight] = useState(0);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
@@ -58,13 +61,14 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     if (currentStop.challenge.kind === 'code') return code.length >= 3;
     if (currentStop.challenge.kind === 'reorder') return list.length === currentStop.challenge.correctOrder.length;
     if (currentStop.challenge.kind === 'composite') return Object.keys(composite).length === Object.keys(currentStop.challenge.categories).length;
+    if (currentStop.challenge.kind === 'lens') return lensLeft === 2 && lensRight === 3;
     return false;
   })();
 
   async function submit() {
     setBusy(true);
     try {
-      const answer = currentStop.challenge.kind === 'choice' ? choice : currentStop.challenge.kind === 'code' ? code : currentStop.challenge.kind === 'reorder' ? list : composite;
+      const answer = currentStop.challenge.kind === 'choice' ? choice : currentStop.challenge.kind === 'code' ? code : currentStop.challenge.kind === 'reorder' ? list : currentStop.challenge.kind === 'composite' ? composite : 'vesting';
       const result = await attemptAnswer(currentStop.id, currentStop.challenge, answer);
       setMessage(result.message);
       if (result.correct) {
@@ -82,7 +86,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
 
   return (
     <PageShell title="Opdracht" backTo={`/stop/${currentStop.id}`} navigation={false}>
-      <p className="eyebrow center">{currentStop.order} / {pack.stops.length}</p>
+      <p className="eyebrow center">{isBonusLocation(currentStop) ? 'Verborgen Schub' : `${currentStop.order} / ${pack.stops.length}`}</p>
       <section className="parchment-card challenge-card stack stack--large">
         {isFinal ? (
           <AudioPlayer
@@ -168,6 +172,15 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
                 </select>
               </label>
             ))}
+          </div>
+        ) : null}
+
+        {currentStop.challenge.kind === 'lens' ? (
+          <div className="lens-puzzle stack" aria-label="Papenbril-lenzenpuzzel">
+            <p>Stel beide lenzen af tot de punten van de vesting samenkomen.</p>
+            <div className="lens-puzzle__lenses" aria-hidden="true"><span style={{ transform: `rotate(${lensLeft * 72}deg)` }}>◒</span><span style={{ transform: `rotate(${lensRight * 72}deg)` }}>◓</span></div>
+            <div className="row"><button className="button secondary" type="button" onClick={() => setLensLeft((value) => (value + 1) % 5)}>Linkerlens draaien</button><button className="button secondary" type="button" onClick={() => setLensRight((value) => (value + 1) % 5)}>Rechterlens draaien</button></div>
+            <button className="button ghost" type="button" onClick={() => { setLensLeft(0); setLensRight(0); }}>Lenzen resetten</button>
           </div>
         ) : null}
 

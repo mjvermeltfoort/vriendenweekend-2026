@@ -1,13 +1,13 @@
 import { GameIcon } from '../../components/GameUi';
-import type { RouteStop } from '../game/gameTypes';
+import { isBonusLocation, type BonusLocation, type RouteStop } from '../game/gameTypes';
 import type { RouteMarkerStatus } from './mapTypes';
 
 interface RouteMarkerProps {
-  stop: RouteStop;
+  stop: RouteStop | BonusLocation;
   status: RouteMarkerStatus;
   selected: boolean;
   style: React.CSSProperties;
-  onSelect: (stop: RouteStop) => void;
+  onSelect: (stop: RouteStop | BonusLocation) => void;
 }
 
 const statusLabels: Record<RouteMarkerStatus, string> = {
@@ -21,14 +21,17 @@ const statusLabels: Record<RouteMarkerStatus, string> = {
 };
 
 export function RouteMarker({ stop, status, selected, style, onSelect }: RouteMarkerProps) {
-  const locked = status === 'locked';
+  const bonus = isBonusLocation(stop);
+  const locked = status === 'locked' && !bonus;
   const markerLabel = locked
     ? `Stop ${stop.order}, verborgen en vergrendeld`
-    : `Stop ${stop.order}: ${stop.title}, ${statusLabels[status]}`;
+    : bonus
+      ? `Verborgen schub, ${statusLabels[status]}`
+      : `Stop ${stop.order}: ${stop.title}, ${statusLabels[status]}`;
 
   return (
     <button
-      className={`map-stop-marker map-stop-marker--${status}${selected ? ' is-selected' : ''}`}
+      className={`map-stop-marker map-stop-marker--${status}${bonus ? ' map-stop-marker--bonus' : ''}${selected ? ' is-selected' : ''}`}
       type="button"
       style={style}
       aria-label={markerLabel}
@@ -36,7 +39,7 @@ export function RouteMarker({ stop, status, selected, style, onSelect }: RouteMa
       disabled={locked}
       onClick={() => onSelect(stop)}
     >
-      <span className="map-stop-marker__number" aria-hidden="true">{stop.order}</span>
+      <span className="map-stop-marker__number" aria-hidden="true">{bonus ? '◈' : stop.order}</span>
       <span className="map-stop-marker__state" aria-hidden="true">
         {status === 'completed' ? <GameIcon name="check" size={16} />
           : status === 'locked' ? <GameIcon name="lock" size={14} />

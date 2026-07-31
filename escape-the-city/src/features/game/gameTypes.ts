@@ -9,6 +9,8 @@ export interface GamePack {
   startStopId: string;
   finalStopId: string;
   stops: RouteStop[];
+  bonusLocations?: BonusLocation[];
+  bonusCompletionReward?: BonusCompletionReward;
   scoring: ScoringConfig;
 }
 
@@ -47,6 +49,40 @@ export interface RouteStop {
   isFinal?: boolean;
 }
 
+/** An optional stop which never participates in the numbered main route. */
+export interface BonusLocation extends RouteStop {
+  id: `bonus:${string}`;
+  isBonus: true;
+  hiddenClue: string;
+  revealedDescription: string;
+  coordinates: RouteStop['coordinates'] & { discoveryRadiusMeters: number };
+  estimatedDetourMinutes: number;
+  maximumPoints: number;
+  recommendedBetween: {
+    afterStopId: string;
+    beforeStopId: string;
+  };
+  manualVerification: {
+    questionId: string;
+    question: string;
+  };
+  reward: RouteStop['reward'] & {
+    id: string;
+    resultLabel: string;
+  };
+}
+
+export interface BonusCompletionReward {
+  requiredCount: number;
+  points: number;
+  title: string;
+  badge: string;
+}
+
+export function isBonusLocation(location: RouteStop | BonusLocation): location is BonusLocation {
+  return 'isBonus' in location && location.isBonus === true;
+}
+
 export interface ScoringConfig {
   basePoints: number;
   hintPenalty: number[];
@@ -63,7 +99,8 @@ export type ChallengeConfig =
   | ChoiceChallengeConfig
   | CodeChallengeConfig
   | ReorderChallengeConfig
-  | CompositeSelectChallengeConfig;
+  | CompositeSelectChallengeConfig
+  | LensChallengeConfig;
 
 export interface ChoiceChallengeConfig {
   kind: 'choice';
@@ -96,5 +133,12 @@ export interface CompositeSelectChallengeConfig {
   categories: Record<string, string[]>;
   correctAnswer: Record<string, string>;
   summaryTemplate: string;
+  wrongFeedback: string;
+}
+
+export interface LensChallengeConfig {
+  kind: 'lens';
+  prompt: string;
+  correctAnswer: string;
   wrongFeedback: string;
 }

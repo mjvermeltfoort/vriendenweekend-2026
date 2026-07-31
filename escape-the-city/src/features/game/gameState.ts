@@ -1,4 +1,4 @@
-import type { GamePack, RouteStop, ChallengeConfig } from './gameTypes';
+import type { BonusLocation, GamePack, RouteStop, ChallengeConfig } from './gameTypes';
 import { calculateStopScore, normalizeAnswer } from './scoring';
 
 export type StopStatus = 'locked' | 'available' | 'arrived' | 'started' | 'completed';
@@ -108,6 +108,9 @@ export interface GameProgress {
   updatedAt?: string;
   finalResult?: ResultData;
   lastSyncedAt?: string;
+  selectedBonusLocationId?: string;
+  bonusIntroSeen?: boolean;
+  bonusCollectionRewarded?: boolean;
 }
 
 export function readableJoinCode(length = 6) {
@@ -157,6 +160,15 @@ export function createInitialProgress(teamId: string, game: GamePack): GameProgr
       answerData: {}
     };
   }
+  for (const bonus of game.bonusLocations ?? []) {
+    stopProgress[bonus.id] = {
+      state: 'available',
+      attempts: 0,
+      hintsUsed: 0,
+      scoreAwarded: 0,
+      answerData: {}
+    };
+  }
   return {
     teamId,
     gameSlug: game.slug,
@@ -174,6 +186,14 @@ export function createInitialProgress(teamId: string, game: GamePack): GameProgr
 
 export function stopById(game: GamePack, stopId: string) {
   return game.stops.find((stop) => stop.id === stopId) ?? null;
+}
+
+export function bonusById(game: GamePack, bonusId: string): BonusLocation | null {
+  return game.bonusLocations?.find((bonus) => bonus.id === bonusId) ?? null;
+}
+
+export function locationById(game: GamePack, locationId: string): RouteStop | BonusLocation | null {
+  return stopById(game, locationId) ?? bonusById(game, locationId);
 }
 
 export function nextStop(game: GamePack, stopId: string) {
@@ -243,6 +263,7 @@ export function challengeAnswerIsCorrect(challenge: ChallengeConfig, answer: unk
     return Object.entries(challenge.correctAnswer)
       .every(([category, expected]) => values[category] === expected);
   }
+  if (challenge.kind === 'lens') return answer === challenge.correctAnswer;
   return false;
 }
 

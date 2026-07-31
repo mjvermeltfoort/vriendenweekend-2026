@@ -1,7 +1,7 @@
 {
   "name": "Het Geheim van de Moerasdraak",
   "short_name": "Moerasdraak",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "start_url": "/escape-the-city/",
   "scope": "/escape-the-city/",
   "display": "standalone",

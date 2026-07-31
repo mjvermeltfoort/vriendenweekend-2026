@@ -37,6 +37,11 @@ export function ResultPage({ pack }: { pack: GamePack }) {
   const hints = result?.hintsUsed ?? progress?.totalHintsUsed ?? 0;
   const wrongAttempts = result?.wrongAttempts ?? progress?.wrongAttempts ?? 0;
   const symbols = result?.symbols ?? progress?.collectedRewards ?? [];
+  const bonuses = pack.bonusLocations ?? [];
+  const completedBonuses = bonuses.filter((bonus) => progress.stopProgress[bonus.id]?.state === 'completed');
+  const bonusPoints = completedBonuses.reduce((total, bonus) => total + (progress.stopProgress[bonus.id]?.scoreAwarded ?? 0), 0)
+    + (completedBonuses.length === bonuses.length ? pack.bonusCompletionReward?.points ?? 0 : 0);
+  const isSchubbenjagers = bonuses.length > 0 && completedBonuses.length === bonuses.length;
 
   async function exportPng(share: boolean) {
     const canvas = canvasRef.current;
@@ -76,6 +81,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
     ctx.font = '32px Georgia';
     ctx.fillStyle = resultPalette.text;
     ctx.fillText(`Score ${score}   ·   Hints ${hints}   ·   Fouten ${wrongAttempts}`, 540, 655);
+    ctx.fillText(`Verborgen schubben ${completedBonuses.length} / ${bonuses.length} · +${bonusPoints}`, 540, 700);
     ctx.fillText(new Date(result?.createdAt ?? Date.now()).toLocaleDateString('nl-NL'), 540, 720);
     ctx.fillStyle = resultPalette.muted;
     ctx.font = '29px Georgia';
@@ -113,6 +119,15 @@ export function ResultPage({ pack }: { pack: GamePack }) {
         <div className="result-stat"><GameIcon name="time" /><span>Tijd</span><strong>{result?.durationMinutes ?? 0} min</strong></div>
         <div className="result-stat"><GameIcon name="lightbulb" /><span>Hints</span><strong>{hints}</strong></div>
         <div className="result-stat"><GameIcon name="star" /><span>Score</span><strong>{score}</strong></div>
+        <div className="result-stat"><span aria-hidden="true">◈</span><span>Schubben</span><strong>{completedBonuses.length} / {bonuses.length}</strong></div>
+      </section>
+
+      <section className="card stack result-section" aria-label="Verborgen Schubben">
+        <p className="eyebrow">Verborgen Schubben</p>
+        <h2>{completedBonuses.length} / {bonuses.length} gevonden</h2>
+        <p className="result-label__symbols" aria-label={`${completedBonuses.length} van ${bonuses.length} drakenschubben`}>{bonuses.map((bonus) => progress.stopProgress[bonus.id]?.state === 'completed' ? '◈' : '◇').join(' ')}</p>
+        <p>Bonuspunten: {bonusPoints}</p>
+        {isSchubbenjagers ? <p className="feedback"><strong>SCHUBBENJAGERS</strong><br />Jullie vonden alle verborgen sporen van de Moerasdraak. +{pack.bonusCompletionReward?.points} verzamelbonus</p> : null}
       </section>
 
       <section className="result-label result-section">

@@ -19,6 +19,7 @@ import {
   type RouteMapProps
 } from './mapTypes';
 import { RouteMarker } from './RouteMarker';
+import { isBonusLocation, type BonusLocation, type RouteStop } from '../game/gameTypes';
 
 type MapMode = 'loading' | 'live' | 'fallback';
 type MarkerPosition = { left: string; top: string };
@@ -101,7 +102,11 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
   const [locationEnabled, setLocationEnabled] = useState(false);
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
 
-  const selectedStop = visibleStops.find((stop) => stop.id === selectedStopId) ?? null;
+  const mapLocations = useMemo<(RouteStop | BonusLocation)[]>(
+    () => [...visibleStops, ...(gamePack.bonusLocations ?? [])],
+    [gamePack.bonusLocations, visibleStops]
+  );
+  const selectedStop = mapLocations.find((stop) => stop.id === selectedStopId) ?? null;
   const selectedState = selectedStop ? progress?.stopProgress?.[selectedStop.id]?.state ?? 'locked' : 'locked';
 
   useEffect(() => {
@@ -161,7 +166,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
 
       const updateMarkerPositions = () => {
         const positions: Record<string, MarkerPosition> = {};
-        for (const stop of visibleStops) {
+        for (const stop of mapLocations) {
           const projected = map.project([stop.coordinates.longitude!, stop.coordinates.latitude!]);
           positions[stop.id] = { left: `${projected.x}px`, top: `${projected.y}px` };
         }
@@ -266,7 +271,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [route, gamePack, visibleStops]);
+  }, [route, gamePack, mapLocations]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -371,7 +376,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
         ) : null}
 
         <div className="route-marker-layer">
-          {visibleStops.map((stop) => {
+          {mapLocations.map((stop) => {
             const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
             const position = mode === 'fallback'
               ? projectFallback([stop.coordinates.longitude!, stop.coordinates.latitude!])
@@ -399,14 +404,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
 
       <p className="map-location-message" aria-live="polite">{locationMessage}</p>
 
-      {selectedStop && selectedState !== 'locked' ? (
-        <section className="route-bottom-sheet" aria-label={`Stop ${selectedStop.order}: ${selectedStop.title}`}>
+      {selectedStop && (selectedState !== 'locked' || isBonusLocation(selectedStop)) ? (
+        <section className="route-bottom-sheet" aria-label={isBonusLocation(selectedStop) ? 'Verborgen vondst' : `Stop ${selectedStop.order}: ${selectedStop.title}`}>
           <button className="route-bottom-sheet__close" type="button" aria-label="Stopinformatie sluiten" onClick={() => setSelectedStopId(null)}>×</button>
-          <span className="route-stop__meta">
-            {selectedStop.isFinal ? 'Finale' : `Opdracht ${selectedStop.order}`} · {stopStatusLabels[selectedState]}
-          </span>
-          <h2>{selectedStop.title}</h2>
-          <p>{selectedStop.navigation.clue}</p>
+          <span className="route-stop__meta">{isBonusLocation(selectedStop) ? 'Verborgen vondst' : selectedStop.isFinal ? 'Finale' : `Opdracht ${selectedStop.order}`} · {stopStatusLabels[selectedState]}</span>
+          <h2>{isBonusLocation(selectedStop) && selectedState !== 'completed' ? 'Verborgen schub' : selectedStop.title}</h2>
+          <p>{isBonusLocation(selectedStop) && selectedState !== 'completed' ? selectedStop.hiddenClue : selectedStop.navigation.clue}</p>
+          {isBonusLocation(selectedStop) ? <p className="muted small">Omweg: circa {selectedStop.estimatedDetourMinutes} minuten · maximaal {selectedStop.maximumPoints} bonuspunten</p> : null}
           <div className="route-bottom-sheet__actions">
             <a
               className="button secondary"
@@ -416,7 +420,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
             >
               Open navigatie
             </a>
-            <Link className="button primary" to={`/stop/${selectedStop.id}`}>Bekijk stop</Link>
+            <Link className="button primary" to={`/stop/${selectedStop.id}`}>{isBonusLocation(selectedStop) ? 'Maak dit mijn doel' : 'Bekijk stop'}</Link>
           </div>
         </section>
       ) : null}

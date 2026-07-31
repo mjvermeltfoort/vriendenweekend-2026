@@ -1,6 +1,7 @@
 import type { GamePack } from '../../features/game/gameTypes';
 import { audioAsset } from '../../features/audio/audioConfig';
 import { audioTranscripts } from '../../features/audio/audioTranscripts';
+import { bonusLocations } from './bonusLocations';
 
 export const gamePack: GamePack = {
   slug: 'moerasdraak-den-bosch',
@@ -12,6 +13,8 @@ export const gamePack: GamePack = {
   estimatedDistanceKm: 4.8,
   startStopId: 'drakenfontein',
   finalStopId: 'bossche-brouwers',
+  bonusLocations,
+  bonusCompletionReward: { requiredCount: 6, points: 300, title: 'Schubbenjagers', badge: 'Zes gouden drakenschubben' },
   scoring: {
     basePoints: 1000,
     hintPenalty: [100, 150, 250],

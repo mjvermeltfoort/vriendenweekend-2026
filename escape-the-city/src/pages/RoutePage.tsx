@@ -21,6 +21,7 @@ export function RoutePage({ pack }: { pack: GamePack }) {
   const finale = progress ? canStartFinale(progress, pack) : { eligible: false, missingCount: pack.stops.length - 1, missingTitles: [] as string[] };
   const finaleLocationRevealed = progress ? isFinaleLocationRevealed(progress, pack) : false;
   const completed = pack.stops.filter((stop) => progress?.stopProgress?.[stop.id]?.state === 'completed').length;
+  const completedBonuses = (pack.bonusLocations ?? []).filter((bonus) => progress?.stopProgress?.[bonus.id]?.state === 'completed').length;
   const visibleStops = finaleLocationRevealed ? pack.stops : pack.stops.filter((stop) => !stop.isFinal);
   const teamLocationProvider = useMemo<LocationProvider>(() => ({
     async getCurrentPosition() {
@@ -87,6 +88,24 @@ export function RoutePage({ pack }: { pack: GamePack }) {
           locationProvider={teamLocationProvider}
         />
       )}
+
+      {pack.bonusLocations?.length ? (
+        <section className="card stack" aria-label="De Verborgen Schubben">
+          <div className="row"><span className="route-marker">◈</span><div><p className="eyebrow">Optioneel</p><h2>De Verborgen Schubben</h2></div></div>
+          <p>Niet alle herinneringen liggen op de hoofdroute. Vind schubben voor extra punten.</p>
+          <p className="muted small">{completedBonuses} / {pack.bonusLocations.length} gevonden</p>
+          <ul className="route-list route-list--spaced">
+            {pack.bonusLocations.map((bonus) => {
+              const state = progress?.stopProgress?.[bonus.id]?.state ?? 'available';
+              const done = state === 'completed';
+              return <li key={bonus.id} className={`route-stop route-stop--${state}`}>
+                <span className="route-marker" aria-label={`Verborgen schub, ${statusLabels[state]}`}>{done ? <GameIcon name="check" size={20} /> : '◈'}</span>
+                <section className="route-stop__card"><span className="route-stop__meta">Verborgen vondst · {statusLabels[state]}</span><h3>{done ? bonus.title : 'Verborgen schub'}</h3><p className="muted">{done ? bonus.revealedDescription : bonus.hiddenClue}</p><Link className="button secondary" to={`/stop/${bonus.id}`}>{done ? 'Bekijk vondst' : 'Maak dit mijn doel'}</Link></section>
+              </li>;
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="card stack">
         <div className="row">

@@ -398,6 +398,25 @@ export async function selectBackupStopObservation(input: {
   return { ...response, state: normalizeTeamState(response.state) };
 }
 
+export async function selectBonusLocation(input: { sessionId: string; bonusId: string }) {
+  const response = await callRpc<{ ok: true; state: RemoteTeamState }>('select_bonus_location', {
+    p_session_id: input.sessionId,
+    p_bonus_id: input.bonusId
+  });
+  return normalizeTeamState(response.state);
+}
+
+export async function verifyBonusObservation(input: { sessionId: string; stopId: string; questionId: string; answer: string; actionId: string }) {
+  const response = await callRpc<{ ok: true; verified: boolean; state: RemoteTeamState }>('verify_bonus_observation', {
+    p_session_id: input.sessionId,
+    p_stop_id: input.stopId,
+    p_question_id: input.questionId,
+    p_answer: input.answer,
+    p_action_id: input.actionId
+  });
+  return { ...response, state: normalizeTeamState(response.state) };
+}
+
 export async function startOrResumeTeamGame(input: StartOrResumeTeamGameInput) {
   const response = await callRpc<{ ok: true; resumed: boolean; run: TeamGameRun }>('start_or_resume_team_game', {
     p_session_id: input.sessionId,

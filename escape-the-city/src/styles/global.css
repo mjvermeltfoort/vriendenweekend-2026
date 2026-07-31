@@ -903,6 +903,14 @@ summary:focus-visible {
   border-color: var(--color-success);
 }
 .map-stop-marker--completed .map-stop-marker__state { background: var(--color-success); }
+.map-stop-marker--bonus { border-radius: 32% 32% 48% 48%; color: #d8aa55; border-color: #d8aa55; transform: translate(-50%, -50%) rotate(30deg); }
+.map-stop-marker--bonus .map-stop-marker__number, .map-stop-marker--bonus .map-stop-marker__state { transform: rotate(-30deg); }
+.map-stop-marker--bonus.is-selected { box-shadow: 0 0 0 4px rgba(216, 170, 85, .28), 0 0 18px rgba(116, 173, 136, .72); }
+@media (prefers-reduced-motion: no-preference) { .map-stop-marker--bonus:not(.map-stop-marker--completed) { animation: bonus-marker-pulse 2.8s ease-in-out infinite; } }
+@keyframes bonus-marker-pulse { 50% { box-shadow: 0 0 0 5px rgba(116, 173, 136, .2); } }
+.lens-puzzle__lenses { display: flex; justify-content: center; gap: .25rem; font-size: 5rem; color: var(--color-gold); }
+.lens-puzzle__lenses span { display: inline-block; transition: transform .2s ease; }
+@media (prefers-reduced-motion: reduce) { .lens-puzzle__lenses span { transition: none; } }
 .map-stop-marker--current {
   color: #06211d;
   background: #35d4c7;
