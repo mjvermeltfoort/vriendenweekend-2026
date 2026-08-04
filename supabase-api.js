@@ -90,7 +90,21 @@
           hint: LOCAL_DEV_HINT
         })),
         leaderboard: [],
-        activePlayers: []
+        activePlayers: [],
+        locationGuess: {
+          visible: true,
+          eligible: false,
+          solved: false,
+          canAttempt: false,
+          completedGames: 0,
+          totalGames: LOCAL_DEV_GAMES.length,
+          bonusPoints: 0,
+          lastAttemptAt: null,
+          lastAttemptCorrect: null,
+          nextAttemptAt: null,
+          solvedAt: null,
+          location: null
+        }
       };
     }
 
@@ -127,6 +141,10 @@
       return { ok: true };
     }
 
+    if (action === 'submit_location_guess') {
+      throw new Error('Voltooi eerst alle spellen.');
+    }
+
     throw new Error('Onbekende lokale testactie.');
   }
 
@@ -149,7 +167,8 @@
     start: ['register_game_start', p => ({ p_game_id: p.gameId, p_source: p.source || '', p_user_agent: p.userAgent || '' })],
     heartbeat: ['register_game_heartbeat', p => ({ p_game_id: p.gameId })],
     replay: ['reset_game_progress', p => ({ p_game_id: p.gameId })],
-    score: ['submit_score', p => ({ p_game_id: p.gameId, p_seconds: p.seconds, p_attempts: p.attempts, p_detail: p.detail || {} })]
+    score: ['submit_score', p => ({ p_game_id: p.gameId, p_seconds: p.seconds, p_attempts: p.attempts, p_detail: p.detail || {} })],
+    locationGuess: ['submit_location_guess', p => ({ p_guess: p.guess })]
   };
 
   window.VriendenweekendApi = {
@@ -167,6 +186,7 @@
     start(gameId, source, userAgent) { return rpc('register_game_start', { p_game_id: gameId, p_source: source || '', p_user_agent: userAgent || '' }); },
     heartbeat(gameId) { return rpc('register_game_heartbeat', { p_game_id: gameId }); },
     replay(gameId) { return rpc('reset_game_progress', { p_game_id: gameId }); },
-    score(gameId, seconds, attempts, detail) { return rpc('submit_score', { p_game_id: gameId, p_seconds: seconds, p_attempts: attempts, p_detail: detail || {} }); }
+    score(gameId, seconds, attempts, detail) { return rpc('submit_score', { p_game_id: gameId, p_seconds: seconds, p_attempts: attempts, p_detail: detail || {} }); },
+    locationGuess(guess) { return rpc('submit_location_guess', { p_guess: guess }); }
   };
 })();
