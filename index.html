@@ -468,6 +468,75 @@
 
     .game-link[hidden] { display: none; }
 
+    .location-finale {
+      margin-top: 20px;
+      padding: clamp(17px, 4vw, 24px);
+      border: 1px solid rgba(212,189,120,.42);
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(212,189,120,.12), rgba(255,255,255,.025)),
+        var(--panel-2);
+    }
+
+    .location-finale[hidden] { display: none; }
+
+    .location-finale h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.35rem, 4vw, 1.75rem);
+      font-weight: 500;
+    }
+
+    .location-finale-intro {
+      margin: 8px 0 15px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .location-guess-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    .location-guess-form[hidden] { display: none; }
+
+    .location-guess-form label {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 700;
+    }
+
+    .location-guess-input {
+      min-width: 0;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #121711;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .location-guess-input:disabled,
+    .location-guess-submit:disabled {
+      opacity: .58;
+      cursor: not-allowed;
+    }
+
+    .location-guess-message,
+    .location-guess-success {
+      margin: 13px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .location-guess-message.error { color: var(--danger); }
+    .location-guess-message.success,
+    .location-guess-success { color: var(--success); }
+    .location-guess-success[hidden] { display: none; }
+
     .helper {
       margin-top: 14px;
       color: var(--muted);
@@ -678,6 +747,7 @@
       }
       .lb-modal { padding: 10px; }
       .lb-modal-card { padding: 10px; max-height: 90vh; }
+      .location-guess-form { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -817,6 +887,18 @@
         </article>
       </div>
 
+      <section class="location-finale" id="location-finale" aria-labelledby="location-finale-title" hidden>
+        <h2 id="location-finale-title">Waar gaan we naartoe?</h2>
+        <p class="location-finale-intro">Alle aanwijzingen leiden naar één eindbestemming. Denk goed na: je kunt maar één keer per 24 uur raden.</p>
+        <form class="location-guess-form" id="location-guess-form">
+          <label for="location-guess-input">Jouw eindbestemming</label>
+          <input class="location-guess-input" id="location-guess-input" name="location" type="text" maxlength="100" autocomplete="off" required>
+          <button class="button location-guess-submit" id="location-guess-submit" type="submit">Controleer locatie</button>
+        </form>
+        <p class="location-guess-message" id="location-guess-message" aria-live="polite"></p>
+        <p class="location-guess-success" id="location-guess-success" aria-live="polite" hidden></p>
+      </section>
+
       <div class="section-head">
         <h2>Tussenstand</h2>
       </div>
@@ -889,11 +971,19 @@
       const leaderboardModalContent = document.getElementById('leaderboard-modal-content');
       const installButton = document.getElementById('install-button');
       const activePlayersRoot = document.getElementById('active-players');
+      const locationFinale = document.getElementById('location-finale');
+      const locationGuessForm = document.getElementById('location-guess-form');
+      const locationGuessInput = document.getElementById('location-guess-input');
+      const locationGuessSubmit = document.getElementById('location-guess-submit');
+      const locationGuessMessage = document.getElementById('location-guess-message');
+      const locationGuessSuccess = document.getElementById('location-guess-success');
       let deferredPrompt = null;
       let activePlayerName = '';
       let activePlayersSignature = '';
       let leaderboardSignature = '';
       let liveOverviewRefreshPending = false;
+      let locationGuessState = null;
+      let locationGuessSubmitting = false;
       const HOMEPAGE_ASSISTANT_SEEN_KEY = 'vriendenweekend-home-assistant-seen';
       const assistant = window.createAssistantManager({ containerId: 'game-assistant', name: 'Hint Henk' });
       const assistantIntro = [
@@ -1235,6 +1325,67 @@
         playerCount.textContent = String(board.length);
       }
 
+      function formatFinaleDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat('nl-NL', {
+          timeZone: 'Europe/Amsterdam',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).format(date);
+      }
+
+      function renderLocationGuess(finale) {
+        const state = finale && typeof finale === 'object' ? finale : {};
+        locationGuessState = state;
+        locationFinale.hidden = !state.visible;
+        if (!state.visible) return;
+
+        locationGuessMessage.className = 'location-guess-message';
+        locationGuessSuccess.hidden = true;
+        locationGuessForm.hidden = Boolean(state.solved);
+
+        if (state.solved) {
+          const solvedDate = formatFinaleDate(state.solvedAt);
+          locationGuessSuccess.textContent = 'Bestemming gevonden: ' + (state.location || 'de eindbestemming') +
+            '. Je hebt ' + Number(state.bonusPoints || 0).toLocaleString('nl-NL') + ' bonuspunten verdiend' +
+            (solvedDate ? ' op ' + solvedDate : '') + '.';
+          locationGuessSuccess.hidden = false;
+          locationGuessMessage.textContent = '';
+          return;
+        }
+
+        const canAttempt = Boolean(state.canAttempt) && !locationGuessSubmitting;
+        locationGuessInput.disabled = !canAttempt;
+        locationGuessSubmit.disabled = !canAttempt;
+
+        if (locationGuessSubmitting) {
+          locationGuessMessage.textContent = 'Je locatie wordt gecontroleerd…';
+          return;
+        }
+
+        if (!state.eligible) {
+          const completed = Number(state.completedGames || 0);
+          const total = Number(state.totalGames || 0);
+          locationGuessMessage.textContent = 'Voltooi eerst alle spellen voordat je een locatie kunt raden' +
+            (total ? ' (' + completed + ' van ' + total + ' voltooid)' : '') + '.';
+          return;
+        }
+
+        if (state.nextAttemptAt) {
+          locationGuessMessage.textContent = 'Helaas, die locatie is niet juist. Je volgende poging is mogelijk vanaf ' +
+            formatFinaleDate(state.nextAttemptAt) + '.';
+          locationGuessMessage.classList.add('error');
+          return;
+        }
+
+        locationGuessMessage.textContent = 'Je hebt één poging. Bij een fout antwoord kun je het over 24 uur opnieuw proberen.';
+      }
+
       function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>"']/g, char => ({
           '&': '&amp;',
@@ -1294,6 +1445,12 @@
 
       function openLeaderboardModal(playerName, details) {
         const items = details.map(game => {
+          if (game.isFinale) {
+            return '<li class="lb-game-row">' +
+              '<span class="lb-game-title">' + escapeHtml(game.title || 'Eindlocatie gevonden') + '</span>' +
+              '<span class="lb-game-score">' + Number(game.score || 0) + ' pt</span>' +
+            '</li>';
+          }
           const att = Number(game.attempts || 0);
           const starts = Number(game.starts || 0);
           const startsMeta = starts > 0 ? starts + (starts === 1 ? ' spelstart' : ' spelstarts') + ' · ' : '';
@@ -1355,6 +1512,7 @@
         renderMetrics(games, leaderboard);
         renderLeaderboard(leaderboard);
         renderActivePlayers(activePlayers);
+        renderLocationGuess(data.locationGuess);
         handleAssistantGameState(games);
 
         setStatus('Status geladen voor ' + playerName + '.', 'success');
@@ -1370,6 +1528,7 @@
 
         renderLeaderboard(leaderboard);
         renderActivePlayers(activePlayers);
+        renderLocationGuess(data.locationGuess);
         playerCount.textContent = String(leaderboard.length);
         previousOpenGameIds = [];
         previousCompletedCount = 0;
@@ -1387,6 +1546,7 @@
           const data = await apiGet('state', { playerName });
           renderActivePlayers(data.activePlayers);
           renderLeaderboard(data.leaderboard);
+          renderLocationGuess(data.locationGuess);
           playerCount.textContent = String(Array.isArray(data.leaderboard) ? data.leaderboard.length : 0);
         } catch (error) {
           console.warn('Live overzicht verversen is mislukt.', error);
@@ -1433,6 +1593,42 @@
 
       nameInput.addEventListener('input', () => {
         updatePlayerNameNotice(nameInput.value);
+      });
+
+      locationGuessForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (locationGuessSubmitting || !locationGuessState || !locationGuessState.canAttempt) return;
+
+        const guess = String(locationGuessInput.value || '').trim();
+        if (!guess) {
+          locationGuessMessage.textContent = 'Vul eerst een locatie in.';
+          locationGuessMessage.className = 'location-guess-message error';
+          locationGuessInput.focus();
+          return;
+        }
+
+        locationGuessSubmitting = true;
+        renderLocationGuess(locationGuessState);
+
+        try {
+          const result = await window.VriendenweekendApi.locationGuess(guess);
+          locationGuessInput.value = '';
+          locationGuessSubmitting = false;
+          renderLocationGuess(result);
+          try {
+            await loadStateForPlayer(activePlayerName);
+          } catch (refreshError) {
+            console.warn('Status verversen na locatiepoging is mislukt.', refreshError);
+            renderLocationGuess(result);
+          }
+        } catch (error) {
+          locationGuessSubmitting = false;
+          renderLocationGuess(locationGuessState);
+          locationGuessMessage.textContent = error && error.message
+            ? error.message
+            : 'De locatie kon niet worden gecontroleerd.';
+          locationGuessMessage.className = 'location-guess-message error';
+        }
       });
 
       form.addEventListener('submit', async event => {
