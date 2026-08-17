@@ -198,6 +198,9 @@ fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .parchment-card h3 { color: #314b32; }
 .parchment-card p,
 .parchment-card label { color: var(--color-parchment-text); }
+.parchment-card .field > span,
+.parchment-card fieldset > legend,
+.parchment-card .field > small { color: #3e2d1c; }
 
 .button {
   position: relative;
@@ -1176,6 +1179,7 @@ summary:focus-visible {
   white-space: pre-line;
 }
 .bell-challenge {
+  container-type: inline-size;
   padding: var(--space-4);
   color: var(--color-text);
   background: linear-gradient(145deg, rgba(8, 23, 17, 0.96), rgba(19, 47, 35, 0.9));
@@ -1184,6 +1188,11 @@ summary:focus-visible {
 }
 .bell-challenge h2 { margin-bottom: var(--space-2); color: var(--color-gold-light); font-size: 1.3rem; }
 .bell-challenge p { margin-bottom: 0; }
+.parchment-card .bell-challenge,
+.parchment-card .bell-challenge p { color: var(--color-text); }
+.parchment-card .bell-challenge .eyebrow,
+.parchment-card .bell-challenge h2,
+.parchment-card .bell-challenge strong { color: var(--color-gold-light); }
 .bell-challenge__message {
   display: grid;
   grid-template-columns: 104px minmax(0, 1fr);
@@ -1253,6 +1262,8 @@ summary:focus-visible {
 }
 .bell-reference__label strong {
   grid-column: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--color-gold-light);
   font-family: var(--font-title);
   font-size: 0.82rem;
@@ -1920,10 +1931,23 @@ details {
 @media (max-width: 400px) {
   .route-bottom-sheet__actions { grid-template-columns: 1fr; }
 }
+@media (max-width: 359px) {
+  .bell-challenge__message { grid-template-columns: minmax(0, 1fr); }
+  .bell-challenge__message img {
+    width: min(100%, 180px);
+    height: auto;
+    justify-self: center;
+  }
+}
+@container (max-width: 220px) {
+  .bell-challenge__message { grid-template-columns: minmax(0, 1fr); }
+  .bell-challenge__message img {
+    width: min(100%, 180px);
+    height: auto;
+    justify-self: center;
+  }
+}
 @media (max-width: 350px) {
   .result-stats { grid-template-columns: repeat(2, 1fr); }
   .result-stat:last-child { grid-column: 1 / -1; }
-}
-@media (max-width: 340px) {
-  .bell-reference { grid-template-columns: 1fr; }
 }

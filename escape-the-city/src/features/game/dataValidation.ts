@@ -1,4 +1,30 @@
-import type { GamePack } from './gameTypes';
+import type { ChallengeConfig, GamePack } from './gameTypes';
+
+function validateChallengePresentation(locationId: string, challenge: ChallengeConfig) {
+  if (challenge.kind === 'choice' && challenge.options[0]?.correct) {
+    return `Voorspelbaar eerste keuzeantwoord voor ${locationId}`;
+  }
+  if (challenge.kind === 'reorder') {
+    const presented = [...challenge.items].sort();
+    const correct = [...challenge.correctOrder].sort();
+    if (presented.length !== correct.length || presented.some((item, index) => item !== correct[index])) {
+      return `Ongeldige sorteerlijst voor ${locationId}`;
+    }
+    if (challenge.items.every((item, index) => item === challenge.correctOrder[index])) {
+      return `Sorteerlijst start al opgelost voor ${locationId}`;
+    }
+  }
+  if (challenge.kind === 'composite') {
+    const categories = Object.keys(challenge.categories);
+    if (!categories.every((category) => challenge.categories[category].includes(challenge.correctAnswer[category]))) {
+      return `Ongeldig samengesteld antwoord voor ${locationId}`;
+    }
+    if (categories.some((category) => challenge.categories[category][0] === challenge.correctAnswer[category])) {
+      return `Voorspelbaar eerste samengesteld antwoord voor ${locationId}`;
+    }
+  }
+  return null;
+}
 
 export function validateGamePack(pack: GamePack) {
   const stopIds = new Set<string>();
@@ -17,13 +43,8 @@ export function validateGamePack(pack: GamePack) {
     if (stop.challenge.kind === 'code' && !stop.challenge.acceptedAnswers.length) {
       return { valid: false, message: `Ontbrekend codeantwoord voor ${stop.id}` };
     }
-    if (stop.challenge.kind === 'composite') {
-      const challenge = stop.challenge;
-      const categories = Object.keys(challenge.categories);
-      if (!categories.every((category) => challenge.categories[category].includes(challenge.correctAnswer[category]))) {
-        return { valid: false, message: `Ongeldig samengesteld antwoord voor ${stop.id}` };
-      }
-    }
+    const challengeError = validateChallengePresentation(stop.id, stop.challenge);
+    if (challengeError) return { valid: false, message: challengeError };
   }
   if (pack.stops[0]?.id !== pack.startStopId) return { valid: false, message: 'Startstop klopt niet.' };
   if (pack.stops[pack.stops.length - 1]?.id !== pack.finalStopId) return { valid: false, message: 'Finalestop klopt niet.' };
@@ -41,6 +62,8 @@ export function validateGamePack(pack: GamePack) {
     if (radiusMeters <= 0 || maximumAccuracyMeters <= 0 || discoveryRadiusMeters < radiusMeters) return { valid: false, message: `Ongeldige bonusgeofence voor ${bonus.id}` };
     if (!stopIds.has(bonus.recommendedBetween.afterStopId) || !stopIds.has(bonus.recommendedBetween.beforeStopId) || !stopIds.has(bonus.visibleAfterStopId)) return { valid: false, message: `Ongeldige bonusrouteverwijzing voor ${bonus.id}` };
     if (bonus.maximumPoints <= 0 || !bonus.reward.id || !bonus.hints || !bonus.challenge) return { valid: false, message: `Onvolledige bonusconfiguratie voor ${bonus.id}` };
+    const challengeError = validateChallengePresentation(bonus.id, bonus.challenge);
+    if (challengeError) return { valid: false, message: challengeError };
   }
   if (pack.bonusCompletionReward && pack.bonusCompletionReward.requiredCount !== bonusIds.size) return { valid: false, message: 'De Schubbenjagers-bonus past niet bij het aantal bonussen.' };
   return { valid: true as const, message: 'OK' };

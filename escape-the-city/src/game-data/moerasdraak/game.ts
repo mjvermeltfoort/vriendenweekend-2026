@@ -36,8 +36,8 @@ export const gamePack: GamePack = {
         kind: 'choice',
         prompt: 'Welke aanwijzing past bij start?',
         options: [
-          { id: 'a', label: 'Water', correct: true },
           { id: 'b', label: 'Vuur', correct: false },
+          { id: 'a', label: 'Water', correct: true },
           { id: 'c', label: 'Zand', correct: false }
         ],
         correctFeedback: 'Goed: de eerste herinnering komt uit water.',
@@ -83,7 +83,7 @@ export const gamePack: GamePack = {
       challenge: {
         kind: 'reorder',
         prompt: 'Welke route klopt?',
-        items: ['Bron', 'Kanaal', 'Sluis', 'Stad'],
+        items: ['Sluis', 'Bron', 'Stad', 'Kanaal'],
         correctOrder: ['Bron', 'Kanaal', 'Sluis', 'Stad'],
         wrongFeedback: 'De stroom loopt anders.'
       },
@@ -104,9 +104,9 @@ export const gamePack: GamePack = {
         kind: 'composite',
         prompt: 'Kies hoofd, lijf en object.',
         categories: {
-          head: ['Horn', 'Masker', 'Kroon'],
-          body: ['Schubben', 'Mantel', 'Steen'],
-          object: ['Lantaarn', 'Sleutel', 'Vork']
+          head: ['Masker', 'Horn', 'Kroon'],
+          body: ['Mantel', 'Steen', 'Schubben'],
+          object: ['Vork', 'Lantaarn', 'Sleutel']
         },
         correctAnswer: {
           head: 'Horn',
@@ -154,8 +154,8 @@ export const gamePack: GamePack = {
         kind: 'choice',
         prompt: 'Wat hoort hier het meest bij?',
         options: [
-          { id: 'a', label: 'Verdediging', correct: true },
           { id: 'b', label: 'Zwemmen', correct: false },
+          { id: 'a', label: 'Verdediging', correct: true },
           { id: 'c', label: 'Bakken', correct: false }
         ],
         correctFeedback: 'Juist: balans houdt stand.',
@@ -177,7 +177,7 @@ export const gamePack: GamePack = {
       challenge: {
         kind: 'reorder',
         prompt: 'Zet brouwstappen in volgorde.',
-        items: ['Schroten', 'Maischen', 'Filteren', 'Koken', 'Koelen', 'Gisten'],
+        items: ['Gisten', 'Schroten', 'Koelen', 'Maischen', 'Koken', 'Filteren'],
         correctOrder: ['Schroten', 'Maischen', 'Filteren', 'Koken', 'Koelen', 'Gisten'],
         wrongFeedback: 'Het brouwproces loopt anders.'
       },

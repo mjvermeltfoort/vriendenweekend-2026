@@ -29,13 +29,7 @@ export const bellChallengeAudio = {
     audioAsset('effects/bellende-engel/bell-3-sleutel.mp3'),
     audioAsset('effects/bellende-engel/bell-4-schild.mp3')
   ],
-  tones: [
-    audioAsset('effects/bellende-engel/bell-1-engel.mp3'),
-    audioAsset('effects/bellende-engel/bell-2-draak.mp3'),
-    audioAsset('effects/bellende-engel/bell-3-sleutel.mp3'),
-    audioAsset('effects/bellende-engel/bell-4-schild.mp3')
-  ],
-  pattern: [3, 2, 1, 4, 3]
+  pattern: [3, 1, 4, 2]
 } as const;
 
 export const bellChallengeImages = {
@@ -74,8 +68,7 @@ export function allEffectAudio() {
   return [
     bellChallengeAudio.awaken,
     bellChallengeAudio.telephone,
-    ...bellChallengeAudio.bells,
-    ...bellChallengeAudio.tones
+    ...bellChallengeAudio.bells
   ];
 }
 

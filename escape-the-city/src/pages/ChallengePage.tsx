@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
@@ -21,9 +21,26 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const [composite, setComposite] = useState<Record<string, string>>({});
   const [lensLeft, setLensLeft] = useState(0);
   const [lensRight, setLensRight] = useState(0);
+  const [lensInteracted, setLensInteracted] = useState(false);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
+  const activeStopId = useRef(stopId);
+
+  activeStopId.current = stopId;
+
+  useEffect(() => {
+    setChoice('');
+    setCode('');
+    setList(stop?.challenge.kind === 'reorder' ? [...stop.challenge.items] : []);
+    setComposite({});
+    setLensLeft(0);
+    setLensRight(0);
+    setLensInteracted(false);
+    setMessage('');
+    setBusy(false);
+    setHintOpen(false);
+  }, [stopId, stop]);
 
   if (!stop) return <PageShell title="Opdracht" backTo="/route"><p>Opdracht niet gevonden.</p></PageShell>;
 
@@ -58,18 +75,30 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
 
   const canSubmit = (() => {
     if (currentStop.challenge.kind === 'choice') return choice.length > 0;
-    if (currentStop.challenge.kind === 'code') return code.length >= 3;
+    if (currentStop.challenge.kind === 'code') return code.length === currentStop.challenge.answerLength;
     if (currentStop.challenge.kind === 'reorder') return list.length === currentStop.challenge.correctOrder.length;
     if (currentStop.challenge.kind === 'composite') return Object.keys(composite).length === Object.keys(currentStop.challenge.categories).length;
-    if (currentStop.challenge.kind === 'lens') return lensLeft === 2 && lensRight === 3;
+    if (currentStop.challenge.kind === 'lens') return lensInteracted;
     return false;
   })();
 
   async function submit() {
+    const submittedStopId = currentStop.id;
     setBusy(true);
     try {
-      const answer = currentStop.challenge.kind === 'choice' ? choice : currentStop.challenge.kind === 'code' ? code : currentStop.challenge.kind === 'reorder' ? list : currentStop.challenge.kind === 'composite' ? composite : 'vesting';
+      const answer = currentStop.challenge.kind === 'choice'
+        ? choice
+        : currentStop.challenge.kind === 'code'
+          ? code
+          : currentStop.challenge.kind === 'reorder'
+            ? list
+            : currentStop.challenge.kind === 'composite'
+              ? composite
+              : lensLeft === 2 && lensRight === 3
+                ? currentStop.challenge.correctAnswer
+                : '';
       const result = await attemptAnswer(currentStop.id, currentStop.challenge, answer);
+      if (activeStopId.current !== submittedStopId) return;
       setMessage(result.message);
       if (result.correct) {
         if (isFinal) {
@@ -80,8 +109,17 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
         }
       }
     } finally {
-      setBusy(false);
+      if (activeStopId.current === submittedStopId) setBusy(false);
     }
+  }
+
+  function updateCode(rawValue: string) {
+    if (currentStop.challenge.kind !== 'code') return;
+    const value = currentStop.challenge.keyboard === 'numeric'
+      ? rawValue.replace(/\D/g, '')
+      : rawValue;
+    setCode(value.slice(0, currentStop.challenge.answerLength));
+    setMessage('');
   }
 
   return (
@@ -115,7 +153,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
             <legend className="eyebrow">Kies één antwoord</legend>
             {currentStop.challenge.options.map((option) => (
               <label key={option.id} className="choice-option">
-                <input type="radio" name="choice" value={option.id} checked={choice === option.id} onChange={() => setChoice(option.id)} />
+                <input type="radio" name="choice" value={option.id} checked={choice === option.id} onChange={() => { setChoice(option.id); setMessage(''); }} />
                 <span>{option.label}</span>
               </label>
             ))}
@@ -128,12 +166,13 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
             <input
               className="code-input"
               value={code}
-              maxLength={currentStop.challenge.answerLength + 4}
-              onChange={(event) => setCode(event.target.value)}
+              maxLength={currentStop.challenge.answerLength}
+              onChange={(event) => updateCode(event.target.value)}
               inputMode={currentStop.challenge.keyboard === 'numeric' ? 'numeric' : 'text'}
               autoComplete="off"
-              aria-describedby={message ? 'answer-feedback' : undefined}
+              aria-describedby={`code-answer-help${message ? ' answer-feedback' : ''}`}
             />
+            <small id="code-answer-help">Voer precies {currentStop.challenge.answerLength} cijfers in.</small>
           </label>
         ) : null}
 
@@ -142,6 +181,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
             <p className="eyebrow">Zet in juiste volgorde</p>
             {list.map((item, index) => {
               const move = (direction: -1 | 1) => {
+                setMessage('');
                 setList((current) => {
                   const copy = [...current];
                   const nextIndex = Math.max(0, Math.min(copy.length - 1, index + direction));
@@ -166,7 +206,10 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
             {Object.entries(currentStop.challenge.categories).map(([category, options]) => (
               <label key={category} className="field">
                 <span>{category}</span>
-                <select value={composite[category] ?? ''} onChange={(event) => setComposite((current) => ({ ...current, [category]: event.target.value }))}>
+                <select value={composite[category] ?? ''} onChange={(event) => {
+                  setComposite((current) => ({ ...current, [category]: event.target.value }));
+                  setMessage('');
+                }}>
                   <option value="">Kies</option>
                   {options.map((option) => <option key={option} value={option}>{option}</option>)}
                 </select>
@@ -179,8 +222,8 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           <div className="lens-puzzle stack" aria-label="Papenbril-lenzenpuzzel">
             <p>Stel beide lenzen af tot de punten van de vesting samenkomen.</p>
             <div className="lens-puzzle__lenses" aria-hidden="true"><span style={{ transform: `rotate(${lensLeft * 72}deg)` }}>◒</span><span style={{ transform: `rotate(${lensRight * 72}deg)` }}>◓</span></div>
-            <div className="row"><button className="button secondary" type="button" onClick={() => setLensLeft((value) => (value + 1) % 5)}>Linkerlens draaien</button><button className="button secondary" type="button" onClick={() => setLensRight((value) => (value + 1) % 5)}>Rechterlens draaien</button></div>
-            <button className="button ghost" type="button" onClick={() => { setLensLeft(0); setLensRight(0); }}>Lenzen resetten</button>
+            <div className="row"><button className="button secondary" type="button" onClick={() => { setLensLeft((value) => (value + 1) % 5); setLensInteracted(true); setMessage(''); }}>Linkerlens draaien</button><button className="button secondary" type="button" onClick={() => { setLensRight((value) => (value + 1) % 5); setLensInteracted(true); setMessage(''); }}>Rechterlens draaien</button></div>
+            <button className="button ghost" type="button" onClick={() => { setLensLeft(0); setLensRight(0); setLensInteracted(true); setMessage(''); }}>Lenzen resetten</button>
           </div>
         ) : null}
 

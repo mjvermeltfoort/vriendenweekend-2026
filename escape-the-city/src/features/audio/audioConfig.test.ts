@@ -16,12 +16,12 @@ describe('audio configuration', () => {
   it('lists all standalone audio for offline preparation', () => {
     expect(allStandaloneNarration()).toHaveLength(3);
     expect(allScenicAudio()).toHaveLength(6);
-    expect(allEffectAudio()).toHaveLength(10);
+    expect(allEffectAudio()).toHaveLength(6);
     expect(allBellChallengeImages()).toHaveLength(5);
     expect([...allStandaloneNarration(), ...allScenicAudio()].every((path) => path.endsWith('.mp3'))).toBe(true);
     expect(allEffectAudio().every((path) => /\.mp3$/.test(path))).toBe(true);
     expect(allBellChallengeImages().every((path) => path.endsWith('.webp'))).toBe(true);
-    expect(bellChallengeAudio.pattern).toEqual([3, 2, 1, 4, 3]);
+    expect(bellChallengeAudio.pattern).toEqual([3, 1, 4, 2]);
     expect(new Set(bellChallengeAudio.pattern)).toEqual(new Set([1, 2, 3, 4]));
   });
 

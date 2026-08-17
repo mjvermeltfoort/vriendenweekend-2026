@@ -18,7 +18,7 @@ export const bonusLocations: BonusLocation[] = [
     manualVerification: { questionId: 'bonus-bolwerk-primary', question: 'Welke twee materialen ontmoeten elkaar hier het duidelijkst?' },
     intro: { title: 'De Verloren Poort', text: 'Een schub wacht bij de oude stadsentree.' },
     navigation: { clue: 'Waar oud steenwerk een roestkleurig pantser draagt.', fallbackDirections: 'Volg de Sint-Janssingel naar de stadsentree.', externalMapsQuery: 'Bolwerk Sint-Jan Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Welke twee materialen ontmoeten elkaar hier het duidelijkst?', options: [{ id: 'a', label: 'Baksteen en roestkleurig staal', correct: true }, { id: 'b', label: 'Hout en natuursteen', correct: false }, { id: 'c', label: 'Beton en koper', correct: false }, { id: 'd', label: 'Glas en marmer', correct: false }], correctFeedback: 'De Poortschub is gevonden.', wrongFeedback: 'Kijk nog eens naar het steenwerk.' },
+    challenge: { kind: 'choice', prompt: 'Welke twee materialen ontmoeten elkaar hier het duidelijkst?', options: [{ id: 'b', label: 'Hout en natuursteen', correct: false }, { id: 'a', label: 'Baksteen en roestkleurig staal', correct: true }, { id: 'c', label: 'Beton en koper', correct: false }, { id: 'd', label: 'Glas en marmer', correct: false }], correctFeedback: 'De Poortschub is gevonden.', wrongFeedback: 'Kijk nog eens naar het steenwerk.' },
     hints: [{ id: 'h1', text: 'Let op de kleur en textuur van de bescherming.' }], reward: { id: 'poortschub', title: 'Poortschub', text: 'De verdediging leeft voort.', symbol: '◈', resultLabel: 'Poortschub' }
   },
   {
@@ -40,7 +40,7 @@ export const bonusLocations: BonusLocation[] = [
     manualVerification: { questionId: 'bonus-moriaan-primary', question: 'Welke combinatie herken je aan dit gebouw?' },
     intro: { title: 'Het Huis dat Bleef Staan', text: 'Een oud huis bewaart een stenen herinnering.' },
     navigation: { clue: 'Vind het stenen huis dat aan de slopershamer ontsnapte.', fallbackDirections: 'Ga naar Markt 77.', externalMapsQuery: 'De Moriaan Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Welke combinatie herken je aan dit gebouw?', options: [{ id: 'a', label: 'Trapgevel, rond hoektorentje en spitsboogdetails', correct: true }, { id: 'b', label: 'Glazen gevel, plat dak en metalen balkon', correct: false }, { id: 'c', label: 'Houten topgevel, klokkentoren en zuilen', correct: false }, { id: 'd', label: 'Witte lijstgevel, koepel en arcade', correct: false }], correctFeedback: 'De Steenschub is gevonden.', wrongFeedback: 'Kijk naar de gevelvormen.' },
+    challenge: { kind: 'choice', prompt: 'Welke combinatie herken je aan dit gebouw?', options: [{ id: 'b', label: 'Glazen gevel, plat dak en metalen balkon', correct: false }, { id: 'a', label: 'Trapgevel, rond hoektorentje en spitsboogdetails', correct: true }, { id: 'c', label: 'Houten topgevel, klokkentoren en zuilen', correct: false }, { id: 'd', label: 'Witte lijstgevel, koepel en arcade', correct: false }], correctFeedback: 'De Steenschub is gevonden.', wrongFeedback: 'Kijk naar de gevelvormen.' },
     hints: [{ id: 'h1', text: 'Zoek vormen die ouder zijn dan de winkelstraat.' }], reward: { id: 'steenschub', title: 'Steenschub', text: 'Steen bewaart de herinnering.', symbol: '◈', resultLabel: 'Steenschub' }
   },
   {
@@ -73,7 +73,7 @@ export const bonusLocations: BonusLocation[] = [
     manualVerification: { questionId: 'bonus-verkade-primary', question: 'Wat was de oorspronkelijke functie van dit gebouw?' },
     intro: { title: 'Van Koek naar Cultuur', text: 'Orden het verhaal van fabriek naar cultuur.' },
     navigation: { clue: 'Waar machines iets knapperigs maakten, worden nu verhalen vertoond.', fallbackDirections: 'Ga naar Boschdijkstraat 45.', externalMapsQuery: 'Verkadefabriek Den Bosch' },
-    challenge: { kind: 'reorder', prompt: 'Zet de geschiedenis in de juiste volgorde.', items: ['Koekjes- en biscuitfabriek', 'Leegstand / einde productie', 'Theater en film'], correctOrder: ['Koekjes- en biscuitfabriek', 'Leegstand / einde productie', 'Theater en film'], wrongFeedback: 'De geschiedenis loopt anders.' },
+    challenge: { kind: 'reorder', prompt: 'Zet de geschiedenis in de juiste volgorde.', items: ['Theater en film', 'Koekjes- en biscuitfabriek', 'Leegstand / einde productie'], correctOrder: ['Koekjes- en biscuitfabriek', 'Leegstand / einde productie', 'Theater en film'], wrongFeedback: 'De geschiedenis loopt anders.' },
     hints: [{ id: 'h1', text: 'Begin bij productie en eindig bij de huidige bestemming.' }], reward: { id: 'machineschub', title: 'Machineschub', text: 'De machines vertellen verder.', symbol: '◈', resultLabel: 'Machineschub' }
   }
 ];
