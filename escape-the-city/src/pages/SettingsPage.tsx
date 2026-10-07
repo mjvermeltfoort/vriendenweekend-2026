@@ -1,3 +1,4 @@
+tsx
 import { useState } from 'react';
 import { PageShell, SyncStatus } from '../components/GameUi';
 import { useGame } from '../app/gameContext';
