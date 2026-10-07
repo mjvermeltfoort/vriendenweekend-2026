@@ -1,0 +1,9 @@
+name: OpenAI Continue CLI
+version: 1.0.0
+schema: v1
+
+models:
+  - name: GPT-5
+    provider: openai
+    model: gpt-5
+    apiKey: "${{ secrets.OPENAI_API_KEY }}"
