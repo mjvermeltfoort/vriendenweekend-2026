@@ -14,6 +14,8 @@ export function PreparationPage({ pack }: { pack: GamePack }) {
   const { activeTeam, progress, syncStatus, syncMessage, syncNow } = useGame();
   const [downloading, setDownloading] = useState(false);
   const assets = useMemo(() => buildAssetManifest(pack), [pack]);
+  const collected = progress?.collectedRewards.length ?? 0;
+  const remaining = Math.max(pack.stops.length - collected, 0);
 
   async function prepare() {
     setDownloading(true);
@@ -40,7 +42,10 @@ export function PreparationPage({ pack }: { pack: GamePack }) {
           <p className="eyebrow">Team</p>
           <h2>{activeTeam?.name ?? 'Geen actief team'}</h2>
         </div>
-        <ProgressBar value={progress?.collectedRewards.length ?? 0} max={pack.stops.length} label="Bestaande voortgang" />
+        <p className="eyebrow">Wat je nu doet</p>
+        <p className="small">Teamcode controleren, locatie inschakelen en de route klaarmaken voor offline gebruik.</p>
+        <ProgressBar value={collected} max={pack.stops.length} label={`Voortgang: ${collected} van ${pack.stops.length} opdrachten`} />
+        <p className="small">Nog {remaining} opdracht{remaining === 1 ? '' : 'en'} open.</p>
         <ul className="prep-list">
           <li><span className="prep-check"><GameIcon name="check" size={16} /></span>Routeversie {pack.version} gereed</li>
           <li><span className="prep-check"><GameIcon name="check" size={16} /></span>{assets.length} routebestanden beschikbaar</li>
@@ -56,3 +61,4 @@ export function PreparationPage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
+
