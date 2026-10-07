@@ -13,6 +13,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
   const { unlockAudio } = useAudio();
   const current = activeTeam && progress ? { team: activeTeam, progress } : null;
   const lastTeam = current ?? (teams[0] ? { team: teams[0], progress: null } : null);
+  const baseUrl = import.meta.env.BASE_URL ?? '/';
 
   return (
     <main className="page shell home-page">
@@ -22,7 +23,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
           <div className="home-hero__visual">
             <img
               className="home-welcome-image"
-              src={`${import.meta.env.BASE_URL}images/welkom-image.png`}
+              src={`${baseUrl}images/welkom-image.png`}
               alt=""
               fetchPriority="high"
               decoding="async"
@@ -99,4 +100,5 @@ export function HomePage({ pack }: { pack: GamePack }) {
     </main>
   );
 }
+
 
