@@ -1,0 +1,177 @@
+name: Issue Command Bot
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  run:
+    name: Run Issue Bot
+    runs-on: ubuntu-latest
+    if: >
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR') &&
+      (startsWith(github.event.comment.body, '/think') ||
+       startsWith(github.event.comment.body, '/solve') ||
+       startsWith(github.event.comment.body, '/review'))
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run issue bot (think/review, and ack solve)
+        id: solve
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+        run: |
+          node .github/scripts/issue-bot.cjs
+
+      - name: Install Continue CLI (solve)
+        if: startsWith(github.event.comment.body, '/solve')
+        run: |
+          set -euo pipefail
+          if [ ! -f .continue/config.yaml ]; then
+            echo ".continue/config.yaml not found in repo. Please add it." >&2
+            exit 1
+          fi
+
+          export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+          curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
+          command -v rtk
+          rtk --version
+          rtk gain
+
+          CAVEMAN_INSTALL_DIR="${RUNNER_TEMP}/caveman-skill"
+          mkdir -p "$CAVEMAN_INSTALL_DIR"
+          (
+            cd "$CAVEMAN_INSTALL_DIR"
+            npx -y skills add JuliusBrussee/caveman --skill caveman --copy -y
+          )
+          CAVEMAN_SKILL="$CAVEMAN_INSTALL_DIR/.agents/skills/caveman/SKILL.md"
+          if [ ! -f "$CAVEMAN_SKILL" ]; then
+            echo "Caveman skill not found at $CAVEMAN_SKILL" >&2
+            exit 1
+          fi
+
+          npm i -g @continuedev/cli@latest
+          cn --version
+
+      - name: Run Continue CLI to solve and modify code
+        id: cont
+        if: startsWith(github.event.comment.body, '/solve')
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/issue-bot"
+          BOT_TMP="${RUNNER_TEMP}/issue-bot"
+          PROMPT="$(printf "%s" "${COMMENT_BODY}" | sed -E 's#^/solve[[:space:]]*:?[[:space:]]*##')"
+
+          COMMENTS_URL="https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}/comments?per_page=100"
+          curl -sS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json"             "${COMMENTS_URL}"             | jq -r --argjson excludeId "${COMMENT_ID}" '
+                sort_by(.created_at)
+                | map(select(.id != $excludeId))
+                | (if length > 10 then .[-10:] else . end)
+                | reverse
+                | .[]
+                | "Author: \(.user.login) (\(.author_association))\nComment:\n\(.body)\n---\n"'             > "${BOT_TMP}/comments.txt" || true
+
+          {
+            echo "Repository wants a fix PR for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
+            echo
+            echo "Issue body:"
+            printf "%s\n" "${ISSUE_BODY}"
+            echo
+            echo "User prompt:"
+            printf "%s\n" "${PROMPT}"
+            echo
+            echo "Recent issue comments (latest first, max 10, excluding this command):"
+            if [ -s "${BOT_TMP}/comments.txt" ]; then cat "${BOT_TMP}/comments.txt"; else echo "(none)"; fi
+            echo
+            echo "Instructions:"
+            echo "- Make minimal, correct code changes directly in the working tree."
+            echo "- Include tests or config updates if needed."
+            echo "- Do not stage or commit; just modify files."
+            echo "- Workflow files under .github/workflows are in scope when the issue requires them."
+            echo "- Follow loaded RTK and Caveman rules."
+          } > "${BOT_TMP}/prompt.txt"
+
+          echo "Running Continue CLI in headless mode"
+          CAVEMAN_SKILL="${RUNNER_TEMP}/caveman-skill/.agents/skills/caveman/SKILL.md"
+          test -f "$CAVEMAN_SKILL"
+          cn             --config .continue/config.yaml             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
+
+          if ! git diff --quiet -- ||              [ -n "$(git ls-files --others --exclude-standard)" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "pr_title=fix: Resolve #${ISSUE_NUMBER} - ${ISSUE_TITLE} (bot via Continue)" >> "$GITHUB_OUTPUT"
+            {
+              echo "This PR was generated by a Continue-based CI run using repo .continue/config.yaml."
+              echo
+              echo "- Issue: #${ISSUE_NUMBER}"
+              echo "- Command: /solve"
+              echo
+              echo "Execution log (truncated):"
+              echo '```'
+              tail -n 400 "${BOT_TMP}/continue.log" || true
+              echo '```'
+            } > "${BOT_TMP}/pr-body.md"
+            echo "pr_body_file=${BOT_TMP}/pr-body.md" >> "$GITHUB_OUTPUT"
+          else
+            echo "No changes produced by Continue runner."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR from Continue changes
+        id: cpr_continue
+        if: steps.cont.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: issue-bot/issue-${{ github.event.issue.number }}-continue
+          commit-message: ${{ steps.solve.outputs.pr_title }}
+          title: ${{ steps.solve.outputs.pr_title }}
+          body-path: ${{ steps.cont.outputs.pr_body_file }}
+          labels: bot, automated, issue-bot, continue
+
+      - name: Comment with PR link (Continue)
+        if: steps.cont.outputs.has_changes == 'true' && steps.cpr_continue.outputs.pull-request-url
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_URL: ${{ steps.cpr_continue.outputs.pull-request-url }}
+        run: |
+          BODY=$(jq -nc --arg body "Opened PR: ${PR_URL}" '{body: $body}')
+          curl -sS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json"             -X POST             -d "${BODY}"             "https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}/comments"
