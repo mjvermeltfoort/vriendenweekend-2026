@@ -152,14 +152,8 @@ export function BottomGameNavigation() {
       ))}
       <div className="bottom-nav__status" aria-live="polite">
         <SyncStatus
-          status={progress?.syncState === 'offline' ? 'offline' : progress?.syncState === 'syncing' ? 'syncing' : 'saved'}
-          message={
-            progress?.syncState === 'offline'
-              ? 'Offline'
-              : progress?.syncState === 'syncing'
-                ? 'Synchroniseren'
-                : 'Opgeslagen'
-          }
+          status={typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'saved'}
+          message={typeof navigator !== 'undefined' && navigator.onLine === false ? 'Offline' : 'Opgeslagen'}
         />
       </div>
     </nav>
@@ -283,4 +277,5 @@ export function HintDialog({
 export function StoryLink({ to, children }: { to: string; children: ReactNode }) {
   return <Link className="text-link" to={to}>{children}</Link>;
 }
+
 
