@@ -244,6 +244,9 @@ export function StopPage({ pack }: { pack: GamePack }) {
     ? null
     : Math.max(0, Math.ceil((fallbackDelayMs - (fallbackNow - fallbackStartedAtRef.current)) / 1000));
 
+  const showVerificationQuestions = ((!isBonusLocation(currentStop) && !canPlay && !isCompleted && observationFallbackVisible && Boolean(currentObservation))
+    || (isBonusLocation(currentStop) && !canPlay && !isCompleted && bonusQuestionAvailable));
+
   const gameCompleted = progress ? canViewResult(progress, pack) : false;
   const showParchment = !gameCompleted && (progress ? (hasLocationUnlock(progress, currentStop.id) || canAccessChallenge(progress, currentStop.id)) : false);
 
@@ -265,7 +268,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
         </section>
       ) : null}
 
-      {!isCompleted ? (
+      {!isCompleted && !showVerificationQuestions ? (
         <section className="card card--compact stack stack--compact" style={{ marginTop: '0.5rem' }}>
           <p className="eyebrow">Vind de locatie</p>
           <h2>{currentStop.title}</h2>
