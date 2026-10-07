@@ -728,7 +728,7 @@ summary:focus-visible {
 .route-map__marker--locked { color: var(--color-text-muted); background: #0a120f; border-color: rgba(173, 154, 116, 0.45); }
 .route-map__marker--completed { color: var(--color-success); border-color: var(--color-success); }
 .route-map__marker--current { box-shadow: 0 0 0 4px rgba(3, 8, 6, 0.78), 0 0 22px rgba(224, 188, 120, 0.55); }
-.route-map__marker.is-selected { outline: 2px solid var(--color-gold-light); outline-offset: 4px; }
+.route-map__marker.is-selected { outline: 3px solid var(--color-gold-light); outline-offset: 4px; }
 .route-map__detail { min-height: 154px; }
 .route-map__detail h2 { margin-bottom: var(--space-2); font-size: 1.05rem; }
 .route-map__detail p { font-size: 0.86rem; }
@@ -1951,3 +1951,4 @@ details {
   .result-stats { grid-template-columns: repeat(2, 1fr); }
   .result-stat:last-child { grid-column: 1 / -1; }
 }
+
