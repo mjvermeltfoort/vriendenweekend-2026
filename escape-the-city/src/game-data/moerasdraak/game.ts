@@ -84,16 +84,16 @@ export const gamePack: GamePack = {
         kind: 'composite',
         prompt: 'Welke drie dingen komen hier samen en verraden waar de oude Waterpoort stond?',
         categories: {
-          old: ['Betonresten', 'Bakstenen resten', 'Houten balk'],
-          modern: ['Glazen boog', 'Stalen poort', 'Kunststof hek'],
-          trace: ['Rode klinkers', 'Blauwe stenen', 'Witte tegels']
+          Oud: ['Betonresten', 'Bakstenen resten', 'Houten balk'],
+          Modern: ['Glazen boog', 'Stalen poort', 'Kunststof hek'],
+          Spoor in straat: ['Rode klinkers', 'Blauwe stenen', 'Witte tegels']
         },
         correctAnswer: {
-          old: 'Bakstenen resten',
-          modern: 'Stalen poort',
-          trace: 'Blauwe stenen'
+          Oud: 'Bakstenen resten',
+          Modern: 'Stalen poort',
+          'Spoor in straat': 'Blauwe stenen'
         },
-        summaryTemplate: 'Oud: {old}, nieuw: {modern}, spoor: {trace}.',
+        summaryTemplate: 'Oud: {Oud}, nieuw: {Modern}, spoor: {Spoor in straat}.',
         wrongFeedback: 'Kijk naar oud, nieuw en sporen in de straat.'
       },
       hints: [{ id: 'h1', text: 'Let op contrast tussen oud metselwerk, een moderne constructie en de gekleurde stenen in de straat.' }],
