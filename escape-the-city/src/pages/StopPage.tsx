@@ -226,11 +226,18 @@ export function StopPage({ pack }: { pack: GamePack }) {
     }
   }
 
-  const mapsUrl = Number.isFinite(currentStop.coordinates.latitude)
-    && Number.isFinite(currentStop.coordinates.longitude)
-    ? `https://www.google.com/maps/search/?api=1&query=${currentStop.coordinates.latitude},${currentStop.coordinates.longitude}`
+  const hasDest = Number.isFinite(currentStop.coordinates.latitude)
+    && Number.isFinite(currentStop.coordinates.longitude);
+  const hasOrigin = Boolean(
+    teamLocation?.isCurrent
+    && Number.isFinite(teamLocation.latitude)
+    && Number.isFinite(teamLocation.longitude)
+  );
+  const originParam = hasOrigin ? `&origin=${teamLocation!.latitude},${teamLocation!.longitude}` : '';
+  const mapsUrl = hasDest
+    ? `https://www.google.com/maps/dir/?api=1&destination=${currentStop.coordinates.latitude},${currentStop.coordinates.longitude}${originParam}&travelmode=walking`
     : currentStop.navigation.externalMapsQuery
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentStop.navigation.externalMapsQuery)}`
+      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentStop.navigation.externalMapsQuery)}${originParam}&travelmode=walking`
       : null;
   const observationFallbackVisible = fallbackReady || fallbackDelayMs === 0;
   const fallbackRemainingSeconds = fallbackDelayMs === null
