@@ -54,10 +54,6 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 * 365
               }
             }
-          },
-          {
-            urlPattern: ({ url }) => url.pathname.endsWith('.tsx'),
-            handler: 'NetworkOnly'
           }
         ]
       }
@@ -72,4 +68,5 @@ export default defineConfig({
     }
   }
 });
+
 
