@@ -344,7 +344,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
           <div className="fallback-route-map" role="region" aria-label="Offline routekaart van Den Bosch">
             <img src={`${import.meta.env.BASE_URL}maps/route-map-fallback.webp`} alt="" />
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              {presentation.fullRouteVisible ? route?.features.map((feature) => (
+              {route && presentation.fullRouteVisible ? route.features.map((feature) => (
                 <polyline className="fallback-route-map__full" key={`full-${feature.properties.legIndex}`} points={polylinePoints(feature)} />
               )) : null}
               {route?.features
@@ -352,7 +352,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
                 .map((feature) => (
                   <polyline className="fallback-route-map__completed" key={`completed-${feature.properties.legIndex}`} points={polylinePoints(feature)} />
                 ))}
-              {route && presentation.activeLegIndex !== null ? (
+              {route && presentation.activeLegIndex !== null && route.features[presentation.activeLegIndex] ? (
                 <>
                   <polyline className="fallback-route-map__active-outline" points={polylinePoints(route.features[presentation.activeLegIndex])} />
                   <polyline className="fallback-route-map__active" points={polylinePoints(route.features[presentation.activeLegIndex])} />
@@ -453,4 +453,5 @@ export function hasWebGlSupport() {
     return false;
   }
 }
+
 
