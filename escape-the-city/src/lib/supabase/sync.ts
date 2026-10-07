@@ -225,7 +225,7 @@ function readableRpcError(error: { message: string; code?: string }) {
   const functionalCode = (Object.keys(errorMessages) as Exclude<TeamSyncErrorCode, 'UNKNOWN'>[])
     .find((code) => details.includes(code));
   if (functionalCode) return new TeamSyncError(functionalCode, errorMessages[functionalCode]);
-  if (error.code === 'PGRST202' || /could not find.*function/i.test(error.message)) {
+  if (error.code === 'PGRST202' || error.code === 'PGRST116' || /could not find.*function|no function found/i.test(error.message)) {
     return new TeamSyncError('SYNC_UNAVAILABLE', 'Teamsynchronisatie is nog niet ingericht.');
   }
   if (/team not found|invalid team/i.test(error.message)) return new TeamSyncError('INVALID_TEAM_CODE', errorMessages.INVALID_TEAM_CODE);
@@ -345,8 +345,7 @@ export async function updateTeamLocation(input: UpdateTeamLocationInput) {
     p_altitude_m: input.altitudeM ?? null,
     p_heading_deg: input.headingDeg ?? null,
     p_speed_mps: input.speedMps ?? null,
-    p_captured_at: input.capturedAt,
-    p_user_agent: navigator.userAgent
+    p_captured_at: input.capturedAt
   });
   return response.currentLocation;
 }
