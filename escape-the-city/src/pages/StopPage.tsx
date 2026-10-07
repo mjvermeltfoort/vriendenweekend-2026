@@ -238,7 +238,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
     <PageShell title={isCompleted ? (isBonusLocation(currentStop) ? 'Drakenschub' : 'Herinnering') : 'Verhaal'} backTo="/route">
       <section className="parchment-card stack">
         <p className="eyebrow">{isBonusLocation(currentStop) ? 'Verborgen vondst' : `Opdracht ${currentStop.order} van ${pack.stops.length}`}</p>
-        <p className="muted small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p>
+        {!isCompleted ? <p className="muted small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p> : null}
         <h1>{currentStop.intro.title}</h1>
         <p>{currentStop.intro.text}</p>
         {currentStop.intro.audioSrc ? (
@@ -303,7 +303,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
         </section>
       ) : null}
 
-        {!isBonusLocation(currentStop) && !canPlay && fallbackDelayMs !== null ? (
+        {!isBonusLocation(currentStop) && !canPlay && !isCompleted && fallbackDelayMs !== null ? (
           <section className="observation-fallback stack" aria-label="Locatie bevestigen zonder GPS">
             <h3>Locatie bevestigen zonder GPS</h3>
             {!observationFallbackVisible ? (
@@ -356,7 +356,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
           </section>
         ) : null}
 
-        {isBonusLocation(currentStop) && !canPlay ? (
+        {isBonusLocation(currentStop) && !canPlay && !isCompleted ? (
           bonusQuestionAvailable ? (
             <section className="observation-fallback stack" aria-label="Bonuslocatie handmatig bevestigen">
               <h3>Locatie bevestigen zonder GPS</h3>
