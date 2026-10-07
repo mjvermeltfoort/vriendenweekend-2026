@@ -266,7 +266,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
       ) : null}
 
       {!isCompleted ? (
-        <section className="card stack" style={{ marginTop: '1rem' }}>
+        <section className="card card--compact stack stack--compact" style={{ marginTop: '0.5rem' }}>
           <p className="eyebrow">Vind de locatie</p>
           <h2>{currentStop.title}</h2>
           <p>{currentStop.navigation.clue}</p>
