@@ -226,9 +226,12 @@ export function StopPage({ pack }: { pack: GamePack }) {
     }
   }
 
-  const mapsUrl = currentStop.navigation.externalMapsQuery
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentStop.navigation.externalMapsQuery)}`
-    : null;
+  const mapsUrl = Number.isFinite(currentStop.coordinates.latitude)
+    && Number.isFinite(currentStop.coordinates.longitude)
+    ? `https://www.google.com/maps/search/?api=1&query=${currentStop.coordinates.latitude},${currentStop.coordinates.longitude}`
+    : currentStop.navigation.externalMapsQuery
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentStop.navigation.externalMapsQuery)}`
+      : null;
   const observationFallbackVisible = fallbackReady || fallbackDelayMs === 0;
   const fallbackRemainingSeconds = fallbackDelayMs === null
     ? null
