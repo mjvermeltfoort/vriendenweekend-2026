@@ -24,6 +24,10 @@ export function RoutePage({ pack }: { pack: GamePack }) {
   const completed = pack.stops.filter((stop) => progress?.stopProgress?.[stop.id]?.state === 'completed').length;
   const visibleBonuses = visibleBonusLocations(pack, progress);
   const visibleStops = finaleLocationRevealed ? pack.stops : pack.stops.filter((stop) => !stop.isFinal);
+  const nextStop = visibleStops.find((stop) => {
+    const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
+    return state !== 'completed';
+  });
   const teamLocationProvider = useMemo<LocationProvider>(() => ({
     async getCurrentPosition() {
       if (!teamLocation?.isCurrent) {
@@ -65,6 +69,14 @@ export function RoutePage({ pack }: { pack: GamePack }) {
         </button>
       </div>
       <ProgressBar value={completed} max={pack.stops.length} label="Herinneringen hersteld" />
+
+      {nextStop ? (
+        <section className="card stack" aria-label="Volgende stap">
+          <p className="eyebrow">Volgende stap</p>
+          <h2>{nextStop.title}</h2>
+          <p className="muted">{nextStop.navigation.clue}</p>
+        </section>
+      ) : null}
 
       {visibleBonuses.length > 0 && !bonusIntroSeen ? (
         <section className="card stack" aria-label="Introductie Verborgen Schubben">
