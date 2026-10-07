@@ -345,7 +345,8 @@ export async function updateTeamLocation(input: UpdateTeamLocationInput) {
     p_altitude_m: input.altitudeM ?? null,
     p_heading_deg: input.headingDeg ?? null,
     p_speed_mps: input.speedMps ?? null,
-    p_captured_at: input.capturedAt
+    p_captured_at: input.capturedAt,
+    p_user_agent: navigator.userAgent
   });
   return response.currentLocation;
 }
@@ -506,3 +507,4 @@ export function mergeRemoteProgress(team: TeamRecord, remote?: Partial<GameProgr
     stopProgress
   };
 }
+

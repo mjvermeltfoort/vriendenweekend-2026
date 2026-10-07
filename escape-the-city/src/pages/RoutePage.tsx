@@ -44,12 +44,12 @@ export function RoutePage({ pack }: { pack: GamePack }) {
   const bonusIntroKey = activeTeam ? `moerasdraak-bonus-intro:${activeTeam.id}` : '';
 
   useEffect(() => {
-    if (!bonusIntroKey) return;
-    setBonusIntroSeen(localStorage.getItem(bonusIntroKey) === 'seen');
+    if (!bonusIntroKey || typeof window === 'undefined') return;
+    setBonusIntroSeen(window.localStorage.getItem(bonusIntroKey) === 'seen');
   }, [bonusIntroKey]);
 
   function dismissBonusIntro() {
-    if (bonusIntroKey) localStorage.setItem(bonusIntroKey, 'seen');
+    if (bonusIntroKey && typeof window !== 'undefined') window.localStorage.setItem(bonusIntroKey, 'seen');
     setBonusIntroSeen(true);
   }
 
@@ -134,3 +134,4 @@ export function RoutePage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
+
