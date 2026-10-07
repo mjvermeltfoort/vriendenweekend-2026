@@ -238,6 +238,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
     <PageShell title={isCompleted ? 'Herinnering' : 'Verhaal'} backTo="/route">
       <section className="parchment-card stack">
         <p className="eyebrow">{isBonusLocation(currentStop) ? 'Verborgen vondst' : `Opdracht ${currentStop.order} van ${pack.stops.length}`}</p>
+        <p className="muted small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p>
         <h1>{currentStop.intro.title}</h1>
         <p>{currentStop.intro.text}</p>
         {currentStop.intro.audioSrc ? (
@@ -429,3 +430,4 @@ export function StopPage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
+
