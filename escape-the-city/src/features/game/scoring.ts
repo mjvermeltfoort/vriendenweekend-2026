@@ -21,5 +21,7 @@ export function calculateBonusScore(input: {
 }) {
   const attemptFactor = input.attempts <= 1 ? 1 : input.attempts === 2 ? 0.75 : 0.5;
   const hintFactor = input.hintsUsed > 0 ? 0.5 : 1;
-  return Math.max(50, Math.round(input.maximumPoints * Math.min(attemptFactor, hintFactor)));
+  const score = Math.round(input.maximumPoints * Math.min(attemptFactor, hintFactor));
+  return input.maximumPoints > 0 ? Math.max(50, score) : 0;
 }
+
