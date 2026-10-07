@@ -67,6 +67,8 @@ export interface TeamStateSnapshot {
   teamLocation: TeamLocation | null;
   activeSessionCount: number;
   lastSyncedAt: string;
+  pendingSyncCount?: number;
+  syncStatus?: 'synced' | 'pending' | 'offline';
 }
 
 export interface SyncQueueItem {
@@ -279,3 +281,4 @@ export function challengeAnswerIsCorrect(challenge: ChallengeConfig, answer: unk
 export function computeStopCompletionScore(game: GamePack, stop: RouteStop, progress: StopProgress) {
   return calculateStopScore(game, progress.hintsUsed, progress.attempts);
 }
+

@@ -72,6 +72,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const revealedHint = hintCount > 0 ? currentStop.hints[Math.min(hintCount, currentStop.hints.length) - 1] : null;
   const isFinal = currentStop.isFinal;
   const penalty = pack.scoring.hintPenalty[hintCount] ?? pack.scoring.hintPenalty.at(-1) ?? 0;
+  const openStops = pack.stops.filter((stopItem) => !progress.stopProgress[stopItem.id]?.completed).length;
 
   const canSubmit = (() => {
     if (currentStop.challenge.kind === 'choice') return choice.length > 0;
@@ -125,6 +126,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   return (
     <PageShell title="Opdracht" backTo={`/stop/${currentStop.id}`} navigation={false}>
       <p className="eyebrow center">{isBonusLocation(currentStop) ? 'Verborgen Schub' : `${currentStop.order} / ${pack.stops.length}`}</p>
+      <p className="center muted small">Nog {openStops} opdrachten open · hints kosten {penalty} punten</p>
       <section className="parchment-card challenge-card stack stack--large">
         {isFinal ? (
           <AudioPlayer
@@ -254,3 +256,4 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
+

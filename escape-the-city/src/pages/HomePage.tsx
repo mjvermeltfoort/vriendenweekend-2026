@@ -49,7 +49,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
               </button>
             </div>
             {isHomeSyncStatusVisible(syncStatus) ? (
-              <div className="home-sync-status">
+              <div className="home-sync-status" aria-live="polite">
                 <SyncStatus status={syncStatus} message={syncMessage} />
               </div>
             ) : null}
@@ -68,10 +68,21 @@ export function HomePage({ pack }: { pack: GamePack }) {
           </section>
 
           <section className="card stack">
+            <p className="eyebrow">Snel starten</p>
+            <h2>Drie stappen om op weg te gaan</h2>
+            <ol>
+              <li>Voer je teamcode in of ga verder met je team.</li>
+              <li>Zet locatie aan zodra je buiten gaat spelen.</li>
+              <li>Open daarna de route en bereid jullie eerste stop voor.</li>
+            </ol>
+            <Link className="button primary" to={lastTeam ? '/voorbereiden' : '/team'}>{lastTeam ? 'Verder spelen' : 'Teamcode invoeren'}</Link>
+          </section>
+
+          <section className="card stack">
             <p className="eyebrow">De legende</p>
             <h2>Herstel zeven herinneringen</h2>
             <p>Reis door Den Bosch, vind bijzondere plekken en ontrafel het verhaal van de Moerasdraak. De eindlocatie wordt pas na alle opdrachten onthuld.</p>
-            <Link className="button primary" to={lastTeam ? '/voorbereiden' : '/team'}>{lastTeam ? 'Verder spelen' : 'Teamcode invoeren'}</Link>
+            <Link className="button secondary" to={lastTeam ? '/route' : '/team'}>{lastTeam ? 'Bekijk route' : 'Start met teamcode'}</Link>
           </section>
 
           {lastTeam ? (
@@ -88,3 +99,4 @@ export function HomePage({ pack }: { pack: GamePack }) {
     </main>
   );
 }
+

@@ -453,3 +453,4 @@ export function hasWebGlSupport() {
     return false;
   }
 }
+
