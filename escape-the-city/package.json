@@ -1,7 +1,7 @@
 {
   "name": "escape-the-city-den-bosch",
   "private": true,
-  "version": "0.1.20",
+  "version": "0.1.22",
   "type": "module",
   "engines": {
     "node": ">=26.5.0 <27"
@@ -12,7 +12,8 @@
     "lint": "tsc -p tsconfig.json --noEmit --pretty false",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify:dist": "node -e \"(function(){const fs=require('fs');const p=require('path');const d='dist';if(!fs.existsSync(d)){console.error('dist not found; run npm run build first');process.exit(2);}const hits=[];function walk(dir){for(const f of fs.readdirSync(dir)){const fp=p.join(dir,f);const st=fs.statSync(fp);if(st.isDirectory())walk(fp);else if(/\\.(js|html|css)$/.test(f)){const c=fs.readFileSync(fp,'utf8');if(/\\bvoid\\s+tsx\\b|\\btsx\\s*;/.test(c))hits.push(fp);}}}walk(d);if(hits.length){console.error('ERROR: bundle contains stray tsx reference in:\\n'+hits.join('\\n'));process.exit(1);}else{console.log('OK: no stray tsx reference in dist');}})();\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
@@ -34,4 +35,3 @@
     "vitest": "^3.2.4"
   }
 }
-
