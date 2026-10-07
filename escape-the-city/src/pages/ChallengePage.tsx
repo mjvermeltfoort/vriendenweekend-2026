@@ -72,7 +72,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const revealedHint = hintCount > 0 ? currentStop.hints[Math.min(hintCount, currentStop.hints.length) - 1] : null;
   const isFinal = currentStop.isFinal;
   const penalty = pack.scoring.hintPenalty[hintCount] ?? pack.scoring.hintPenalty.at(-1) ?? 0;
-  const openStops = pack.stops.filter((stopItem) => !progress.stopProgress[stopItem.id]?.completed).length;
+  const openStops = pack.stops.filter((stopItem) => progress.stopProgress[stopItem.id]?.state !== 'completed').length;
 
   const canSubmit = (() => {
     if (currentStop.challenge.kind === 'choice') return choice.length > 0;
@@ -256,4 +256,3 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
-

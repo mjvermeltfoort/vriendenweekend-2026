@@ -127,7 +127,7 @@ export function GameTopBar({ title, backTo }: { title: string; backTo?: string }
 }
 
 export function BottomGameNavigation() {
-  const { progress } = useGame();
+  const { progress, syncStatus, syncMessage } = useGame();
   const location = useLocation();
   const currentStop = progress?.currentStopId ? `/stop/${progress.currentStopId}` : '/route';
   const links = [
@@ -152,14 +152,8 @@ export function BottomGameNavigation() {
       ))}
       <div className="bottom-nav__status" aria-live="polite">
         <SyncStatus
-          status={progress?.syncState === 'offline' ? 'offline' : progress?.syncState === 'syncing' ? 'syncing' : 'saved'}
-          message={
-            progress?.syncState === 'offline'
-              ? 'Offline'
-              : progress?.syncState === 'syncing'
-                ? 'Synchroniseren'
-                : 'Opgeslagen'
-          }
+          status={syncStatus}
+          message={syncMessage}
         />
       </div>
     </nav>
@@ -283,4 +277,3 @@ export function HintDialog({
 export function StoryLink({ to, children }: { to: string; children: ReactNode }) {
   return <Link className="text-link" to={to}>{children}</Link>;
 }
-
