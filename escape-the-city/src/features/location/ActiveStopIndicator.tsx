@@ -72,34 +72,33 @@ export function ActiveStopIndicator({
       : location.accuracyM <= 40
         ? 'Locatie redelijk'
         : 'Locatie nog onnauwkeurig';
-  const nextStep = verified
-    ? 'Volgende stap: open de opdracht.'
-    : displayedDistance !== null
-      ? 'Volgende stap: loop verder tot de afstand kleiner wordt.'
-      : 'Volgende stap: wacht op een nauwkeurige GPS-metingen.';
+
+  // Compacte presentatie: één hoofdregel met status/afstand en eventueel een subtitel
+  let mainLine: string;
+  let subLine: string | null = null;
+
+  if (verified) {
+    mainLine = 'Locatie bereikt';
+  } else if (stop.id === pack.startStopId) {
+    mainLine = `Startlocatie: ${stop.locationName}`;
+    subLine = 'GPS wordt automatisch gecontroleerd.';
+  } else if (displayedDistance !== null) {
+    mainLine = `Nog ${formattedWalkingDistance(displayedDistance)}`;
+    subLine = walkingStatus(displayedDistance);
+  } else {
+    mainLine = routeError ? 'Loopafstand tijdelijk niet beschikbaar.' : 'Loopafstand bepalen…';
+  }
 
   return (
     <section className="active-stop-indicator" aria-label="Afstand tot actuele stop">
       <p className="eyebrow">Actuele stop</p>
       <h2>{stop.title}</h2>
-      <p className="muted small">{nextStep}</p>
       <div aria-live="polite">
-        {verified ? (
-          <p className="active-stop-indicator__status">Locatie bereikt</p>
-        ) : stop.id === pack.startStopId ? (
-          <>
-            <p>Startlocatie: {stop.locationName}</p>
-            <p className="active-stop-indicator__status">Bij de start controleren we je GPS automatisch.</p>
-          </>
-        ) : displayedDistance !== null ? (
-          <>
-            <p className="active-stop-indicator__distance">Nog ongeveer {formattedWalkingDistance(displayedDistance)} lopen</p>
-            <progress max="100" value={progressValue} aria-label="Voortgang van de actieve etappe" />
-            <p className="active-stop-indicator__status">{walkingStatus(displayedDistance)}</p>
-          </>
-        ) : (
-          <p>{routeError ? 'Loopafstand tijdelijk niet beschikbaar.' : 'Loopafstand bepalen…'}</p>
-        )}
+        <p className={verified ? 'active-stop-indicator__status' : 'active-stop-indicator__distance'}>{mainLine}</p>
+        {!verified && displayedDistance !== null ? (
+          <progress max="100" value={progressValue} aria-label="Voortgang naar de stop" />
+        ) : null}
+        {subLine ? <p className="muted small">{subLine}</p> : null}
         {!verified ? <p className="muted small">{gpsStatus}</p> : null}
       </div>
       {verified && showOpenButton ? (
