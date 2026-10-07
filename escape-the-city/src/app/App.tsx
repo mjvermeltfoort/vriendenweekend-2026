@@ -52,6 +52,20 @@ function ContrastController() {
   return <DocumentContrast enabled={settings.highContrastEnabled} />;
 }
 
+function AppStatusHint() {
+  const location = useLocation();
+
+  if (location.pathname === '/') {
+    return <p>Start: teamcode, locatie aan en route voorbereiden.</p>;
+  }
+
+  if (location.pathname === '/route') {
+    return <p>Volgende stap: open de kaart en ga naar de gemarkeerde stop.</p>;
+  }
+
+  return null;
+}
+
 export function App() {
   const validation = validateGamePack(gamePack);
   if (!validation.valid) {
@@ -64,6 +78,7 @@ export function App() {
       <ContrastController />
       <InstallBanner />
       <FloatingTeamRadio />
+      <AppStatusHint />
       <Routes>
         <Route path="/" element={<HomePage pack={gamePack} />} />
         <Route path="/team" element={<TeamPage pack={gamePack} />} />
@@ -79,3 +94,4 @@ export function App() {
     </>
   );
 }
+
