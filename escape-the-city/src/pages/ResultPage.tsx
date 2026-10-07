@@ -42,6 +42,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
   const bonusPoints = completedBonuses.reduce((total, bonus) => total + (progress.stopProgress[bonus.id]?.scoreAwarded ?? 0), 0)
     + (completedBonuses.length === bonuses.length ? pack.bonusCompletionReward?.points ?? 0 : 0);
   const isSchubbenjagers = bonuses.length > 0 && completedBonuses.length === bonuses.length;
+  const resultDate = new Date(result?.createdAt ?? Date.now()).toLocaleDateString('nl-NL');
 
   async function exportPng(share: boolean) {
     const canvas = canvasRef.current;
@@ -156,4 +157,3 @@ export function ResultPage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
-
