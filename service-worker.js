@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'vriendenweekend-dossier-shell-';
-const CACHE_NAME = `${CACHE_PREFIX}v44`;
+const CACHE_NAME = `${CACHE_PREFIX}v45`;
 const ESCAPE_THE_CITY_PATH = new URL('./escape-the-city/', self.registration.scope).pathname;
 
 const APP_SHELL = [
@@ -130,3 +130,4 @@ self.addEventListener('fetch', event => {
     )
   );
 });
+
