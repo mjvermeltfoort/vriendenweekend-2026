@@ -12,7 +12,8 @@
     "lint": "tsc -p tsconfig.json --noEmit --pretty false",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "ci": "npm run lint && npm run test && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
@@ -34,4 +35,3 @@
     "vitest": "^3.2.4"
   }
 }
-
