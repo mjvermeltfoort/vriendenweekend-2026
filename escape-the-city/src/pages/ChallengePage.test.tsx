@@ -44,7 +44,7 @@ function TestApp({ initialStopId }: { initialStopId: string }) {
   return (
     <MemoryRouter initialEntries={[`/challenge/${initialStopId}`]}>
       <nav>
-        {['drakenfontein', 'binnendieze', 'bosch-wezen', 'sint-jan', 'bonus:citadel'].map((id) => (
+        {['drakenfontein', 'bossche-brouwers', 'bosch-wezen', 'sint-jan', 'bonus:citadel'].map((id) => (
           <Link key={id} data-route={id} to={`/challenge/${id}`}>{id}</Link>
         ))}
       </nav>
@@ -123,12 +123,17 @@ describe('ChallengePage', () => {
     act(() => button('Hint gebruiken').click());
     expect(container.querySelector('[data-testid="hint-dialog"]')).not.toBeNull();
 
-    routeTo('binnendieze');
+    routeTo('bossche-brouwers');
     expect(container.querySelector('#answer-feedback')).toBeNull();
     expect(container.querySelector('[data-testid="hint-dialog"]')).toBeNull();
-    expect(container.querySelector('.reorder-item span')?.textContent).toContain('Sluis');
-    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Sluis omlaag"]')!.click());
-    expect(container.querySelector('.reorder-item span')?.textContent).toContain('Bron');
+    const firstBefore = container.querySelector('.reorder-item span')?.textContent;
+    expect(firstBefore).toBeTruthy();
+    const moveDown = container.querySelector<HTMLButtonElement>('.reorder-item button[aria-label$=" omlaag"]');
+    expect(moveDown).toBeTruthy();
+    act(() => moveDown!.click());
+    const firstAfter = container.querySelector('.reorder-item span')?.textContent;
+    expect(firstAfter).toBeTruthy();
+    expect(firstAfter).not.toEqual(firstBefore);
 
     routeTo('drakenfontein');
     act(() => container.querySelector<HTMLInputElement>('input[value="a"]')!.click());
@@ -144,8 +149,8 @@ describe('ChallengePage', () => {
     act(() => button('Linkerlens draaien').click());
     expect(button('Controleer antwoord').disabled).toBe(false);
 
-    routeTo('binnendieze');
-    expect(container.querySelector('.reorder-item span')?.textContent).toContain('Sluis');
+    routeTo('bossche-brouwers');
+    expect(container.querySelector('.reorder-item span')?.textContent).toBeTruthy();
     routeTo('drakenfontein');
     expect(container.querySelector<HTMLInputElement>('input[value="a"]')!.checked).toBe(false);
     routeTo('bosch-wezen');

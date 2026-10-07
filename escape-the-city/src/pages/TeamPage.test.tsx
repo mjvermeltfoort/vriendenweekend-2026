@@ -39,11 +39,14 @@ vi.mock('react-router-dom', async () => {
 import { TeamPage } from './TeamPage';
 import { gamePack } from '../game-data/moerasdraak/game';
 
+const actEnvironment = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
+
 describe('TeamPage', () => {
   const container = document.createElement('div');
   const root = createRoot(container);
 
   beforeEach(() => {
+    actEnvironment.IS_REACT_ACT_ENVIRONMENT = true;
     container.innerHTML = '';
     vi.clearAllMocks();
   });
@@ -53,6 +56,7 @@ describe('TeamPage', () => {
       root.render(null);
     });
     container.innerHTML = '';
+    actEnvironment.IS_REACT_ACT_ENVIRONMENT = false;
   });
 
   it('only renders team-code join flow when there is no active team', () => {

@@ -86,7 +86,7 @@ export const gamePack: GamePack = {
         categories: {
           Oud: ['Betonresten', 'Bakstenen resten', 'Houten balk'],
           Modern: ['Glazen boog', 'Stalen poort', 'Kunststof hek'],
-          Spoor in straat: ['Rode klinkers', 'Blauwe stenen', 'Witte tegels']
+          'Spoor in straat': ['Rode klinkers', 'Blauwe stenen', 'Witte tegels']
         },
         correctAnswer: {
           Oud: 'Bakstenen resten',
