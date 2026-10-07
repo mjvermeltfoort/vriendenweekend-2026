@@ -1,0 +1,73 @@
+name: Escape the City checks
+
+on:
+  pull_request:
+    paths:
+      - 'escape-the-city/**'
+      - '.github/workflows/escape-the-city-checks.yml'
+      - '.github/scripts/browser-smoke.py'
+      - '.nvmrc'
+  push:
+    paths:
+      - 'escape-the-city/**'
+      - '.github/workflows/escape-the-city-checks.yml'
+      - '.github/scripts/browser-smoke.py'
+      - '.nvmrc'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: city-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: escape-the-city
+    env:
+      # Smoke tests must never connect to the production backend.
+      VITE_SUPABASE_URL: https://smoke-test.supabase.co
+      VITE_SUPABASE_ANON_KEY: smoke-test-public-key
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: escape-the-city/package-lock.json
+      - name: Install dependencies
+        id: dependencies
+        run: npm ci
+      - name: Check TypeScript
+        run: npm run lint
+      - name: Run unit tests
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: npm test
+      - name: Build production assets
+        id: build
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: npm run build
+      - uses: actions/setup-python@v6
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        with:
+          python-version: '3.11'
+      - name: Install browser test tooling
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          python -m pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Check browser startup
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python ../.github/scripts/browser-smoke.py
+      - name: Upload browser diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-smoke-diagnostics
+          path: escape-the-city/test-results/browser-smoke/
+          if-no-files-found: ignore
