@@ -2,3 +2,9 @@
 dist/
 node_modules/
 *.tsbuildinfo
+
+# Tooling/agent werkmappen (niet in repo)
+.agents/
+.cave/
+.forge/
+.continue/
