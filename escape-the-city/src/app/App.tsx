@@ -55,10 +55,6 @@ function ContrastController() {
 function AppStatusHint() {
   const location = useLocation();
 
-  if (location.pathname === '/') {
-    return <p>Start: teamcode, locatie aan en route voorbereiden.</p>;
-  }
-
   if (location.pathname === '/route') {
     return <p>Volgende stap: open de kaart en ga naar de gemarkeerde stop.</p>;
   }
