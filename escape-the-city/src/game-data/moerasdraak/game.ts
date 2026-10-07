@@ -74,20 +74,29 @@ export const gamePack: GamePack = {
       id: 'binnendieze',
       order: 3,
       slug: 'binnendieze',
-      title: 'De Verdwenen Stroom',
-      shortTitle: 'Water',
+      title: 'Onder de Stad',
+      shortTitle: 'Waterpoort',
       locationName: 'Waterpoort, Herman Moerkerkpark',
       coordinates: { latitude: 51.689641, longitude: 5.305190, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      intro: { title: 'Onder de stad', text: 'Zet de waterstromen in juiste volgorde.', audioSrc: audioAsset('03-binnendieze.mp3'), transcript: audioTranscripts.binnendieze },
-      navigation: { clue: 'Volg het water waar de stad haar geheimen bewaart.', fallbackDirections: 'Zoek een toegangspunt tot de Binnendieze.', externalMapsQuery: 'Binnendieze Den Bosch' },
+      intro: { title: 'Sporen van de Waterpoort', text: 'Zoek oud metselwerk, een moderne stalen poort en de blauwe stenen in de straat.', audioSrc: audioAsset('03-binnendieze.mp3'), transcript: audioTranscripts.binnendieze },
+      navigation: { clue: 'Zoek de plek waar oude bakstenen resten en een moderne stalen poort samen laten zien waar vroeger de Waterpoort stond.', fallbackDirections: 'Zoek een toegangspunt tot de Binnendieze.', externalMapsQuery: 'Binnendieze Den Bosch' },
       challenge: {
-        kind: 'reorder',
-        prompt: 'Welke route klopt?',
-        items: ['Sluis', 'Bron', 'Stad', 'Kanaal'],
-        correctOrder: ['Bron', 'Kanaal', 'Sluis', 'Stad'],
-        wrongFeedback: 'De stroom loopt anders.'
+        kind: 'composite',
+        prompt: 'Welke drie dingen komen hier samen en verraden waar de oude Waterpoort stond?',
+        categories: {
+          old: ['Betonresten', 'Bakstenen resten', 'Houten balk'],
+          modern: ['Glazen boog', 'Stalen poort', 'Kunststof hek'],
+          trace: ['Rode klinkers', 'Blauwe stenen', 'Witte tegels']
+        },
+        correctAnswer: {
+          old: 'Bakstenen resten',
+          modern: 'Stalen poort',
+          trace: 'Blauwe stenen'
+        },
+        summaryTemplate: 'Oud: {old}, nieuw: {modern}, spoor: {trace}.',
+        wrongFeedback: 'Kijk naar oud, nieuw en sporen in de straat.'
       },
-      hints: [{ id: 'h1', text: 'Water beweegt altijd van begin naar eind.' }],
+      hints: [{ id: 'h1', text: 'Let op contrast tussen oud metselwerk, een moderne constructie en de gekleurde stenen in de straat.' }],
       reward: { title: 'Water', text: 'De stroom is onthuld.', symbol: '💧' }
     },
     {
