@@ -8,7 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './styles/global.css';
 
 // Build bump to force a new hashed bundle for deployment/SW cache refresh
-const BUILD_ID = '2026-10-07-01';
+const BUILD_ID = '2026-10-07-02';
 if (typeof document !== 'undefined') {
   document.documentElement.setAttribute('data-ec-build', BUILD_ID);
   // Log for diagnostics (harmless in production)
