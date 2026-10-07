@@ -40,7 +40,7 @@ export const gamePack: GamePack = {
           { id: 'a', label: 'Water', correct: true },
           { id: 'c', label: 'Zand', correct: false }
         ],
-        correctFeedback: 'Goed: de eerste herinnering komt uit water.',
+        correctFeedback: 'Goed: bij het water vinden jullie de herinnering aan vuur.',
         wrongFeedback: 'Nog niet. Kijk opnieuw naar de fontein.'
       },
       hints: [{ id: 'h1', text: 'De fontein staat niet bij een winkelstraat.' }],
@@ -58,7 +58,7 @@ export const gamePack: GamePack = {
       navigation: { clue: 'Let op gevels en details rond Gerritje.', fallbackDirections: 'Loop naar Zoete Lieve Gerritje.', externalMapsQuery: 'Zoete Lieve Gerritje Den Bosch' },
       challenge: {
         kind: 'choice',
-        prompt: 'Welke verklaring klopt niet?',
+        prompt: 'Welke verklaring past bij deze plek?',
         options: [
           { id: 'a', label: 'De brug lag hier altijd al', correct: false },
           { id: 'b', label: 'Er stroomt water onder de stad', correct: true },

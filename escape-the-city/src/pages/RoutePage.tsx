@@ -128,8 +128,16 @@ export function RoutePage({ pack }: { pack: GamePack }) {
             <h2>{finaleLocationRevealed ? 'Bossche Brouwers' : 'Verborgen eindlocatie'}</h2>
           </div>
         </div>
-        <p>{finaleLocationRevealed ? 'Alle herinneringen zijn hersteld. De eindlocatie is onthuld.' : `Nog ${finale.missingCount} opdrachten te voltooien voordat de eindlocatie wordt onthuld.`}</p>
-        {finale.eligible ? <Link className="button primary" to="/stop/bossche-brouwers">Naar finale</Link> : progress?.finalized ? <Link className="button secondary" to="/resultaat">Bekijk resultaat</Link> : <span className="button" aria-disabled="true">Eindlocatie verborgen</span>}
+        <p>{progress?.finalized
+          ? 'Alle zeven herinneringen zijn hersteld.'
+          : finaleLocationRevealed
+            ? 'Zes herinneringen zijn hersteld'
+            : `Nog ${finale.missingCount} opdrachten te voltooien voordat de eindlocatie wordt onthuld.`}</p>
+        {progress?.finalized
+          ? <Link className="button secondary" to="/resultaat">Bekijk resultaat</Link>
+          : finale.eligible
+            ? <Link className="button primary" to="/stop/bossche-brouwers">Naar finale</Link>
+            : <span className="button" aria-disabled="true">Eindlocatie verborgen</span>}
       </section>
     </PageShell>
   );

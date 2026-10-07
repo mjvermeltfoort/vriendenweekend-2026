@@ -121,6 +121,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
         <div className="result-stat"><GameIcon name="time" /><span>Tijd</span><strong>{result?.durationMinutes ?? 0} min</strong></div>
         <div className="result-stat"><GameIcon name="lightbulb" /><span>Hints</span><strong>{hints}</strong></div>
         <div className="result-stat"><GameIcon name="star" /><span>Score</span><strong>{score}</strong></div>
+        <div className="result-stat"><GameIcon name="scroll" /><span>Fouten</span><strong>{wrongAttempts}</strong></div>
         <div className="result-stat"><span aria-hidden="true">◈</span><span>Schubben</span><strong>{completedBonuses.length} / {bonuses.length}</strong></div>
       </section>
 

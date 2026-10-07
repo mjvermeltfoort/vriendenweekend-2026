@@ -1,0 +1,33 @@
+{
+  "name": "Het Geheim van de Moerasdraak",
+  "short_name": "Moerasdraak",
+  "version": "0.1.20",
+  "start_url": "/escape-the-city/",
+  "scope": "/escape-the-city/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "nl-NL",
+  "theme_color": "#07100d",
+  "background_color": "#030806",
+  "description": "Mobiele PWA voor Escape the City in Den Bosch.",
+  "icons": [
+    {
+      "src": "/escape-the-city/icons/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/escape-the-city/icons/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/escape-the-city/icons/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

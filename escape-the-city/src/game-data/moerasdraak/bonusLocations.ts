@@ -16,9 +16,9 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Waar oud steenwerk een roestkleurig pantser draagt.', revealedDescription: 'De oude poort is verdwenen, maar haar verdediging leeft voort.', estimatedDetourMinutes: 3,
     recommendedBetween: { afterStopId: 'drakenfontein', beforeStopId: 'zoete-lieve-gerritje' }, visibleAfterStopId: 'drakenfontein', maximumPoints: 100,
     manualVerification: { questionId: 'bonus-bolwerk-primary', question: 'Welke twee materialen ontmoeten elkaar hier het duidelijkst?' },
-    intro: { title: 'De Verloren Poort', text: 'Een schub wacht bij de oude stadsentree.' },
+    intro: { title: 'De Verloren Poort', text: 'Tussen stadspoort en bolwerk bleef de verdediging zichtbaar.' },
     navigation: { clue: 'Waar oud steenwerk een roestkleurig pantser draagt.', fallbackDirections: 'Volg de Sint-Janssingel naar de stadsentree.', externalMapsQuery: 'Bolwerk Sint-Jan Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Welke twee materialen ontmoeten elkaar hier het duidelijkst?', options: [{ id: 'b', label: 'Hout en natuursteen', correct: false }, { id: 'a', label: 'Baksteen en roestkleurig staal', correct: true }, { id: 'c', label: 'Beton en koper', correct: false }, { id: 'd', label: 'Glas en marmer', correct: false }], correctFeedback: 'De Poortschub is gevonden.', wrongFeedback: 'Kijk nog eens naar het steenwerk.' },
+    challenge: { kind: 'choice', prompt: 'Kijk naar de sporen van verdediging: wat herken je hier het best?', options: [{ id: 'b', label: 'Hout en natuursteen', correct: false }, { id: 'a', label: 'Stadsentree en verdedigingspoort', correct: true }, { id: 'c', label: 'Beton en koper', correct: false }, { id: 'd', label: 'Glas en marmer', correct: false }], correctFeedback: 'De Poortschub is gevonden.', wrongFeedback: 'Kijk nog eens naar het steenwerk.' },
     hints: [{ id: 'h1', text: 'Let op de kleur en textuur van de bescherming.' }], reward: { id: 'poortschub', title: 'Poortschub', text: 'De verdediging leeft voort.', symbol: '◈', resultLabel: 'Poortschub' }
   },
   {
@@ -27,9 +27,9 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Zoek een belangrijk man die maar voor de helft aanwezig is.', revealedDescription: 'In Oeteldonk is een halve oplossing soms precies genoeg.', estimatedDetourMinutes: 5,
     recommendedBetween: { afterStopId: 'zoete-lieve-gerritje', beforeStopId: 'binnendieze' }, visibleAfterStopId: 'drakenfontein', maximumPoints: 200,
     manualVerification: { questionId: 'bonus-halve-peer-primary', question: 'Waar bevindt de afgebeelde helft zich?' },
-    intro: { title: 'De Ontbrekende Helft', text: 'Een halve figuur bewaart een hele schub.' },
+    intro: { title: 'De Ontbrekende Helft', text: 'Twee partijen begonnen hier iets; één partij liet een halve oplossing achter.' },
     navigation: { clue: 'Zoek een belangrijk man die maar voor de helft aanwezig is.', fallbackDirections: 'Zoek de gevel bij de Korenbrugstraat.', externalMapsQuery: 'De Halve Peer Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Waar bevindt de afgebeelde helft zich?', options: [{ id: 'a', label: 'Op een brugleuning', correct: false }, { id: 'b', label: 'Tegen een gevel boven de Binnendieze', correct: true }, { id: 'c', label: 'Op een sokkel op straat', correct: false }, { id: 'd', label: 'Boven op een stadspoort', correct: false }], correctFeedback: 'De Narrenschub is gevonden.', wrongFeedback: 'Zoek hoger, bij de gevel.' },
+    challenge: { kind: 'choice', prompt: 'Wat vertelt de ontbrekende helft over de plek?', options: [{ id: 'a', label: 'Op een brugleuning', correct: false }, { id: 'b', label: 'Slechts een van de twee partijen betaalde mee', correct: true }, { id: 'c', label: 'Op een sokkel op straat', correct: false }, { id: 'd', label: 'Boven op een stadspoort', correct: false }], correctFeedback: 'De Narrenschub is gevonden.', wrongFeedback: 'Zoek hoger, bij de gevel.' },
     hints: [{ id: 'h1', text: 'De helft kijkt niet vanaf straatniveau terug.' }], reward: { id: 'narrenschub', title: 'Narrenschub', text: 'Een halve oplossing was genoeg.', symbol: '◈', resultLabel: 'Narrenschub' }
   },
   {
@@ -38,9 +38,9 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Vind het stenen huis dat aan de slopershamer ontsnapte.', revealedDescription: 'Steen onthoudt wat mensen bijna verloren lieten gaan.', estimatedDetourMinutes: 5,
     recommendedBetween: { afterStopId: 'binnendieze', beforeStopId: 'bosch-wezen' }, visibleAfterStopId: 'zoete-lieve-gerritje', maximumPoints: 150,
     manualVerification: { questionId: 'bonus-moriaan-primary', question: 'Welke combinatie herken je aan dit gebouw?' },
-    intro: { title: 'Het Huis dat Bleef Staan', text: 'Een oud huis bewaart een stenen herinnering.' },
+    intro: { title: 'Het Huis dat Bleef Staan', text: 'Een woonhuis dat geldt als een van de oudste bakstenen in de stad bleef hier behouden.' },
     navigation: { clue: 'Vind het stenen huis dat aan de slopershamer ontsnapte.', fallbackDirections: 'Ga naar Markt 77.', externalMapsQuery: 'De Moriaan Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Welke combinatie herken je aan dit gebouw?', options: [{ id: 'b', label: 'Glazen gevel, plat dak en metalen balkon', correct: false }, { id: 'a', label: 'Trapgevel, rond hoektorentje en spitsboogdetails', correct: true }, { id: 'c', label: 'Houten topgevel, klokkentoren en zuilen', correct: false }, { id: 'd', label: 'Witte lijstgevel, koepel en arcade', correct: false }], correctFeedback: 'De Steenschub is gevonden.', wrongFeedback: 'Kijk naar de gevelvormen.' },
+    challenge: { kind: 'choice', prompt: 'Wat maakt dit gebouw historisch bijzonder?', options: [{ id: 'b', label: 'Glazen gevel, plat dak en metalen balkon', correct: false }, { id: 'a', label: 'Het is een van de oudste bakstenen woonhuizen', correct: true }, { id: 'c', label: 'Houten topgevel, klokkentoren en zuilen', correct: false }, { id: 'd', label: 'Witte lijstgevel, koepel en arcade', correct: false }], correctFeedback: 'De Steenschub is gevonden.', wrongFeedback: 'Kijk naar de gevelvormen.' },
     hints: [{ id: 'h1', text: 'Zoek vormen die ouder zijn dan de winkelstraat.' }], reward: { id: 'steenschub', title: 'Steenschub', text: 'Steen bewaart de herinnering.', symbol: '◈', resultLabel: 'Steenschub' }
   },
   {
@@ -49,9 +49,9 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Een vogel bewaakt een huis dat ouder is dan zijn gevel.', revealedDescription: 'De zwaan ziet wat beneden vaak onopgemerkt blijft.', estimatedDetourMinutes: 4,
     recommendedBetween: { afterStopId: 'sint-jan', beforeStopId: 'kruithuis' }, visibleAfterStopId: 'binnendieze', maximumPoints: 150,
     manualVerification: { questionId: 'bonus-zwanenbroedershuis-primary', question: 'Welk dier staat helemaal boven op de gevel?' },
-    intro: { title: 'De Wachter op de Gevel', text: 'Kijk omhoog naar de gevelwachter.' },
+    intro: { title: 'De Wachter op de Gevel', text: 'De Illustre Lieve Vrouwe Broederschap liet hier een zwaan achter.' },
     navigation: { clue: 'Een vogel bewaakt een huis dat ouder is dan zijn gevel.', fallbackDirections: 'Ga naar Hinthamerstraat 94.', externalMapsQuery: 'Zwanenbroedershuis Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Welk dier staat helemaal boven op de gevel?', options: [{ id: 'a', label: 'Adelaar', correct: false }, { id: 'b', label: 'Zwaan', correct: true }, { id: 'c', label: 'Ooievaar', correct: false }, { id: 'd', label: 'Raaf', correct: false }], correctFeedback: 'De Veerschub is gevonden.', wrongFeedback: 'Kijk nog iets hoger.' },
+    challenge: { kind: 'choice', prompt: 'Welke organisatie is met dit huis verbonden?', options: [{ id: 'a', label: 'Schuttersgilde', correct: false }, { id: 'b', label: 'De Illustre Lieve Vrouwe Broederschap', correct: true }, { id: 'c', label: 'Gilde van Sint-Jan', correct: false }, { id: 'd', label: 'VOC', correct: false }], correctFeedback: 'De Veerschub is gevonden.', wrongFeedback: 'Lees de naam boven de deur.' },
     hints: [{ id: 'h1', text: 'De naam van het huis helpt.' }], reward: { id: 'veerschub', title: 'Veerschub', text: 'De gevelwachter ziet alles.', symbol: '◈', resultLabel: 'Veerschub' }
   },
   {
