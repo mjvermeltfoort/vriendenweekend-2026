@@ -1,7 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-declare const tsx: unknown;
-void tsx;
 import { HashRouter } from 'react-router-dom';
 import { App } from './app/App';
 import { Providers } from './app/providers';
@@ -20,4 +18,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </Providers>
   </React.StrictMode>
 );
+
 
