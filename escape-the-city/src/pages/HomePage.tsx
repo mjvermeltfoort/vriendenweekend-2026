@@ -68,16 +68,6 @@ export function HomePage({ pack }: { pack: GamePack }) {
             </div>
           </section>
 
-          <section className="card stack">
-            <p className="eyebrow">Snel starten</p>
-            <h2>Drie stappen om op weg te gaan</h2>
-            <ol>
-              <li>Voer je teamcode in of ga verder met je team.</li>
-              <li>Zet locatie aan zodra je buiten gaat spelen.</li>
-              <li>Open daarna de route en bereid jullie eerste stop voor.</li>
-            </ol>
-            <Link className="button primary" to={lastTeam ? '/voorbereiden' : '/team'}>{lastTeam ? 'Verder spelen' : 'Teamcode invoeren'}</Link>
-          </section>
 
           <section className="card stack">
             <p className="eyebrow">De legende</p>
