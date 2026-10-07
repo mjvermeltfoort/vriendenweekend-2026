@@ -26,8 +26,8 @@ export function RouteMarker({ stop, status, selected, style, onSelect }: RouteMa
   const markerLabel = locked
     ? `Stop ${stop.order}, verborgen en vergrendeld`
     : bonus
-      ? `Verborgen schub, ${statusHintLabels[status]}`
-      : `Stop ${stop.order}: ${stop.title}, ${statusHintLabels[status]}`;
+      ? `Verborgen schub, ${statusLabels[status]}`
+      : `Stop ${stop.order}: ${stop.title}, ${statusLabels[status]}`;
 
   return (
     <button
@@ -50,4 +50,3 @@ export function RouteMarker({ stop, status, selected, style, onSelect }: RouteMa
     </button>
   );
 }
-

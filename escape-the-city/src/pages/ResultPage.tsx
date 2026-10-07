@@ -34,6 +34,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
     return <Navigate to="/route" replace />;
   }
   const score = result?.score ?? progress?.totalScore ?? 0;
+  const resultDate = new Date(result?.createdAt ?? Date.now()).toLocaleDateString('nl-NL');
   const hints = result?.hintsUsed ?? progress?.totalHintsUsed ?? 0;
   const wrongAttempts = result?.wrongAttempts ?? progress?.wrongAttempts ?? 0;
   const symbols = result?.symbols ?? progress?.collectedRewards ?? [];
@@ -156,4 +157,3 @@ export function ResultPage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
-

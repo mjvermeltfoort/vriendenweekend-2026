@@ -88,12 +88,11 @@ export function App() {
         <Route path="/challenge/:stopId" element={<ChallengePage pack={gamePack} />} />
         <Route path="/resultaat" element={<ResultPage pack={gamePack} />} />
         <Route path="/instellingen" element={<SettingsPage />} />
-        {import.meta.env.DEV ? <Route path="/dev/design-system" element={React.createElement(DesignSystemPage)} /> : null}
+        {import.meta.env.DEV ? <Route path="/dev/design-system" element={<DesignSystemPage />} /> : null}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
 }
-
 
 
