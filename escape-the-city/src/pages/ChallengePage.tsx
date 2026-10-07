@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { canAccessChallenge, isFinaleLocationRevealed, locationById } from '../features/game/gameState';
+import { canAccessChallenge, canViewResult, hasLocationUnlock, isFinaleLocationRevealed, locationById } from '../features/game/gameState';
 import { isBonusLocation } from '../features/game/gameTypes';
 import { GameIcon, HintDialog, PageShell } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
@@ -74,6 +74,9 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const penalty = pack.scoring.hintPenalty[hintCount] ?? pack.scoring.hintPenalty.at(-1) ?? 0;
   const openStops = pack.stops.filter((stopItem) => progress.stopProgress[stopItem.id]?.state !== 'completed').length;
 
+  const gameCompleted = progress ? canViewResult(progress, pack) : false;
+  const showParchment = !gameCompleted && (progress ? (hasLocationUnlock(progress, currentStop.id) || canAccessChallenge(progress, currentStop.id)) : false);
+
   const canSubmit = (() => {
     if (currentStop.challenge.kind === 'choice') return choice.length > 0;
     if (currentStop.challenge.kind === 'code') return code.length === currentStop.challenge.answerLength;
@@ -127,7 +130,8 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     <PageShell title="Opdracht" backTo={`/stop/${currentStop.id}`} navigation={false}>
       <p className="eyebrow center">{isBonusLocation(currentStop) ? 'Verborgen Schub' : `${currentStop.order} / ${pack.stops.length}`}</p>
       <p className="center muted small">Nog {openStops} opdrachten open · hints kosten {penalty} punten</p>
-      <section className="parchment-card challenge-card stack stack--large">
+      {showParchment ? (
+        <section className="parchment-card challenge-card stack stack--large">
         {isFinal ? (
           <AudioPlayer
             source={narrationAudio.finale}
@@ -243,6 +247,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           ) : <p className="center muted small">Geen extra hints beschikbaar.</p>}
         </div>
       </section>
+      ) : null}
 
       <HintDialog
         open={hintOpen}

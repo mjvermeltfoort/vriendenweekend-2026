@@ -2,7 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { canStartFinale, hasLocationUnlock, isBonusVisible, isFinaleLocationRevealed, locationById, nextStop, stopById } from '../features/game/gameState';
+import { canAccessChallenge, canStartFinale, canViewResult, hasLocationUnlock, isBonusVisible, isFinaleLocationRevealed, locationById, nextStop, stopById } from '../features/game/gameState';
 import { isBonusLocation } from '../features/game/gameTypes';
 import { createSimulatorProvider, defaultSimulatorState, type SimulatorState } from '../features/location/simulator';
 import { GameIcon, PageShell } from '../components/GameUi';
@@ -244,21 +244,26 @@ export function StopPage({ pack }: { pack: GamePack }) {
     ? null
     : Math.max(0, Math.ceil((fallbackDelayMs - (fallbackNow - fallbackStartedAtRef.current)) / 1000));
 
+  const gameCompleted = progress ? canViewResult(progress, pack) : false;
+  const showParchment = !gameCompleted && (progress ? (hasLocationUnlock(progress, currentStop.id) || canAccessChallenge(progress, currentStop.id)) : false);
+
   return (
     <PageShell title={isCompleted ? (isBonusLocation(currentStop) ? 'Drakenschub' : 'Herinnering') : 'Verhaal'} backTo="/route">
-      <section className="parchment-card stack">
-        <p className="eyebrow">{isBonusLocation(currentStop) ? 'Verborgen vondst' : `Opdracht ${currentStop.order} van ${pack.stops.length}`}</p>
-        {!isCompleted ? <p className="muted small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p> : null}
-        <h1>{currentStop.intro.title}</h1>
-        <p>{currentStop.intro.text}</p>
-        {currentStop.intro.audioSrc ? (
-          <AudioPlayer
-            source={currentStop.intro.audioSrc}
-            title="Luister naar het verhaal"
-            transcript={currentStop.intro.transcript ?? currentStop.intro.text}
-          />
-        ) : <p>{currentStop.intro.transcript ?? currentStop.intro.text}</p>}
-      </section>
+      {showParchment ? (
+        <section className="parchment-card stack">
+          <p className="eyebrow">{isBonusLocation(currentStop) ? 'Verborgen vondst' : `Opdracht ${currentStop.order} van ${pack.stops.length}`}</p>
+          {!isCompleted ? <p className="muted small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p> : null}
+          <h1>{currentStop.intro.title}</h1>
+          <p>{currentStop.intro.text}</p>
+          {currentStop.intro.audioSrc ? (
+            <AudioPlayer
+              source={currentStop.intro.audioSrc}
+              title="Luister naar het verhaal"
+              transcript={currentStop.intro.transcript ?? currentStop.intro.text}
+            />
+          ) : <p>{currentStop.intro.transcript ?? currentStop.intro.text}</p>}
+        </section>
+      ) : null}
 
       {!isCompleted ? (
         <section className="card stack" style={{ marginTop: '1rem' }}>
