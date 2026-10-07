@@ -113,6 +113,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
         <h1>Avontuur voltooid!</h1>
         <DragonEmblem />
         <p>Jullie hebben het geheim van de Moerasdraak ontrafeld.</p>
+        <p className="small">Datum: {resultDate}</p>
       </section>
 
       <section className="result-stats" aria-label="Spelresultaten">
@@ -155,3 +156,4 @@ export function ResultPage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
+
