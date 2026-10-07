@@ -10,6 +10,9 @@ const { version: appVersion } = JSON.parse(
 
 export default defineConfig({
   base: '/escape-the-city/',
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion)
+  },
   plugins: [
     react(),
     VitePWA({
