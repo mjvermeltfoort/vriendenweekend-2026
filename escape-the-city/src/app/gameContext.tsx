@@ -72,6 +72,7 @@ interface GameContextValue {
   observationStatus: TeamState['observationStatus'];
   teamRadioMessages: TeamRadioMessage[];
   hasUnreadTeamRadio: boolean;
+  hasLocalTeamToDelete: boolean;
   markTeamRadioRead: () => void;
   resumeWithJoinCode: (code: string) => Promise<string>;
   removeActiveTeam: () => Promise<void>;
@@ -91,6 +92,20 @@ interface GameContextValue {
 
 const GameContext = createContext<GameContextValue | null>(null);
 const HEARTBEAT_INTERVAL_MS = 20_000;
+
+// Select a single local team id that is safe to delete from this device.
+// Precedence: active team -> session team -> last-team pointer -> only stored team.
+export function pickDeletableLocalTeamId(input: {
+  teams: TeamRecord[];
+  activeTeamId?: string | null;
+  sessionTeamId?: string | null;
+  lastTeamId?: string | null;
+}): string | null {
+  if (input.activeTeamId) return input.activeTeamId;
+  if (input.sessionTeamId) return input.sessionTeamId;
+  if (input.lastTeamId) return input.lastTeamId;
+  return input.teams.length === 1 ? input.teams[0].id : null;
+}
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -426,7 +441,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function removeActiveTeam() {
-    const teamId = activeTeam?.id;
+    const candidateId = pickDeletableLocalTeamId({
+      teams,
+      activeTeamId: activeTeam?.id ?? null,
+      sessionTeamId: sessionRef.current?.teamId ?? null,
+      lastTeamId: loadLastTeamId()
+    });
     const activeSession = sessionRef.current;
     sessionRef.current = null;
     setSession(null);
@@ -437,9 +457,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         // Local logout must still finish when the revoke request cannot be delivered.
       }
     }
-    if (teamId) {
-      await clearSensitiveSessionData(teamId);
-      await deleteTeam(teamId);
+    if (candidateId) {
+      await clearSensitiveSessionData(candidateId);
+      await deleteTeam(candidateId);
     }
     clearLastTeamId();
     progressRef.current = null;
@@ -719,6 +739,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     observationStatus,
     sendRadioMessage,
     hasUnreadTeamRadio,
+    hasLocalTeamToDelete: Boolean(pickDeletableLocalTeamId({
+      teams,
+      activeTeamId: activeTeam?.id ?? null,
+      sessionTeamId: sessionRef.current?.teamId ?? null,
+      lastTeamId: loadLastTeamId()
+    })),
     markTeamRadioRead,
     resumeWithJoinCode,
     removeActiveTeam,
@@ -733,7 +759,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     useHint,
     attemptAnswer,
     completeFinale
-  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun, locationError, teamRadioMessages, currentObservation, observationStatus, sendRadioMessage, hasUnreadTeamRadio, markTeamRadioRead]);
+  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun, locationError, teamRadioMessages, currentObservation, observationStatus, sendRadioMessage, hasUnreadTeamRadio, markTeamRadioRead, teams.length, activeTeam?.id, sessionRef.current?.teamId]);
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
