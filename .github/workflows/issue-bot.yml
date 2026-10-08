@@ -59,18 +59,22 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           set -euo pipefail
+          export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
           npm i -g @continuedev/cli@latest
           python3 - <<'PY'
           import os
           from pathlib import Path
-          prompt = ("Investigate issue #" + os.environ["ISSUE_NUMBER"] + ": " + os.environ["ISSUE_TITLE"]
+          mode = "deep" if os.environ.get("COMMENT_BODY", "").lower().startswith("/think deep") else ("quick" if os.environ.get("COMMENT_BODY", "").lower().startswith("/think quick") else "standard")
+          prompt = ("Investigation mode: " + mode + "\nInvestigate issue #" + os.environ["ISSUE_NUMBER"] + ": " + os.environ["ISSUE_TITLE"]
                     + "\n" + os.environ.get("ISSUE_BODY", "")
                     + "\nUser instructions: " + os.environ.get("COMMENT_BODY", "")
                     + "\nFollow .continue/rules/think.md. Inspect actual code and cite file paths and lines. Do not edit files.")
           Path("/tmp/think-prompt.txt").write_text(prompt)
           PY
           set +e
-          cn --config .continue/config.yaml --rule .continue/rules/think.md --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
+          cn --config .continue/config.yaml --rule .continue/rules/rtk.md --rule .continue/rules/think.md --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
           status=$?
           set -e
           git diff --exit-code
@@ -78,10 +82,11 @@ jobs:
           BOT_STATUS="$status" python3 - <<'PY'
           import json, os
           from pathlib import Path
-          report = Path("/tmp/think-output.txt").read_text(errors="replace")[-48000:]
+          report = Path("/tmp/think-output.txt").read_text(errors="replace")[-12000:]
           header = "### /think — repository investigation" if os.environ["BOT_STATUS"] == "0" else "### /think failed (see Actions logs)"
           Path("/tmp/think-comment.json").write_text(json.dumps({"body": header + "\n\n" + report}))
           PY
+          echo "Research output bytes: $(wc -c < /tmp/think-output.txt)" >> "$GITHUB_STEP_SUMMARY"
           curl --fail-with-body -sS -X POST -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" --data-binary @/tmp/think-comment.json "https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}/comments"
           test "$status" -eq 0
 
@@ -140,13 +145,12 @@ jobs:
           PROMPT="$(printf "%s" "${COMMENT_BODY}" | sed -E 's#^/solve[[:space:]]*:?[[:space:]]*##')"
 
           COMMENTS_URL="https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}/comments?per_page=100"
-          curl -sS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json"             "${COMMENTS_URL}"             | jq -r --argjson excludeId "${COMMENT_ID}" '
-                sort_by(.created_at)
-                | map(select(.id != $excludeId))
-                | (if length > 10 then .[-10:] else . end)
-                | reverse
-                | .[]
-                | "Author: \(.user.login) (\(.author_association))\nComment:\n\(.body)\n---\n"'             > "${BOT_TMP}/comments.txt" || true
+          # Supply only latest successful investigation, not entire conversation history.
+          curl --fail-with-body -sS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "${COMMENTS_URL}" |
+            jq -r --argjson excludeId "${COMMENT_ID}" '
+              [.[] | select(.id != $excludeId and (.body | startswith("### /think — repository investigation")))]
+              | sort_by(.created_at) | last | .body // "(no prior /think report)"
+            ' | head -c 12000 > "${BOT_TMP}/comments.txt"
 
           {
             echo "Repository wants a fix PR for Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
@@ -157,7 +161,7 @@ jobs:
             echo "User prompt:"
             printf "%s\n" "${PROMPT}"
             echo
-            echo "Recent issue comments (latest first; use the latest /think report but verify against current code):"
+            echo "Latest /think analysis (may be stale; verify against current code):"
             if [ -s "${BOT_TMP}/comments.txt" ]; then cat "${BOT_TMP}/comments.txt"; else echo "(none)"; fi
             echo
             echo "Instructions:"
@@ -166,6 +170,8 @@ jobs:
             echo "- Do not stage or commit; just modify files."
             echo "- Workflow files under .github/workflows are in scope when the issue requires them."
             echo "- Follow loaded RTK and Caveman rules."
+            echo "- Start with targeted file searches, read only necessary lines, and test changed areas first."
+            echo "- Stop investigating once root cause and fix are evidenced; avoid repeating searches."
           } > "${BOT_TMP}/prompt.txt"
 
           echo "Running Continue CLI in headless mode"
@@ -184,7 +190,7 @@ jobs:
               echo
               echo "Execution log (truncated):"
               echo '```'
-              tail -n 400 "${BOT_TMP}/continue.log" || true
+              tail -n 100 "${BOT_TMP}/continue.log" || true
               echo '```'
             } > "${BOT_TMP}/pr-body.md"
             echo "pr_body_file=${BOT_TMP}/pr-body.md" >> "$GITHUB_OUTPUT"
