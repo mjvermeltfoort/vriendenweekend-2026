@@ -4,9 +4,10 @@ import { useGame } from '../app/gameContext';
 import { useAudio } from '../features/audio/audioContext';
 
 export function SettingsPage() {
-  const { syncStatus, syncMessage, syncNow, removeActiveTeam, settings, updateSettings } = useGame();
+  const { syncStatus, syncMessage, syncNow, removeActiveTeam, settings, updateSettings, hasLocalTeamToDelete } = useGame();
   const { toggleSound, toggleBackgroundMusic } = useAudio();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busyDelete, setBusyDelete] = useState(false);
 
   return (
     <PageShell title="Info" backTo="/route">
@@ -68,15 +69,32 @@ export function SettingsPage() {
 
       <section className="card settings-section stack">
         <p className="eyebrow">Teamdata</p>
-        <button className="button danger" onClick={() => setConfirmDelete(true)}>Lokaal team verwijderen</button>
-        {confirmDelete ? (
-          <div className="card stack" role="alertdialog" aria-labelledby="delete-title" aria-describedby="delete-description">
-            <h2 id="delete-title">Team verwijderen?</h2>
-            <p id="delete-description">Dit verwijdert team en voortgang van dit toestel. Deze actie kan niet lokaal ongedaan worden gemaakt.</p>
-            <button className="button danger" onClick={() => void removeActiveTeam()}>Ja, lokaal verwijderen</button>
-            <button className="button ghost" onClick={() => setConfirmDelete(false)}>Annuleren</button>
-          </div>
-        ) : null}
+        {hasLocalTeamToDelete ? (
+          <>
+            <button className="button danger" onClick={() => setConfirmDelete(true)}>Lokaal team verwijderen</button>
+            {confirmDelete ? (
+              <div className="card stack" role="alertdialog" aria-labelledby="delete-title" aria-describedby="delete-description" aria-modal="true">
+                <h2 id="delete-title">Team verwijderen?</h2>
+                <p id="delete-description">Dit verwijdert team en voortgang van dit toestel. Deze actie kan niet lokaal ongedaan worden gemaakt.</p>
+                <button
+                  className="button danger"
+                  onClick={async () => {
+                    setBusyDelete(true);
+                    await removeActiveTeam();
+                    setBusyDelete(false);
+                    setConfirmDelete(false);
+                  }}
+                  disabled={busyDelete}
+                >
+                  {busyDelete ? 'Verwijderen…' : 'Ja, lokaal verwijderen'}
+                </button>
+                <button className="button ghost" onClick={() => setConfirmDelete(false)} disabled={busyDelete}>Annuleren</button>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <p className="muted small">Geen lokaal team om te verwijderen.</p>
+        )}
       </section>
     </PageShell>
   );

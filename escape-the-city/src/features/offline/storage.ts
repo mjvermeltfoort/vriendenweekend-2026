@@ -243,6 +243,11 @@ export async function clearSensitiveSessionData(teamId?: string) {
   if (!teamId || localStorage.getItem(LAST_TEAM_KEY) === teamId) {
     localStorage.removeItem(LAST_TEAM_KEY);
   }
+  // Also clear per-team UI flags to avoid resurrecting stale state on session clear.
+  if (teamId) {
+    localStorage.removeItem(`${TEAM_RADIO_SEEN_PREFIX}${teamId}`);
+    localStorage.removeItem(`moerasdraak-bonus-intro:${teamId}`);
+  }
 }
 
 export function loadStoredSettings(): StoredSettings {
