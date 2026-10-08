@@ -168,7 +168,7 @@ jobs:
             echo "- Make minimal, correct code changes directly in the working tree."
             echo "- Include tests or config updates if needed."
             echo "- Do not stage or commit; just modify files."
-            echo "- Workflow files under .github/workflows are in scope when the issue requires them."
+            echo "- NEVER modify files under .github/workflows/ (including when requested in an issue)."
             echo "- Follow loaded RTK and Caveman rules."
             echo "- Start with targeted file searches, read only necessary lines, and test changed areas first."
             echo "- Stop investigating once root cause and fix are evidenced; avoid repeating searches."
@@ -178,6 +178,12 @@ jobs:
           CAVEMAN_SKILL="${RUNNER_TEMP}/caveman-skill/.agents/skills/caveman/SKILL.md"
           test -f "$CAVEMAN_SKILL"
           cn             --config .continue/config.yaml             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
+
+          # Reject workflow edits before creating a pull request.
+          if { git diff --name-only; git ls-files --others --exclude-standard; } | grep -q '^.github/workflows/'; then
+            echo "Issue-bot is not permitted to modify GitHub Actions workflow files." >&2
+            exit 1
+          fi
 
           if ! git diff --quiet -- ||              [ -n "$(git ls-files --others --exclude-standard)" ]; then
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
