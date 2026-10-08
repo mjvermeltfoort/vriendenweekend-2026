@@ -17,6 +17,20 @@ export function stopFeatures(): FeatureCollection<Point> {
   };
 }
 
+export function bonusStopFeatures(): FeatureCollection<Point> {
+  return {
+    type: 'FeatureCollection',
+    features: (gamePack.bonusLocations ?? []).map((bonus) => ({
+      type: 'Feature',
+      properties: { id: bonus.id, title: bonus.title, isBonus: true },
+      geometry: {
+        type: 'Point',
+        coordinates: [bonus.coordinates.longitude!, bonus.coordinates.latitude!]
+      }
+    }))
+  };
+}
+
 export function teamMarkerFeatures(teams: DashboardTeam[], selectedTeamId: string | null, now = Date.now()): FeatureCollection<Point> {
   return {
     type: 'FeatureCollection',

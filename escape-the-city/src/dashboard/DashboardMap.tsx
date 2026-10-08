@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FeatureCollection, Point } from 'geojson';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { applyMoerasdraakTheme, MAP_STYLE_URL } from '../features/map/mapStyle';
-import { accuracyFeatures, stopFeatures, teamMarkerFeatures } from './mapData';
+import { accuracyFeatures, stopFeatures, teamMarkerFeatures, bonusStopFeatures } from './mapData';
 import type { DashboardTeam } from './types';
 
 interface DashboardMapProps {
@@ -84,6 +84,7 @@ export function DashboardMap({ teams, selectedTeamId, now, onSelect }: Dashboard
         applyMoerasdraakTheme(map);
         map.addSource('dashboard-route', { type: 'geojson', data: route });
         map.addSource('dashboard-stops', { type: 'geojson', data: stopFeatures() });
+        map.addSource('dashboard-bonuses', { type: 'geojson', data: bonusStopFeatures() });
         map.addSource('dashboard-accuracy', { type: 'geojson', data: empty });
         map.addSource('dashboard-teams', { type: 'geojson', data: empty });
         map.addLayer({
@@ -123,6 +124,17 @@ export function DashboardMap({ teams, selectedTeamId, now, onSelect }: Dashboard
           }
         });
         map.addLayer({
+          id: 'dashboard-bonuses',
+          type: 'circle',
+          source: 'dashboard-bonuses',
+          paint: {
+            'circle-radius': 5,
+            'circle-color': '#10251c',
+            'circle-stroke-color': '#35d4c7',
+            'circle-stroke-width': 2
+          }
+        });
+        map.addLayer({
           id: 'dashboard-stop-labels',
           type: 'symbol',
           source: 'dashboard-stops',
@@ -133,6 +145,18 @@ export function DashboardMap({ teams, selectedTeamId, now, onSelect }: Dashboard
             'text-anchor': 'top'
           },
           paint: { 'text-color': '#f4e6c5', 'text-halo-color': '#07100d', 'text-halo-width': 2 }
+        });
+        map.addLayer({
+          id: 'dashboard-bonus-labels',
+          type: 'symbol',
+          source: 'dashboard-bonuses',
+          layout: {
+            'text-field': ['concat', '◈ ', ['get', 'title']],
+            'text-size': 11,
+            'text-offset': [0, 1.2],
+            'text-anchor': 'top'
+          },
+          paint: { 'text-color': '#c9f5f1', 'text-halo-color': '#07100d', 'text-halo-width': 2 }
         });
         map.addLayer({
           id: 'dashboard-teams',

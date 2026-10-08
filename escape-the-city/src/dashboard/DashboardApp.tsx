@@ -33,7 +33,10 @@ type DialogState =
   | { kind: 'release'; team: DashboardTeam; stopName: string }
   | null;
 
-const stopById = new Map(gamePack.stops.map((stop) => [stop.id, stop]));
+const stopById = new Map([
+  ...gamePack.stops,
+  ...(gamePack.bonusLocations ?? [])
+].map((stop) => [stop.id, stop]));
 const RADIO_TOAST_DURATION_MS = 8_000;
 
 export function DashboardRadioToast({ teamName, onOpen, onClose }: {
@@ -441,6 +444,25 @@ export function DashboardApp() {
                       return <li key={stop.id} data-state={progress?.state ?? 'locked'}>{stop.order}. {stop.shortTitle} <span>{progress?.state ?? 'locked'}</span></li>;
                     })}
                   </ol>
+                  {gamePack.bonusLocations && gamePack.bonusLocations.length ? (
+                    <>
+                      <h4>Bonuslocaties</h4>
+                      <ol className="progress-list">
+                        {gamePack.bonusLocations.map((bonus) => {
+                          const progress = selectedTeam.stopProgress.find((item) => item.stopId === bonus.id);
+                          const state = progress?.state ?? 'locked';
+                          const description = state === 'completed' ? bonus.revealedDescription : bonus.hiddenClue;
+                          return (
+                            <li key={bonus.id} data-state={state}>
+                              ◈ {bonus.title} <span>{state}</span>
+                              <div className="muted small">{description}</div>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </>
+                  ) : null}
+
                 </div>
                 <div>
                   <h3>Locatie</h3>
