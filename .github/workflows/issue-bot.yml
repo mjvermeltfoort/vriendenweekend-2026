@@ -73,6 +73,8 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
+          command -v rtk
+          rtk --version
           CAVEMAN_INSTALL_DIR="${RUNNER_TEMP}/caveman-skill"
           mkdir -p "$CAVEMAN_INSTALL_DIR"
           (
@@ -81,7 +83,7 @@ jobs:
               { tail -n 60 "${RUNNER_TEMP}/caveman-install.log"; exit 1; }
           )
           CAVEMAN_SKILL="$CAVEMAN_INSTALL_DIR/.agents/skills/caveman/SKILL.md"
-          test -f "$CAVEMAN_SKILL"
+          test -s "$CAVEMAN_SKILL"
           npm i -g @continuedev/cli@latest
           python3 - <<'PY'
           import os
@@ -100,6 +102,12 @@ jobs:
           set -e
           git diff --exit-code
           test -z "$(git ls-files --others --exclude-standard)"
+          {
+            echo "### RTK — /think"
+            echo "Versie: $(rtk --version)"
+            rtk gain || echo "RTK-besparing niet beschikbaar"
+            echo "Caveman-regel: $CAVEMAN_SKILL"
+          } >> "$GITHUB_STEP_SUMMARY"
           BOT_STATUS="$status" python3 - <<'PY'
           import json, os
           from pathlib import Path
@@ -311,4 +319,5 @@ jobs:
           REVIEW_OUTCOME: ${{ steps.solve.outcome }}
           SOLVE_OUTCOME: ${{ steps.cont.outcome }}
           PR_OUTCOME: ${{ steps.cpr_continue.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify_city.outcome }}
         run: node .github/scripts/issue-bot-cost-report.cjs
