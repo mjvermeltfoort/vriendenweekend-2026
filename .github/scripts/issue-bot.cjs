@@ -2,7 +2,6 @@
 // Node 20+ required (global fetch available)
 
 const fs = require('fs');
-const path = require('path');
 
 const {
   OPENAI_API_KEY,
@@ -11,6 +10,7 @@ const {
   ISSUE_NUMBER,
   ISSUE_TITLE,
   ISSUE_BODY,
+  COMMENT_ID,
   COMMENT_BODY,
   COMMENT_AUTHOR,
   AUTHOR_ASSOCIATION,
@@ -32,6 +32,24 @@ async function postComment(body) {
   if (!resp.ok) {
     const text = await resp.text();
     throw new Error(`GitHub comment error: ${resp.status} ${text}`);
+  }
+}
+
+
+async function reactToCommand(content) {
+  if (!COMMENT_ID) throw new Error('Missing issue comment ID');
+  const url = `https://api.github.com/repos/${REPO}/issues/comments/${COMMENT_ID}/reactions`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${GITHUB_TOKEN}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/vnd.github+json'
+    },
+    body: JSON.stringify({ content })
+  });
+  if (!resp.ok) {
+    throw new Error(`GitHub reaction error: ${resp.status} ${await resp.text()}`);
   }
 }
 
@@ -69,12 +87,16 @@ async function callOpenAI(messages) {
     const mode = match[1].toLowerCase();
     const userPrompt = (match[2] || '').trim();
 
-    if (mode === 'solve') {
-      const dir = path.join('.github', 'issue-bot');
-      fs.mkdirSync(dir, { recursive: true });
-      const ack = `Mode: solve — acknowledged. Running Continue CLI with repo .continue/config.yaml.\n\nPrompt:\n${userPrompt || '(none)'}\n\nI will open a PR if changes are produced.`;
-      await postComment(ack);
+    if (process.argv.includes('--react-only')) {
+      // GitHub has no magnifying-glass reaction, so review uses eyes.
+      await reactToCommand(mode === 'solve' ? '+1' : 'eyes');
+      console.log(`Added GitHub reaction for /${mode} command`);
+      return;
+    }
 
+    if (mode === 'solve') {
+      // A thumbs-up reaction on the command already acknowledges /solve.
+      // No issue comment is needed before running Continue.
       const prTitle = `fix: Resolve #${ISSUE_NUMBER} - ${ISSUE_TITLE} (bot via Continue)`;
       if (GITHUB_OUTPUT) {
         fs.appendFileSync(GITHUB_OUTPUT, `has_patch=false\n`);
@@ -117,6 +139,7 @@ async function callOpenAI(messages) {
   } catch (err) {
     console.error(String(err));
     try {
+      if (process.argv.includes('--react-only')) throw err;
       const fallback = `Sorry, the bot failed with: ${String(err).slice(0, 1800)}\n\nPlease check the workflow logs.`;
       await postComment(fallback);
     } catch (_) {}
