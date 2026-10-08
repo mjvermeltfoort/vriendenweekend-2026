@@ -27,9 +27,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: escape-the-city/package-lock.json
 
       - name: React to issue command
         env:
@@ -158,6 +160,15 @@ jobs:
           echo "Caveman: $CAVEMAN_SKILL"
           echo "RTK en Caveman worden via --rule aan Continue meegegeven."
 
+      - name: Install Escape the City dependencies for Continue
+        if: startsWith(github.event.comment.body, '/solve')
+        working-directory: escape-the-city
+        run: |
+          set -euo pipefail
+          npm ci
+          echo "Vitest beschikbaar voor Continue: $(npm exec -- vitest --version)"
+          echo "Dependencies installed; Continue can now run lint, tests and build." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run Continue CLI to solve and modify code
         id: cont
         if: startsWith(github.event.comment.body, '/solve')
@@ -265,14 +276,6 @@ jobs:
             echo "### RTK-rapportage"
             rtk gain || echo "RTK-besparing niet beschikbaar"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - uses: actions/setup-node@v6
-        name: Set up Node for Escape the City verification
-        if: steps.cont.outputs.has_changes == 'true'
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: escape-the-city/package-lock.json
 
       - name: Verify Escape the City before PR
         id: verify_city
