@@ -71,8 +71,7 @@ export function RoutePage({ pack }: { pack: GamePack }) {
       <ProgressBar value={completed} max={pack.stops.length} label="Herinneringen hersteld" />
 
       {nextStop ? (
-        <section className="card stack" aria-label="Volgende stap">
-          <p className="eyebrow">Volgende stap</p>
+        <section className="card stack">
           <h2>{nextStop.title}</h2>
           <p className="muted">{nextStop.navigation.clue}</p>
         </section>

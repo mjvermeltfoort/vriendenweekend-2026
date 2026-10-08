@@ -53,12 +53,6 @@ function ContrastController() {
 }
 
 function AppStatusHint() {
-  const location = useLocation();
-
-  if (location.pathname === '/route') {
-    return <p>Volgende stap: open de kaart en ga naar de gemarkeerde stop.</p>;
-  }
-
   return null;
 }
 
