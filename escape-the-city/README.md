@@ -11,6 +11,13 @@ Escape the City PWA voor Den Bosch.
 - Vitest
 
 ## Starten
+Eis: gebruik Node.js 26.5.0 of hoger, maar lager dan 27 (volgens `package.json`).
+Controleer je versie:
+
+```bash
+node --version
+```
+
 ```bash
 cd escape-the-city
 npm install
