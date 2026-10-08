@@ -112,11 +112,16 @@ async function main() {
 
   const outcome = mode === 'think' ? process.env.THINK_OUTCOME :
     mode === 'review' ? process.env.REVIEW_OUTCOME : process.env.SOLVE_OUTCOME;
-  const status = (outcome === 'success' && (mode !== 'solve' || process.env.PR_OUTCOME !== 'failure')) ? 'uitgevoerd' : 'mislukt of onderbroken';
+  const verificationFailed = mode === 'solve' && process.env.VERIFY_OUTCOME === 'failure';
+  const prFailed = mode === 'solve' && process.env.PR_OUTCOME === 'failure';
+  const status = outcome === 'success' && !verificationFailed && !prFailed ? 'uitgevoerd' : 'mislukt of onderbroken';
   const repo = process.env.REPO;
   const issueNumber = process.env.ISSUE_NUMBER;
   const runUrl = 'https://github.com/' + repo + '/actions/runs/' + process.env.GITHUB_RUN_ID;
-  const body = formatReport(mode, usage, runUrl, status);
+  let body = formatReport(mode, usage, runUrl, status);
+  if (verificationFailed) {
+    body += '\n\n❌ Lint, tests of build mislukt; er is geen PR aangemaakt. Bekijk de verify-stap in de Actions-run.';
+  }
   const response = await fetch('https://api.github.com/repos/' + repo + '/issues/' + issueNumber + '/comments', {
     method: 'POST',
     headers: {
