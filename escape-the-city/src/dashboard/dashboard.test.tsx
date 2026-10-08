@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { DashboardDialog, DashboardRadioToast } from './DashboardApp';
-import { accuracyFeatures, teamMarkerFeatures } from './mapData';
+import { accuracyFeatures, teamMarkerFeatures, bonusStopFeatures } from './mapData';
 import { dashboardReducer, initialDashboardState } from './store';
 import {
   activeParticipants,
@@ -111,6 +111,13 @@ describe('dashboard data model', () => {
     expect(circles.features[0].properties?.actualAccuracyM).toBe(640);
     expect(circles.features[0].properties?.visualAccuracyM).toBe(250);
     expect(circles.features[0].geometry.coordinates[0]).toHaveLength(65);
+  });
+
+  it('exposes all configured bonus stops as distinct map features', () => {
+    const bonuses = bonusStopFeatures();
+    expect(bonuses.features.length).toBe(6);
+    expect(new Set(bonuses.features.map((f) => String(f.properties?.id))).size).toBe(6);
+    expect(bonuses.features.every((f) => (f.properties as any)?.isBonus === true)).toBe(true);
   });
 });
 
