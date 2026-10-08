@@ -32,13 +32,25 @@ function collectContinueUsage(startedAt, cwd, home = process.env.CONTINUE_GLOBAL
   const sum = (getter) => sessions.reduce((total, usage) => total + (number(getter(usage)) || 0), 0);
   const hasTokens = sessions.some((usage) => number(usage.promptTokens) !== null || number(usage.completionTokens) !== null);
   const hasCost = sessions.some((usage) => number(usage.totalCost) !== null && usage.totalCost > 0);
-  return {
-    input: hasTokens ? sum((u) => u.promptTokens) : null,
-    output: hasTokens ? sum((u) => u.completionTokens) : null,
-    cached: hasTokens ? sum((u) => u.promptTokensDetails?.cachedTokens) : null,
-    cost: hasCost ? sum((u) => u.totalCost) : null,
-    source: 'Continue-sessiestatistieken',
-  };
+  const input = hasTokens ? sum((u) => u.promptTokens) : null;
+  const output = hasTokens ? sum((u) => u.completionTokens) : null;
+  const cached = hasTokens ? sum((u) => u.promptTokensDetails?.cachedTokens) : null;
+  let model = null;
+  try {
+    const config = fs.readFileSync('.continue/config.yaml', 'utf8');
+    const models = [...config.matchAll(/^\s+model:\s*([\w.-]+)\s*$/gm)];
+    if (models.length === 1) model = models[0][1];
+  } catch { /* Model unknown. */ }
+  let cost = hasCost ? sum((u) => u.totalCost) : null;
+  let source = 'Continue-sessiestatistieken';
+  // Fall back only for a known configured model and measured tokens.
+  // Published standard GPT-5 prices: https://developers.openai.com/api/docs/models/gpt-5
+  if (cost === null && hasTokens && model === 'gpt-5') {
+    const cachedInput = Math.min(input, cached);
+    cost = ((input - cachedInput) * 1.25 + cachedInput * 0.125 + output * 10) / 1e6;
+    source += ' + GPT-5-prijslijst (schatting)';
+  }
+  return { input, output, cached, cost, model, source };
 }
 
 function reviewUsage(filepath) {
@@ -100,7 +112,7 @@ async function main() {
 
   const outcome = mode === 'think' ? process.env.THINK_OUTCOME :
     mode === 'review' ? process.env.REVIEW_OUTCOME : process.env.SOLVE_OUTCOME;
-  const status = outcome === 'success' ? 'uitgevoerd' : 'mislukt of onderbroken';
+  const status = (outcome === 'success' && (mode !== 'solve' || process.env.PR_OUTCOME !== 'failure')) ? 'uitgevoerd' : 'mislukt of onderbroken';
   const repo = process.env.REPO;
   const issueNumber = process.env.ISSUE_NUMBER;
   const runUrl = 'https://github.com/' + repo + '/actions/runs/' + process.env.GITHUB_RUN_ID;
