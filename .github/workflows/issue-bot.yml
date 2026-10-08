@@ -64,9 +64,9 @@ jobs:
           import os
           from pathlib import Path
           prompt = ("Investigate issue #" + os.environ["ISSUE_NUMBER"] + ": " + os.environ["ISSUE_TITLE"]
-                    + "\\n" + os.environ.get("ISSUE_BODY", "")
-                    + "\\nUser instructions: " + os.environ.get("COMMENT_BODY", "")
-                    + "\\nFollow .continue/rules/think.md. Inspect actual code and cite file paths and lines. Do not edit files.")
+                    + "\n" + os.environ.get("ISSUE_BODY", "")
+                    + "\nUser instructions: " + os.environ.get("COMMENT_BODY", "")
+                    + "\nFollow .continue/rules/think.md. Inspect actual code and cite file paths and lines. Do not edit files.")
           Path("/tmp/think-prompt.txt").write_text(prompt)
           PY
           set +e
@@ -80,7 +80,7 @@ jobs:
           from pathlib import Path
           report = Path("/tmp/think-output.txt").read_text(errors="replace")[-48000:]
           header = "### /think — repository investigation" if os.environ["BOT_STATUS"] == "0" else "### /think failed (see Actions logs)"
-          Path("/tmp/think-comment.json").write_text(json.dumps({"body": header + "\\n\\n" + report}))
+          Path("/tmp/think-comment.json").write_text(json.dumps({"body": header + "\n\n" + report}))
           PY
           curl --fail-with-body -sS -X POST -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" --data-binary @/tmp/think-comment.json "https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}/comments"
           test "$status" -eq 0
