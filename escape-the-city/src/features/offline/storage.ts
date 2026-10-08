@@ -90,11 +90,11 @@ export async function deleteTeam(teamId: string) {
   const queue = tx1.objectStore(QUEUE_STORE);
   const cursor = queue.openCursor();
   cursor.onsuccess = () => {
-    const current = cursor.result;
-    if (current && current.value.teamId === teamId) {
-      current.delete();
-      current.continue();
-    }
+    const current = cursor.result as IDBCursorWithValue | null;
+    if (!current) return;
+    const value = current.value as SyncQueueItem;
+    if (value.teamId === teamId) current.delete();
+    current.continue();
   };
   await new Promise<void>((resolve, reject) => {
     tx1.oncomplete = () => {
@@ -104,6 +104,9 @@ export async function deleteTeam(teamId: string) {
     tx1.onerror = () => reject(tx1.error);
   });
   if (localStorage.getItem(LAST_TEAM_KEY) === teamId) localStorage.removeItem(LAST_TEAM_KEY);
+  // Also clear per-team UI flags that might resurrect stale UI state.
+  localStorage.removeItem(`${TEAM_RADIO_SEEN_PREFIX}${teamId}`);
+  localStorage.removeItem(`moerasdraak-bonus-intro:${teamId}`);
 }
 
 export async function loadTeams() {

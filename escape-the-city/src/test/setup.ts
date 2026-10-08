@@ -1,3 +1,5 @@
+import 'fake-indexeddb/auto';
+
 // Node 26 exposes an undefined global localStorage placeholder. Supply the
 // browser Storage surface explicitly for jsdom tests.
 const values = new Map<string, string>();
