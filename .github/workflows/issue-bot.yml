@@ -63,6 +63,15 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
+          CAVEMAN_INSTALL_DIR="${RUNNER_TEMP}/caveman-skill"
+          mkdir -p "$CAVEMAN_INSTALL_DIR"
+          (
+            cd "$CAVEMAN_INSTALL_DIR"
+            npx -y skills add JuliusBrussee/caveman --skill caveman --copy -y > "${RUNNER_TEMP}/caveman-install.log" 2>&1 ||
+              { tail -n 60 "${RUNNER_TEMP}/caveman-install.log"; exit 1; }
+          )
+          CAVEMAN_SKILL="$CAVEMAN_INSTALL_DIR/.agents/skills/caveman/SKILL.md"
+          test -f "$CAVEMAN_SKILL"
           npm i -g @continuedev/cli@latest
           python3 - <<'PY'
           import os
@@ -71,11 +80,11 @@ jobs:
           prompt = ("Investigation mode: " + mode + "\nInvestigate issue #" + os.environ["ISSUE_NUMBER"] + ": " + os.environ["ISSUE_TITLE"]
                     + "\n" + os.environ.get("ISSUE_BODY", "")
                     + "\nUser instructions: " + os.environ.get("COMMENT_BODY", "")
-                    + "\nFollow .continue/rules/think.md. Inspect actual code and cite file paths and lines. Do not edit files.")
+                    + "\nFollow .continue/rules/think.md and the Caveman skill. Research in depth, reply concisely in Dutch with evidence. Do not edit files.")
           Path("/tmp/think-prompt.txt").write_text(prompt)
           PY
           set +e
-          env -u GITHUB_TOKEN -u GH_TOKEN cn --config .continue/config.yaml --rule .continue/rules/rtk.md --rule .continue/rules/think.md --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
+          env -u GITHUB_TOKEN -u GH_TOKEN cn --config .continue/config.yaml --rule .continue/rules/rtk.md --rule .continue/rules/think.md --rule "$CAVEMAN_SKILL" --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
           status=$?
           set -e
           git diff --exit-code
@@ -83,7 +92,10 @@ jobs:
           BOT_STATUS="$status" python3 - <<'PY'
           import json, os
           from pathlib import Path
-          report = Path("/tmp/think-output.txt").read_text(errors="replace")[-12000:]
+          full_output = Path("/tmp/think-output.txt").read_text(errors="replace")
+          report = full_output.strip()
+          if len(report) > 2600:
+              report = "Uitvoer ingekort; volledige log staat bij GitHub Actions.\n\n" + report[-2400:]
           header = "### /think — repository investigation" if os.environ["BOT_STATUS"] == "0" else "### /think failed (see Actions logs)"
           Path("/tmp/think-comment.json").write_text(json.dumps({"body": header + "\n\n" + report}))
           PY
