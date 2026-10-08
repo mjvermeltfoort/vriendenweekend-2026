@@ -58,6 +58,7 @@ jobs:
           node .github/scripts/issue-bot.cjs
 
       - name: Investigate issue (/think)
+        id: think
         if: startsWith(github.event.comment.body, '/think')
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -92,6 +93,7 @@ jobs:
                     + "\nFollow .continue/rules/think.md and the Caveman skill. Research in depth, reply concisely in Dutch with evidence. Do not edit files.")
           Path("/tmp/think-prompt.txt").write_text(prompt)
           PY
+          touch "${RUNNER_TEMP}/issue-bot-usage-start"
           set +e
           env -u GITHUB_TOKEN -u GH_TOKEN cn --config .continue/config.yaml --rule .continue/rules/rtk.md --rule .continue/rules/think.md --rule "$CAVEMAN_SKILL" --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
           status=$?
@@ -200,6 +202,7 @@ jobs:
           echo "Running Continue CLI in headless mode"
           CAVEMAN_SKILL="${RUNNER_TEMP}/caveman-skill/.agents/skills/caveman/SKILL.md"
           test -f "$CAVEMAN_SKILL"
+          touch "${RUNNER_TEMP}/issue-bot-usage-start"
           env -u GITHUB_TOKEN -u GH_TOKEN cn             --config .continue/config.yaml             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
 
           # Check both uncommitted changes and commits created by the agent.
@@ -256,3 +259,17 @@ jobs:
           title: ${{ steps.solve.outputs.pr_title }}
           body-path: ${{ steps.cont.outputs.pr_body_file }}
           labels: bot, automated, issue-bot, continue
+
+      - name: Comment usage and estimated cost on issue
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          THINK_OUTCOME: ${{ steps.think.outcome }}
+          REVIEW_OUTCOME: ${{ steps.solve.outcome }}
+          SOLVE_OUTCOME: ${{ steps.cont.outcome }}
+          PR_OUTCOME: ${{ steps.cpr_continue.outcome }}
+        run: node .github/scripts/issue-bot-cost-report.cjs
