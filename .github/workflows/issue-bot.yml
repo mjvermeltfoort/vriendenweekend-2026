@@ -31,7 +31,15 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run issue bot (review and ack solve)
+      - name: React to issue command
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: node .github/scripts/issue-bot.cjs --react-only
+
+      - name: Run issue bot (review and prepare solve)
         id: solve
         if: "!startsWith(github.event.comment.body, '/think')"
         env:
@@ -42,6 +50,7 @@ jobs:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
           COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
           AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
@@ -267,14 +276,3 @@ jobs:
           title: ${{ steps.solve.outputs.pr_title }}
           body-path: ${{ steps.cont.outputs.pr_body_file }}
           labels: bot, automated, issue-bot, continue
-
-      - name: Comment with PR link (Continue)
-        if: (steps.cont.outputs.has_changes == 'true' && steps.cpr_continue.outputs.pull-request-url != '') || steps.cpr_committed.outputs.url != ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          PR_URL: ${{ steps.cpr_continue.outputs.pull-request-url || steps.cpr_committed.outputs.url }}
-        run: |
-          BODY=$(jq -nc --arg body "Opened PR: ${PR_URL}" '{body: $body}')
-          curl -sS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json"             -X POST             -d "${BODY}"             "https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}/comments"
