@@ -1,4 +1,4 @@
-// Issue Bot runner for think/review comments and solve ack + outputs (CommonJS)
+// Issue Bot runner for review responses, command reactions, and solve preparation (CommonJS)
 // Node 20+ required (global fetch available)
 
 const fs = require('fs');
@@ -72,6 +72,11 @@ async function callOpenAI(messages) {
     throw new Error(`OpenAI API error: ${resp.status} ${text}`);
   }
   const data = await resp.json();
+  // Preserve only usage metadata, never prompt or response text, for the cost report.
+  if (data.usage && process.env.RUNNER_TEMP) {
+    const filepath = require('node:path').join(process.env.RUNNER_TEMP, 'issue-bot-review-usage.json');
+    fs.writeFileSync(filepath, JSON.stringify({ model: data.model, usage: data.usage }));
+  }
   return data.choices?.[0]?.message?.content?.trim() || 'No response generated.';
 }
 
