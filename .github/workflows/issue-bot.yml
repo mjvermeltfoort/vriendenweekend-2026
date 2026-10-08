@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -74,7 +75,7 @@ jobs:
           Path("/tmp/think-prompt.txt").write_text(prompt)
           PY
           set +e
-          cn --config .continue/config.yaml --rule .continue/rules/rtk.md --rule .continue/rules/think.md --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
+          env -u GITHUB_TOKEN -u GH_TOKEN cn --config .continue/config.yaml --rule .continue/rules/rtk.md --rule .continue/rules/think.md --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
           status=$?
           set -e
           git diff --exit-code
@@ -178,7 +179,7 @@ jobs:
           echo "Running Continue CLI in headless mode"
           CAVEMAN_SKILL="${RUNNER_TEMP}/caveman-skill/.agents/skills/caveman/SKILL.md"
           test -f "$CAVEMAN_SKILL"
-          cn             --config .continue/config.yaml             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
+          env -u GITHUB_TOKEN -u GH_TOKEN cn             --config .continue/config.yaml             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
 
           # Check both uncommitted changes and commits created by the agent.
           if ! git merge-base --is-ancestor "$BASE_SHA" HEAD; then
@@ -197,6 +198,8 @@ jobs:
               exit 1
             fi
             BRANCH="issue-bot/issue-${ISSUE_NUMBER}-continue"
+            export GH_TOKEN="$GITHUB_TOKEN"
+            gh auth setup-git
             git push origin "HEAD:refs/heads/${BRANCH}"
             echo "committed_branch=${BRANCH}" >> "$GITHUB_OUTPUT"
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
