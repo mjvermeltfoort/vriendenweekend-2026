@@ -146,6 +146,9 @@ jobs:
 
           npm i -g @continuedev/cli@latest
           cn --version
+          echo "RTK: $(rtk --version)"
+          echo "Caveman: $CAVEMAN_SKILL"
+          echo "RTK en Caveman worden via --rule aan Continue meegegeven."
 
       - name: Run Continue CLI to solve and modify code
         id: cont
@@ -201,7 +204,9 @@ jobs:
 
           echo "Running Continue CLI in headless mode"
           CAVEMAN_SKILL="${RUNNER_TEMP}/caveman-skill/.agents/skills/caveman/SKILL.md"
-          test -f "$CAVEMAN_SKILL"
+          test -s "$CAVEMAN_SKILL"
+          command -v rtk
+          echo "Continue skills: rtk=$(rtk --version), caveman=$CAVEMAN_SKILL" >> "$GITHUB_STEP_SUMMARY"
           touch "${RUNNER_TEMP}/issue-bot-usage-start"
           env -u GITHUB_TOKEN -u GH_TOKEN cn             --config .continue/config.yaml             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
 
@@ -248,6 +253,40 @@ jobs:
             echo "No changes produced by Continue runner."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
+          {
+            echo "### RTK-rapportage"
+            rtk gain || echo "RTK-besparing niet beschikbaar"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-node@v6
+        name: Set up Node for Escape the City verification
+        if: steps.cont.outputs.has_changes == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: escape-the-city/package-lock.json
+
+      - name: Verify Escape the City before PR
+        id: verify_city
+        if: steps.cont.outputs.has_changes == 'true'
+        working-directory: escape-the-city
+        env:
+          VITE_SUPABASE_URL: https://smoke-test.supabase.co
+          VITE_SUPABASE_ANON_KEY: smoke-test-public-key
+        run: |
+          set -euo pipefail
+          echo "Installing dependencies from lockfile"
+          npm ci
+          echo "Checking TypeScript"
+          npm run lint
+          echo "Running all Vitest unit tests"
+          npm test
+          echo "Building production assets"
+          npm run build
+          {
+            echo "### Escape the City verification"
+            echo "✅ npm ci · npm run lint · npm test · npm run build"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create PR from Continue changes
         id: cpr_continue
