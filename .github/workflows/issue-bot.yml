@@ -30,8 +30,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run issue bot (think/review, and ack solve)
+      - name: Run issue bot (review and ack solve)
         id: solve
+        if: "!startsWith(github.event.comment.body, '/think')"
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -45,6 +46,44 @@ jobs:
           COMMENT_URL: ${{ github.event.comment.html_url }}
         run: |
           node .github/scripts/issue-bot.cjs
+
+      - name: Investigate issue (/think)
+        if: startsWith(github.event.comment.body, '/think')
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          npm i -g @continuedev/cli@latest
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          prompt = ("Investigate issue #" + os.environ["ISSUE_NUMBER"] + ": " + os.environ["ISSUE_TITLE"]
+                    + "\\n" + os.environ.get("ISSUE_BODY", "")
+                    + "\\nUser instructions: " + os.environ.get("COMMENT_BODY", "")
+                    + "\\nFollow .continue/rules/think.md. Inspect actual code and cite file paths and lines. Do not edit files.")
+          Path("/tmp/think-prompt.txt").write_text(prompt)
+          PY
+          set +e
+          cn --config .continue/config.yaml --rule .continue/rules/think.md --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
+          status=$?
+          set -e
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+          BOT_STATUS="$status" python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = Path("/tmp/think-output.txt").read_text(errors="replace")[-48000:]
+          header = "### /think — repository investigation" if os.environ["BOT_STATUS"] == "0" else "### /think failed (see Actions logs)"
+          Path("/tmp/think-comment.json").write_text(json.dumps({"body": header + "\\n\\n" + report}))
+          PY
+          curl --fail-with-body -sS -X POST -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" --data-binary @/tmp/think-comment.json "https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}/comments"
+          test "$status" -eq 0
 
       - name: Install Continue CLI (solve)
         if: startsWith(github.event.comment.body, '/solve')
@@ -118,7 +157,7 @@ jobs:
             echo "User prompt:"
             printf "%s\n" "${PROMPT}"
             echo
-            echo "Recent issue comments (latest first, max 10, excluding this command):"
+            echo "Recent issue comments (latest first; use the latest /think report but verify against current code):"
             if [ -s "${BOT_TMP}/comments.txt" ]; then cat "${BOT_TMP}/comments.txt"; else echo "(none)"; fi
             echo
             echo "Instructions:"
