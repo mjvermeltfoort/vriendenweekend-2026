@@ -290,20 +290,31 @@ jobs:
           set -euo pipefail
           echo "Installing dependencies from lockfile"
           npm ci
-          echo "Checking TypeScript"
+          # Run every check even if a previous one fails, so the agent gets
+          # complete actionable diagnostics instead of only the first failure.
+          set +e
           npm run lint
-          echo "Running all Vitest unit tests"
+          lint_status=$?
           npm test
-          echo "Building production assets"
+          test_status=$?
           npm run build
+          build_status=$?
+          set -e
           {
             echo "### Escape the City verification"
-            echo "✅ npm ci · npm run lint · npm test · npm run build"
+            echo "npm ci: geslaagd"
+            echo "Lint (exit): $lint_status"
+            echo "Vitest (exit): $test_status"
+            echo "Build (exit): $build_status"
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$lint_status" -ne 0 ] || [ "$test_status" -ne 0 ] || [ "$build_status" -ne 0 ]; then
+            echo "::error::Escape the City checks failed (lint=$lint_status, tests=$test_status, build=$build_status). PR blocked."
+            exit 1
+          fi
 
       - name: Create PR from Continue changes
         id: cpr_continue
-        if: steps.cont.outputs.has_changes == 'true'
+        if: steps.cont.outputs.has_changes == 'true' && steps.verify_city.outcome == 'success'
         uses: peter-evans/create-pull-request@v6
         with:
           branch: issue-bot/issue-${{ github.event.issue.number }}-continue
