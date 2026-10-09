@@ -9,3 +9,9 @@ models:
     apiKey: "${{ secrets.OPENAI_API_KEY }}"
     useResponsesApi: true
     capabilities: [tool_use]
+    # Fallback when Continue routes an unfamiliar model via Chat Completions:
+    # GPT-6 Luna supports tool calls there only with reasoning_effort=none.
+    # See https://developers.openai.com/api/docs/models/gpt-6-luna
+    requestOptions:
+      extraBodyProperties:
+        reasoning_effort: none
