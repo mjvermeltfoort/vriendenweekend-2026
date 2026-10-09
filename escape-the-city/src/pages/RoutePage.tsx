@@ -60,30 +60,29 @@ export function RoutePage({ pack }: { pack: GamePack }) {
         <SyncStatus status={syncStatus} message={syncMessage} />
         {activeSessionCount > 0 ? <span className="muted small">{activeSessionCount} speler{activeSessionCount === 1 ? '' : 's'} actief</span> : null}
       </div>
-      <div className="route-tabs" aria-label="Routeweergave">
-        <button className={view === 'list' ? 'is-active' : ''} type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
-          <GameIcon name="location" size={16} /> Lijst
-        </button>
-        <button className={view === 'route' ? 'is-active' : ''} type="button" aria-pressed={view === 'route'} onClick={() => setView('route')}>
-          <GameIcon name="map" size={16} /> Route
-        </button>
+      <div className="route-hero card stack">
+        <p className="eyebrow">Route</p>
+        <h1>{nextStop?.title ?? 'Geen volgende stop'}</h1>
+        <p className="muted">{nextStop?.navigation.clue ?? 'De route staat klaar zodra de volgende opdracht beschikbaar is.'}</p>
+        <div className="route-tabs" aria-label="Routeweergave">
+          <button className={view === 'list' ? 'is-active' : ''} type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
+            <GameIcon name="location" size={16} /> Lijst
+          </button>
+          <button className={view === 'route' ? 'is-active' : ''} type="button" aria-pressed={view === 'route'} onClick={() => setView('route')}>
+            <GameIcon name="map" size={16} /> Route
+          </button>
+        </div>
+        <ProgressBar value={completed} max={pack.stops.length} label="Herinneringen hersteld" />
+        {visibleBonuses.length > 0 && !bonusIntroSeen ? (
+          <details className="route-details">
+            <summary>Meer informatie</summary>
+            <div className="stack">
+              <p>Niet alle herinneringen liggen op de hoofdroute. In de stad zijn zes verborgen Drakenschubben achtergebleven. Ze zijn niet nodig om het avontuur te voltooien, maar oplettende teams kunnen er extra punten mee verdienen.</p>
+              <button className="button primary" type="button" onClick={dismissBonusIntro}>BEKIJK DE VERBORGEN SCHUBBEN</button>
+            </div>
+          </details>
+        ) : null}
       </div>
-      <ProgressBar value={completed} max={pack.stops.length} label="Herinneringen hersteld" />
-
-      {nextStop ? (
-        <section className="card stack" aria-label="Volgende stap">
-          <p className="eyebrow">Volgende stap</p>
-          <h2>{nextStop.title}</h2>
-          <p className="muted">{nextStop.navigation.clue}</p>
-        </section>
-      ) : null}
-
-      {visibleBonuses.length > 0 && !bonusIntroSeen ? (
-        <section className="card stack" aria-label="Introductie Verborgen Schubben">
-          <p>Niet alle herinneringen liggen op de hoofdroute. In de stad zijn zes verborgen Drakenschubben achtergebleven. Ze zijn niet nodig om het avontuur te voltooien, maar oplettende teams kunnen er extra punten mee verdienen.</p>
-          <button className="button primary" type="button" onClick={dismissBonusIntro}>BEKIJK DE VERBORGEN SCHUBBEN</button>
-        </section>
-      ) : null}
 
       {view === 'list' ? (
         <ol className="route-list route-list--spaced" aria-label="Routepunten">

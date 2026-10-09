@@ -243,6 +243,9 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const fallbackRemainingSeconds = fallbackDelayMs === null
     ? null
     : Math.max(0, Math.ceil((fallbackDelayMs - (fallbackNow - fallbackStartedAtRef.current)) / 1000));
+  const fallbackStatus = fallbackRemainingSeconds && fallbackRemainingSeconds > 0
+    ? `Verificatievragen verschijnen over ${fallbackRemainingSeconds} seconden.`
+    : 'Verificatievragen verschijnen bijna.';
 
   const showVerificationQuestions = ((!isBonusLocation(currentStop) && !canPlay && !isCompleted && observationFallbackVisible && Boolean(currentObservation))
     || (isBonusLocation(currentStop) && !canPlay && !isCompleted && bonusQuestionAvailable));
@@ -268,129 +271,113 @@ export function StopPage({ pack }: { pack: GamePack }) {
         </section>
       ) : null}
 
-      {!isCompleted && !showVerificationQuestions ? (
-        <section className="card card--compact stack stack--compact" style={{ marginTop: '0.5rem' }}>
-          <p className="eyebrow">Vind de locatie</p>
-          <h2>{currentStop.title}</h2>
-          <p>{currentStop.navigation.clue}</p>
-          <p className="muted small">{currentStop.locationName}</p>
+      <section className="card card--compact stack stack--compact" style={{ marginTop: '0.5rem' }}>
+        <p className="eyebrow">Vind de locatie</p>
+        <h2>{currentStop.title}</h2>
+        <p className="muted">{currentStop.navigation.clue}</p>
+        <p className="muted small">{currentStop.locationName}</p>
 
-          {isBonusLocation(currentStop) ? (
-            <section className="active-stop-indicator" aria-label="Afstand tot verborgen schub">
-              <p className="eyebrow">Afstand tot schub</p>
-              {bonusDistance === null ? (
-                <p>Afstand bepalen…</p>
-              ) : (
-                <>
-                  <p className="active-stop-indicator__distance">Nog ongeveer {formattedWalkingDistance(bonusDistance)} lopen</p>
-                  <p className="muted small">Directe afstand vanaf jullie actuele GPS-locatie.</p>
-                </>
-              )}
-            </section>
-          ) : currentStopIsActive
-            ? (
-              <ActiveStopIndicator
-                pack={pack}
-                progress={progress}
-                location={teamLocation}
-                showOpenButton
-                onOpenChallenge={() => {
-                  void startStop(currentStop.id).then((started) => {
-                    if (started) navigate(`/challenge/${currentStop.id}`);
-                  }).catch((error) => {
-                    setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.');
-                  });
-                }}
-              />
-            )
-            : null}
+        {isBonusLocation(currentStop) ? (
+          <section className="active-stop-indicator" aria-label="Afstand tot verborgen schub">
+            <p className="eyebrow">Afstand tot schub</p>
+            {bonusDistance === null ? (
+              <p>Afstand bepalen…</p>
+            ) : (
+              <>
+                <p className="active-stop-indicator__distance">Nog ongeveer {formattedWalkingDistance(bonusDistance)} lopen</p>
+                <p className="muted small">Directe afstand vanaf jullie actuele GPS-locatie.</p>
+              </>
+            )}
+          </section>
+        ) : currentStopIsActive ? (
+          <ActiveStopIndicator
+            pack={pack}
+            progress={progress}
+            location={teamLocation}
+            showOpenButton
+            onOpenChallenge={() => {
+              void startStop(currentStop.id).then((started) => {
+                if (started) navigate(`/challenge/${currentStop.id}`);
+              }).catch((error) => {
+                setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.');
+              });
+            }}
+          />
+        ) : null}
 
-          {gpsMessage || (!canPlay && locationError) ? (
-            <div className="location-status" role="status" aria-live="polite">
-              <GameIcon name={canPlay ? 'check' : 'location'} />
-              <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
-            </div>
-          ) : null}
+        {gpsMessage || (!canPlay && locationError) ? (
+          <div className="location-status" role="status" aria-live="polite">
+            <GameIcon name={canPlay ? 'check' : 'location'} />
+            <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
+          </div>
+        ) : null}
 
-          {!isCompleted ? (
+        {!isCompleted ? (
+          <>
+            {!canPlay ? <p className="muted">We controleren automatisch de beste actuele GPS van jullie team.</p> : null}
+            {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
+          </>
+        ) : null}
+      </section>
+
+      {!isBonusLocation(currentStop) && !canPlay && !isCompleted && fallbackDelayMs !== null ? (
+        <section className="observation-fallback stack" aria-label="Locatie bevestigen zonder GPS">
+          <h3>Locatie bevestigen zonder GPS</h3>
+          <p>{!observationFallbackVisible ? fallbackStatus : currentObservation ? currentObservation.question : observationStatus === 'validation_required' ? 'De vragen voor deze plek worden nog fysiek gecontroleerd. Vraag de organisatie om deze stop vrij te geven.' : 'Vraag de organisatie om deze stop vrij te geven.'}</p>
+          {observationFallbackVisible && currentObservation ? (
             <>
-              {!canPlay ? <p className="muted">We controleren automatisch de beste actuele GPS van jullie team.</p> : null}
-              {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
+              <label className="field">
+                <span>Jullie antwoord</span>
+                <input
+                  value={answer}
+                  onChange={(event) => setAnswer(event.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+              {currentObservation.hint ? <p className="hint">Hint: {currentObservation.hint}</p> : null}
+              <button
+                className="button primary"
+                type="button"
+                disabled={observationBusy || !answer.trim()}
+                onClick={() => void checkObservation()}
+              >
+                {observationBusy ? 'Controleren…' : 'Antwoord controleren'}
+              </button>
+              {currentObservation.canSelectBackup ? (
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={() => void selectBackupObservation(currentStop.id).catch((error) => {
+                    setGpsMessage(error instanceof Error ? error.message : 'De reservevraag kon niet worden geladen.');
+                  })}
+                >
+                  Detail niet zichtbaar
+                </button>
+              ) : currentObservation.isBackup ? (
+                <p>Vraag de organisatie om deze stop vrij te geven als ook dit detail niet zichtbaar is.</p>
+              ) : null}
             </>
           ) : null}
         </section>
       ) : null}
 
-        {!isBonusLocation(currentStop) && !canPlay && !isCompleted && fallbackDelayMs !== null ? (
-          <section className="observation-fallback stack" aria-label="Locatie bevestigen zonder GPS">
+      {isBonusLocation(currentStop) && !canPlay && !isCompleted ? (
+        bonusQuestionAvailable ? (
+          <section className="observation-fallback stack" aria-label="Bonuslocatie handmatig bevestigen">
             <h3>Locatie bevestigen zonder GPS</h3>
-            {!observationFallbackVisible ? (
-              <p>
-                {fallbackRemainingSeconds && fallbackRemainingSeconds > 0
-                  ? `Verificatievragen verschijnen over ${fallbackRemainingSeconds} seconden.`
-                  : 'Verificatievragen verschijnen bijna.'}
-              </p>
-            ) : currentObservation ? (
-              <>
-                <p>{currentObservation.question}</p>
-                <label className="field">
-                  <span>Jullie antwoord</span>
-                  <input
-                    value={answer}
-                    onChange={(event) => setAnswer(event.target.value)}
-                    autoComplete="off"
-                  />
-                </label>
-                {currentObservation.hint ? <p className="hint">Hint: {currentObservation.hint}</p> : null}
-                <button
-                  className="button primary"
-                  type="button"
-                  disabled={observationBusy || !answer.trim()}
-                  onClick={() => void checkObservation()}
-                >
-                  {observationBusy ? 'Controleren…' : 'Antwoord controleren'}
-                </button>
-                {currentObservation.canSelectBackup ? (
-                  <button
-                    className="button secondary"
-                    type="button"
-                    onClick={() => void selectBackupObservation(currentStop.id).catch((error) => {
-                      setGpsMessage(error instanceof Error ? error.message : 'De reservevraag kon niet worden geladen.');
-                    })}
-                  >
-                    Detail niet zichtbaar
-                  </button>
-                ) : currentObservation.isBackup ? (
-                  <p>Vraag de organisatie om deze stop vrij te geven als ook dit detail niet zichtbaar is.</p>
-                ) : null}
-              </>
-            ) : (
-              <p>
-                {observationStatus === 'validation_required'
-                  ? 'De vragen voor deze plek worden nog fysiek gecontroleerd. Vraag de organisatie om deze stop vrij te geven.'
-                  : 'Vraag de organisatie om deze stop vrij te geven.'}
-              </p>
-            )}
+            <p>{currentStop.manualVerification.question}</p>
+            <label className="field"><span>Jullie antwoord</span><input value={answer} onChange={(event) => setAnswer(event.target.value)} autoComplete="off" /></label>
+            <button className="button primary" type="button" disabled={observationBusy || !answer.trim()} onClick={() => void checkBonusObservation()}>{observationBusy ? 'Controleren…' : 'Antwoord controleren'}</button>
           </section>
-        ) : null}
+        ) : (
+          <section className="location-status" aria-live="polite">
+            <GameIcon name="location" />
+            <p>Kom dichter bij de schub. De verificatievraag verschijnt zodra jullie in de buurt zijn.</p>
+          </section>
+        )
+      ) : null}
 
-        {isBonusLocation(currentStop) && !canPlay && !isCompleted ? (
-          bonusQuestionAvailable ? (
-            <section className="observation-fallback stack" aria-label="Bonuslocatie handmatig bevestigen">
-              <h3>Locatie bevestigen zonder GPS</h3>
-              <p>{currentStop.manualVerification.question}</p>
-              <label className="field"><span>Jullie antwoord</span><input value={answer} onChange={(event) => setAnswer(event.target.value)} autoComplete="off" /></label>
-              <button className="button primary" type="button" disabled={observationBusy || !answer.trim()} onClick={() => void checkBonusObservation()}>{observationBusy ? 'Controleren…' : 'Antwoord controleren'}</button>
-            </section>
-          ) : (
-            <section className="location-status" aria-live="polite">
-              <GameIcon name="location" />
-              <p>Kom dichter bij de schub. De verificatievraag verschijnt zodra jullie in de buurt zijn.</p>
-            </section>
-          )
-        ) : null}
-
-        {isDev ? (
+      {isDev ? (
           <details>
             <summary>GPS-devsimulator</summary>
             <div className="stack">

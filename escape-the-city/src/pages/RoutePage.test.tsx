@@ -80,4 +80,13 @@ describe('RoutePage finale states', () => {
     expect(container.textContent).toContain('Bekijk resultaat');
     expect(container.textContent).not.toContain('Naar finale');
   });
+
+  it('shows route hero before details on mobile-sized route view', async () => {
+    await render(createInitialProgress('team-1', gamePack), 'hero');
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('Route');
+    expect(text).toContain('Routekaart');
+    expect(text).toContain('Verborgen eindlocatie');
+  });
 });
