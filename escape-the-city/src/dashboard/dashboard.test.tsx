@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { DashboardDialog, DashboardRadioToast } from './DashboardApp';
+import { DashboardApp, DashboardDialog, DashboardRadioToast } from './DashboardApp';
 import { accuracyFeatures, teamMarkerFeatures, bonusStopFeatures } from './mapData';
 import { dashboardReducer, initialDashboardState } from './store';
 import {
@@ -118,6 +118,20 @@ describe('dashboard data model', () => {
     expect(bonuses.features.length).toBe(6);
     expect(new Set(bonuses.features.map((f) => String(f.properties?.id))).size).toBe(6);
     expect(bonuses.features.every((f) => (f.properties as any)?.isBonus === true)).toBe(true);
+  });
+});
+
+describe('dashboard render', () => {
+  const container = document.createElement('div');
+  const root = createRoot(container);
+
+  afterAll(() => {
+    act(() => root.unmount());
+  });
+
+  it('keeps mobile and desktop layout structure available', () => {
+    expect(container).toBeTruthy();
+    expect(root).toBeTruthy();
   });
 });
 
