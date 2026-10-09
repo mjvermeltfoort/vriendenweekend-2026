@@ -500,7 +500,7 @@ summary:focus-visible {
 .home-hero {
   --home-gutter: var(--space-5);
   position: relative;
-  min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   padding: 0 var(--home-gutter) calc(1.25rem + env(safe-area-inset-bottom));
@@ -509,6 +509,11 @@ summary:focus-visible {
   background:
     radial-gradient(circle at 50% 35%, rgba(105, 116, 49, 0.16), transparent 34rem),
     linear-gradient(180deg, #273715, #08100a 78%, #030806);
+}
+@supports not (min-height: 100svh) {
+  .home-hero {
+    min-height: 100vh;
+  }
 }
 .home-hero__visual {
   position: relative;
