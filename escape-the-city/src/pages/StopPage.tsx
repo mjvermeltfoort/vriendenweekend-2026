@@ -255,7 +255,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
       {showParchment ? (
         <section className="parchment-card stack">
           <p className="eyebrow">{isBonusLocation(currentStop) ? 'Verborgen vondst' : `Opdracht ${currentStop.order} van ${pack.stops.length}`}</p>
-          {!isCompleted ? <p className="muted small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p> : null}
+          {!isCompleted ? <p className="parchment-instruction small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p> : null}
           <h1>{currentStop.intro.title}</h1>
           <p>{currentStop.intro.text}</p>
           {currentStop.intro.audioSrc ? (

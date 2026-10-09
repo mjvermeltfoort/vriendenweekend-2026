@@ -203,6 +203,13 @@ fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .parchment-card h3 { color: #314b32; }
 .parchment-card p,
 .parchment-card label { color: var(--color-parchment-text); }
+.parchment-card .parchment-instruction {
+  color: #2a1f12;
+  font-size: 0.93rem;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
 .parchment-card .field > span,
 .parchment-card fieldset > legend,
 .parchment-card .field > small { color: #3e2d1c; }
@@ -1969,5 +1976,6 @@ details {
 @media (max-width: 350px) {
   .result-stats { grid-template-columns: repeat(2, 1fr); }
   .result-stat:last-child { grid-column: 1 / -1; }
+  .parchment-card .parchment-instruction { font-size: 0.96rem; }
 }
 
