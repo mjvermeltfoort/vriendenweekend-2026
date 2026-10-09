@@ -1,6 +1,6 @@
 # Openbaar realtime teamdashboard
 
-Open `/escape-the-city/dashboard.html` rechtstreeks op een desktopvenster van minimaal 1100 pixels breed. Het dashboard staat los van de spelersrouter, navigatie, manifest en serviceworkerregistratie.
+Open `/escape-the-city/dashboard.html` rechtstreeks op een venster van minimaal 1100 pixels breed. Landscape tablets vanaf ongeveer 768 pixels breed tonen ook de lijst-en-kaartweergave. Het dashboard staat los van de spelersrouter, navigatie, manifest en serviceworkerregistratie.
 
 ## Belangrijke waarschuwing
 
