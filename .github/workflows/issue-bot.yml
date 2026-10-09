@@ -305,38 +305,17 @@ jobs:
             rtk gain || echo "RTK-besparing niet beschikbaar"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Verify Escape the City before PR
+      - name: Verify and automatically repair Escape the City
         id: verify_city
         if: steps.cont.outputs.has_changes == 'true'
-        working-directory: escape-the-city
+        timeout-minutes: 25
         env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           VITE_SUPABASE_URL: https://smoke-test.supabase.co
           VITE_SUPABASE_ANON_KEY: smoke-test-public-key
-        run: |
-          set -euo pipefail
-          echo "Installing dependencies from lockfile"
-          npm ci
-          # Run every check even if a previous one fails, so the agent gets
-          # complete actionable diagnostics instead of only the first failure.
-          set +e
-          npm run lint
-          lint_status=$?
-          npm test
-          test_status=$?
-          npm run build
-          build_status=$?
-          set -e
-          {
-            echo "### Escape the City verification"
-            echo "npm ci: geslaagd"
-            echo "Lint (exit): $lint_status"
-            echo "Vitest (exit): $test_status"
-            echo "Build (exit): $build_status"
-          } >> "$GITHUB_STEP_SUMMARY"
-          if [ "$lint_status" -ne 0 ] || [ "$test_status" -ne 0 ] || [ "$build_status" -ne 0 ]; then
-            echo "::error::Escape the City checks failed (lint=$lint_status, tests=$test_status, build=$build_status). PR blocked."
-            exit 1
-          fi
+        run: bash .github/scripts/issue-bot-verify.sh
 
       - name: Create PR from Continue changes
         id: cpr_continue
