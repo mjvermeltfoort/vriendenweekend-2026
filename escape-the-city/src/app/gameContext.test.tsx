@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { GameProvider, useGame, pickDeletableLocalTeamId } from './gameContext';
 import { gamePack } from '../game-data/moerasdraak/game';
 import { createInitialProgress, type TeamRecord } from '../features/game/gameState';
@@ -15,8 +15,10 @@ import {
   loadLastTeamId
 } from '../features/offline/storage';
 
-function TestProbe() {
+function TestProbe({ onRemove }: { onRemove?: (remove: () => Promise<void>) => void }) {
   const value = useGame();
+  // Capture the initial callback before asynchronous team hydration.
+  if (onRemove) onRemove(value.removeActiveTeam);
   return (
     <pre data-active={value.activeTeam?.id ?? ''} data-has-delete={String(value.hasLocalTeamToDelete)} />
   );
@@ -63,19 +65,17 @@ describe('removeActiveTeam fallbacks', () => {
     // simulate last-team pointer without mounting state as active
     localStorage.setItem('moerasdraak-last-team', teamId);
 
-    act(() => root.render(<GameProvider><TestProbe /></GameProvider>));
+    let remove: (() => Promise<void>) | undefined;
+    await act(async () => {
+      root.render(<GameProvider><TestProbe onRemove={(fn) => { remove ??= fn; }} /></GameProvider>);
+    });
 
-    // fetch context and call removeActiveTeam
     const probe = container.querySelector('pre')!;
     expect(probe.getAttribute('data-has-delete')).toBe('true');
 
-    // call through provider by re-rendering with a consumer that triggers deletion
-    function DeleteTrigger() {
-      const { removeActiveTeam } = useGame();
-      useEffect(() => { void removeActiveTeam(); }, [removeActiveTeam]);
-      return null;
-    }
-    act(() => root.render(<GameProvider><DeleteTrigger /></GameProvider>));
+    // Wait for the full asynchronous removal before checking IndexedDB.
+    expect(remove).toBeDefined();
+    await act(async () => { await remove!(); });
 
     // verify local deletion
     expect((await loadTeams()).length).toBe(0);
@@ -83,18 +83,18 @@ describe('removeActiveTeam fallbacks', () => {
     expect(await loadTeamSession(teamId)).toBeUndefined();
     expect(loadLastTeamId()).toBeNull();
 
-    act(() => root.unmount());
+    await act(async () => { root.unmount(); });
   });
 
   it('hasLocalTeamToDelete is false when no teams exist', async () => {
     const container = document.createElement('div');
     const root = createRoot(container);
 
-    act(() => root.render(<GameProvider><TestProbe /></GameProvider>));
+    await act(async () => { root.render(<GameProvider><TestProbe /></GameProvider>); });
 
     const probe = container.querySelector('pre')!;
     expect(probe.getAttribute('data-has-delete')).toBe('false');
 
-    act(() => root.unmount());
+    await act(async () => { root.unmount(); });
   });
 });
