@@ -378,31 +378,31 @@ export function StopPage({ pack }: { pack: GamePack }) {
       ) : null}
 
       {isDev ? (
-          <details>
-            <summary>GPS-devsimulator</summary>
-            <div className="stack">
-              <label className="field"><span>Mode</span>
-                <select value={devState.mode} onChange={(e) => setDevState((state) => ({ ...state, mode: e.target.value as SimulatorState['mode'] }))}>
-                  <option value="exact">Exact</option>
-                  <option value="outside">Buiten geofence</option>
-                  <option value="denied">Toegang geweigerd</option>
-                  <option value="timeout">Timeout</option>
-                  <option value="unavailable">Niet beschikbaar</option>
-                </select>
-              </label>
-              <label className="field"><span>Latitude</span><input value={devState.latitude} onChange={(e) => setDevState((state) => ({ ...state, latitude: Number(e.target.value) }))} /></label>
-              <label className="field"><span>Longitude</span><input value={devState.longitude} onChange={(e) => setDevState((state) => ({ ...state, longitude: Number(e.target.value) }))} /></label>
-              <label className="field"><span>Nauwkeurigheid</span><input value={devState.accuracy} onChange={(e) => setDevState((state) => ({ ...state, accuracy: Number(e.target.value) }))} /></label>
-              <button className="button secondary" type="button" onClick={() => void sendSimulatedLocation()}>
-                GPS-meting versturen
-              </button>
-            </div>
-          </details>
-        ) : null}
+        <details>
+          <summary>GPS-devsimulator</summary>
+          <div className="stack">
+            <label className="field"><span>Mode</span>
+              <select value={devState.mode} onChange={(e) => setDevState((state) => ({ ...state, mode: e.target.value as SimulatorState['mode'] }))}>
+                <option value="exact">Exact</option>
+                <option value="outside">Buiten geofence</option>
+                <option value="denied">Toegang geweigerd</option>
+                <option value="timeout">Timeout</option>
+                <option value="unavailable">Niet beschikbaar</option>
+              </select>
+            </label>
+            <label className="field"><span>Latitude</span><input value={devState.latitude} onChange={(e) => setDevState((state) => ({ ...state, latitude: Number(e.target.value) }))} /></label>
+            <label className="field"><span>Longitude</span><input value={devState.longitude} onChange={(e) => setDevState((state) => ({ ...state, longitude: Number(e.target.value) }))} /></label>
+            <label className="field"><span>Nauwkeurigheid</span><input value={devState.accuracy} onChange={(e) => setDevState((state) => ({ ...state, accuracy: Number(e.target.value) }))} /></label>
+            <button className="button secondary" type="button" onClick={() => void sendSimulatedLocation()}>
+              GPS-meting versturen
+            </button>
+          </div>
+        </details>
+      ) : null}
 
-        {isCompleted ? (
-          <div className="card card--success center">
-            <span style={{ fontSize: '2rem' }}>{currentStop.reward.symbol}</span>
+      {isCompleted ? (
+        <div className="card card--success center">
+          <span style={{ fontSize: '2rem' }}>{currentStop.reward.symbol}</span>
             {isBonusLocation(currentStop) ? (
               <>
                 <h2>Drakenschub gevonden</h2>
@@ -416,11 +416,12 @@ export function StopPage({ pack }: { pack: GamePack }) {
                 {currentStop.challenge.kind === 'choice' ? (
                   <p className="muted small">{currentStop.challenge.correctFeedback}</p>
                 ) : null}
+                <Link className="button secondary" to="/route">Bekijk routekaart</Link>
               </>
             )}
-          </div>
-        ) : (
-          <>
+        </div>
+      ) : (
+        <>
             {otherActiveGame ? (
               <div className="location-status" role="status">
                 <GameIcon name="team" />
@@ -441,12 +442,12 @@ export function StopPage({ pack }: { pack: GamePack }) {
                 Opdracht openen
               </button>
             ) : null}
-          </>
-        )}
+        </>
+      )}
 
-        {currentStop.isFinal && !finaleEligibility.eligible ? <p className="error">Nog {finaleEligibility.missingCount} opdrachten te voltooien.</p> : null}
-        {isCompleted && followingStop ? <Link className="button secondary" to={`/stop/${followingStop.id}`}>Volgende routepunt</Link> : null}
-        {isCompleted && !followingStop && !isBonusLocation(currentStop) ? <Link className="button primary" to="/resultaat">Bekijk resultaat</Link> : null}
+      {currentStop.isFinal && !finaleEligibility.eligible ? <p className="error">Nog {finaleEligibility.missingCount} opdrachten te voltooien.</p> : null}
+      {isCompleted && followingStop ? <Link className="button secondary" to={`/stop/${followingStop.id}`}>Volgende routepunt</Link> : null}
+      {isCompleted && !followingStop && !isBonusLocation(currentStop) ? <Link className="button primary" to="/resultaat">Bekijk resultaat</Link> : null}
     </PageShell>
   );
 }
