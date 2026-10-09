@@ -35,20 +35,39 @@ function collectContinueUsage(startedAt, cwd, home = process.env.CONTINUE_GLOBAL
   const input = hasTokens ? sum((u) => u.promptTokens) : null;
   const output = hasTokens ? sum((u) => u.completionTokens) : null;
   const cached = hasTokens ? sum((u) => u.promptTokensDetails?.cachedTokens) : null;
+  // The workflow records which single-model Continue config it actually used.
   let model = null;
   try {
-    const config = fs.readFileSync('.continue/config.yaml', 'utf8');
+    const selection = path.join(process.env.RUNNER_TEMP || '/tmp', 'issue-bot-config-used');
+    const configPath = fs.readFileSync(selection, 'utf8').trim();
+    const config = fs.readFileSync(configPath, 'utf8');
     const models = [...config.matchAll(/^\s+model:\s*([\w.-]+)\s*$/gm)];
     if (models.length === 1) model = models[0][1];
-  } catch { /* Model unknown. */ }
+  } catch {
+    // Historical jobs used only the default config.
+    try {
+      const config = fs.readFileSync('.continue/config.yaml', 'utf8');
+      const models = [...config.matchAll(/^\s+model:\s*([\w.-]+)\s*$/gm)];
+      if (models.length === 1) model = models[0][1];
+    } catch { /* Model unknown. */ }
+  }
   let cost = hasCost ? sum((u) => u.totalCost) : null;
   let source = 'Continue-sessiestatistieken';
-  // Fall back only for a known configured model and measured tokens.
-  // Published standard GPT-5 prices: https://developers.openai.com/api/docs/models/gpt-5
-  if (cost === null && hasTokens && model === 'gpt-5') {
+  // USD per million tokens: uncached input, cached input, output.
+  // https://developers.openai.com/api/docs/models/
+  // GPT-6 figures reflect standard short-context pricing; actual rates can
+  // differ for long-context requests and other processing tiers.
+  const prices = {
+    'gpt-5': [1.25, 0.125, 10],
+    'gpt-5.4-mini': [0.75, 0.075, 4.5],
+    'gpt-6-luna': [0.10, 0.01, 0.50],
+    'gpt-6-sol': [2.00, 0.20, 10.00]
+  };
+  if (cost === null && hasTokens && prices[model]) {
+    const [regularRate, cachedRate, outputRate] = prices[model];
     const cachedInput = Math.min(input, cached);
-    cost = ((input - cachedInput) * 1.25 + cachedInput * 0.125 + output * 10) / 1e6;
-    source += ' + GPT-5-prijslijst (schatting)';
+    cost = ((input - cachedInput) * regularRate + cachedInput * cachedRate + output * outputRate) / 1e6;
+    source += ' + gepubliceerde modeltarieven (indicatie)';
   }
   return { input, output, cached, cost, model, source };
 }
@@ -94,7 +113,7 @@ function formatReport(mode, usage, runUrl, status) {
   } else {
     lines.push('- Tokens en kosten: **niet beschikbaar** (geen betrouwbare gebruiksstatistieken gevonden).');
   }
-  lines.push('', 'De kosten zijn een schatting, niet de definitieve factuur. [GitHub Actions-run](' + runUrl + ').');
+  lines.push('', 'Kostenindicatie op basis van Continue of standaard API-tarieven; caching, lange context en facturatie kunnen afwijken. [GitHub Actions-run](' + runUrl + ').');
   return lines.join('\n');
 }
 
