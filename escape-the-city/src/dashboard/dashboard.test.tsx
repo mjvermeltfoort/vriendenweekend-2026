@@ -90,6 +90,18 @@ describe('dashboard data model', () => {
     });
   });
 
+  it('removes exactly one team and clears selection when needed', () => {
+    const first = team({ id: 'one' });
+    const second = team({ id: 'two', name: 'Team Twee' });
+    const initialized = dashboardReducer(initialDashboardState, { type: 'snapshot', teams: [first, second] });
+    const selected = dashboardReducer({ ...initialized, selectedTeamId: 'one' }, {
+      type: 'remove-team',
+      teamId: 'one'
+    });
+    expect(selected.teams.map((item) => item.name)).toEqual(['Team Twee']);
+    expect(selected.selectedTeamId).toBe('two');
+  });
+
   it('replaces exactly one team and preserves selection', () => {
     const first = team({ id: 'one' });
     const second = team({ id: 'two', name: 'Team Twee' });
