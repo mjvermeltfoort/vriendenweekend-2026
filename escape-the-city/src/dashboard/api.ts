@@ -65,6 +65,7 @@ export const dashboardActions = {
     'dashboard_revoke_team_session',
     { p_team_id: teamId, p_session_id: sessionId }
   ),
+  deleteTeam: (teamId: string) => mutate('dashboard_delete_team', { p_team_id: teamId }),
   releaseCurrentStop: (teamId: string, reason: string) => mutate(
     'dashboard_release_current_stop',
     { p_team_id: teamId, p_reason: reason }
