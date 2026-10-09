@@ -43,7 +43,7 @@ validate_agent_changes() {
   fi
   local changed
   changed="$({ git diff --name-only "$START_SHA" HEAD; git diff --name-only; git diff --cached --name-only; git ls-files --others --exclude-standard; } | sort -u)"
-  if printf '%s\n' "$changed" | grep -q '^\.'github'/workflows/'; then
+  if printf '%s\n' "$changed" | grep -q '^\.github/workflows/'; then
     echo "::error::Issue-bot may never modify .github/workflows/."
     return 1
   fi
@@ -103,10 +103,16 @@ for pass in 0 1 2; do
     echo "Failure statuses: install=$install_status lint=$lint_status tests=$test_status build=$build_status."
     echo "===== RELEVANT VERIFICATION LOGS (truncated) ====="
     for label in install lint tests build; do
+      case "$label" in
+        install) failed="$install_status" ;;
+        lint)    failed="$lint_status" ;;
+        tests)   failed="$test_status" ;;
+        build)   failed="$build_status" ;;
+      esac
       file="$TEMP_DIR/verify-$pass-$label.log"
-      if [ -f "$file" ]; then
-        echo "===== $label ====="
-        tail -n 105 "$file"
+      if [ "$failed" -ne 0 ] && [ -f "$file" ]; then
+        echo "===== FAILED: $label ====="
+        tail -n 100 "$file"
       fi
     done
   } >"$prompt_file"
