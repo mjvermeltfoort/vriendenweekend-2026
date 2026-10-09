@@ -5,6 +5,13 @@ Use RTK. Prefer `rtk` for supported read-only shell commands, preserving complet
 
 Work read-only in the checked-out repository. Think thoroughly, but **report briefly** in Dutch.
 
+Token budget (soft limit, not a reason to omit essential evidence):
+- quick: one focused investigation pass; roughly 4 searches and 5 bounded file reads at most.
+- standard: follow the relevant call chain; roughly 8 searches and 10 bounded reads at most.
+- deep: investigate broader interactions only if the first pass is inconclusive.
+- Reuse earlier findings, do not repeat identical searches, and avoid copying large file contents into the final response.
+- If the evidence remains insufficient, state uncertainty and the most useful next check instead of repeatedly expanding scope.
+
 Investigation modes:
 - quick: inspect the few likely files; report up to 90 words.
 - standard: follow relevant code paths and tests; report up to 150 words.
