@@ -113,6 +113,18 @@ jobs:
           set +e
           timeout --signal=TERM --kill-after=15s "$MAX_SECONDS" env -u GITHUB_TOKEN -u GH_TOKEN cn --config "$CONFIG_FILE" --rule .continue/rules/rtk.md --rule .continue/rules/think.md --rule "$CAVEMAN_SKILL" --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
           status=$?
+          if [ "$status" -ne 0 ] && [ "$CONFIG_FILE" = ".continue/config-luna.yaml" ] &&
+             grep -Eqi '400.*(reasoning_effort|function tools)|chat/completions.*(reasoning|function)|model_not_found|Unsupported model' /tmp/think-output.txt; then
+            echo "::warning::Luna failed due to model/API compatibility. Retrying /think with GPT-5.4 Mini."
+            {
+              echo "### Model fallback"
+              echo "GPT-6 Luna not compatible with this Continue API route; retrying with GPT-5.4 Mini."
+            } >> "$GITHUB_STEP_SUMMARY"
+            CONFIG_FILE=.continue/config.yaml
+            printf '%s\n' "$CONFIG_FILE" > "${RUNNER_TEMP}/issue-bot-config-used"
+            timeout --signal=TERM --kill-after=15s "$MAX_SECONDS" env -u GITHUB_TOKEN -u GH_TOKEN cn --config "$CONFIG_FILE" --rule .continue/rules/rtk.md --rule .continue/rules/think.md --rule "$CAVEMAN_SKILL" --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
+            status=$?
+          fi
           set -e
           git diff --exit-code
           test -z "$(git ls-files --others --exclude-standard)"
