@@ -108,9 +108,10 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
   const [locationEnabled, setLocationEnabled] = useState(false);
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
 
+  const visibleBonusLocationsMemo = useMemo(() => visibleBonusLocations(gamePack, progress), [gamePack, progress]);
   const mapLocations = useMemo<(RouteStop | BonusLocation)[]>(
-    () => [...visibleStops, ...visibleBonusLocations(gamePack, progress)],
-    [gamePack, progress, visibleStops]
+    () => [...visibleStops, ...visibleBonusLocationsMemo],
+    [visibleStops, visibleBonusLocationsMemo]
   );
   const selectedStop = mapLocations.find((stop) => stop.id === selectedStopId) ?? null;
   const selectedState = selectedStop ? progress?.stopProgress?.[selectedStop.id]?.state ?? 'locked' : 'locked';
