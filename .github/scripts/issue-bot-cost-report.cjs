@@ -14,6 +14,35 @@ function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
 }
 
+// Standard text-token prices in USD per million tokens:
+// [uncached input, cached input, output]. See https://developers.openai.com/api/docs/pricing
+const MODEL_RATES = {
+  'gpt-5': [1.25, 0.125, 10],
+  'gpt-5.4-mini': [0.75, 0.075, 4.5],
+  'gpt-6-luna': [0.10, 0.01, 0.50],
+  'gpt-6-sol': [2.00, 0.20, 10.00],
+  'gpt-4o-mini': [0.15, 0.075, 0.60],
+};
+
+function estimateCost(model, input, output, cached) {
+  const rates = MODEL_RATES[model];
+  if (!rates || input === null || output === null) {
+    return { cost: null, costRange: null, cachedVerified: false };
+  }
+  const [inputRate, cacheRate, outputRate] = rates;
+  const baseOutput = output * outputRate;
+  const maxCost = (input * inputRate + baseOutput) / 1e6;
+  const minCost = (input * cacheRate + baseOutput) / 1e6;
+  // A zero cached count can mean no cache hits OR an integration that did not
+  // expose OpenAI cache usage. Never present that as a precise dollar amount.
+  if (cached === null || cached === 0) {
+    return { cost: null, costRange: [minCost, maxCost], cachedVerified: false };
+  }
+  const validCached = Math.min(input, cached);
+  const cost = ((input - validCached) * inputRate + validCached * cacheRate + baseOutput) / 1e6;
+  return { cost, costRange: null, cachedVerified: true };
+}
+
 function collectContinueUsage(startedAt, cwd, home = process.env.CONTINUE_GLOBAL_DIR || path.join(os.homedir(), '.continue')) {
   const dir = path.join(home, 'sessions');
   if (!fs.existsSync(dir)) return null;
@@ -31,10 +60,10 @@ function collectContinueUsage(startedAt, cwd, home = process.env.CONTINUE_GLOBAL
   if (sessions.length === 0) return null;
   const sum = (getter) => sessions.reduce((total, usage) => total + (number(getter(usage)) || 0), 0);
   const hasTokens = sessions.some((usage) => number(usage.promptTokens) !== null || number(usage.completionTokens) !== null);
-  const hasCost = sessions.some((usage) => number(usage.totalCost) !== null && usage.totalCost > 0);
   const input = hasTokens ? sum((u) => u.promptTokens) : null;
   const output = hasTokens ? sum((u) => u.completionTokens) : null;
-  const cached = hasTokens ? sum((u) => u.promptTokensDetails?.cachedTokens) : null;
+  const hasCacheUsage = sessions.some((u) => number(u.promptTokensDetails?.cachedTokens) !== null);
+  const cached = hasCacheUsage ? sum((u) => u.promptTokensDetails?.cachedTokens) : null;
   // The workflow records which single-model Continue config it actually used.
   let model = null;
   try {
@@ -51,25 +80,10 @@ function collectContinueUsage(startedAt, cwd, home = process.env.CONTINUE_GLOBAL
       if (models.length === 1) model = models[0][1];
     } catch { /* Model unknown. */ }
   }
-  let cost = hasCost ? sum((u) => u.totalCost) : null;
-  let source = 'Continue-sessiestatistieken';
-  // USD per million tokens: uncached input, cached input, output.
-  // https://developers.openai.com/api/docs/models/
-  // GPT-6 figures reflect standard short-context pricing; actual rates can
-  // differ for long-context requests and other processing tiers.
-  const prices = {
-    'gpt-5': [1.25, 0.125, 10],
-    'gpt-5.4-mini': [0.75, 0.075, 4.5],
-    'gpt-6-luna': [0.10, 0.01, 0.50],
-    'gpt-6-sol': [2.00, 0.20, 10.00]
-  };
-  if (cost === null && hasTokens && prices[model]) {
-    const [regularRate, cachedRate, outputRate] = prices[model];
-    const cachedInput = Math.min(input, cached);
-    cost = ((input - cachedInput) * regularRate + cachedInput * cachedRate + output * outputRate) / 1e6;
-    source += ' + gepubliceerde modeltarieven (indicatie)';
-  }
-  return { input, output, cached, cost, model, source };
+  // Continue's session.totalCost is an internal estimate, not an OpenAI charge.
+  // It can disagree with the selected model's published price by a large factor.
+  const pricing = estimateCost(model, input, output, cached);
+  return { input, output, cached, ...pricing, model, source: 'Continue-tokens + OpenAI-standaardtarieven' };
 }
 
 function reviewUsage(filepath) {
@@ -80,12 +94,9 @@ function reviewUsage(filepath) {
   const output = number(u.completion_tokens);
   if (input === null || output === null) return null;
   const cached = number(u.prompt_tokens_details?.cached_tokens) || 0;
-  let cost = null;
-  // USD per 1M text tokens, from the published GPT-4o-mini API prices.
-  if (/^gpt-4o-mini(?:-|$)/.test(record.model || '')) {
-    cost = ((input - Math.min(input, cached)) * 0.15 + Math.min(input, cached) * 0.075 + output * 0.60) / 1e6;
-  }
-  return { input, output, cached, cost, source: 'OpenAI API-usage', model: record.model };
+  const model = /^gpt-4o-mini(?:-|$)/.test(record.model || '') ? 'gpt-4o-mini' : (record.model || '');
+  const pricing = estimateCost(model, input, output, cached);
+  return { input, output, cached, ...pricing, source: 'OpenAI API-tokens + standaardtarieven', model: record.model };
 }
 
 function usd(n) {
@@ -103,17 +114,23 @@ function formatReport(mode, usage, runUrl, status) {
   ];
   if (usage) {
     if (usage.model) lines.push('- Model: \`' + usage.model + '\`');
-    if (usage.input !== null) {
-      lines.push('- Invoer: **' + count(usage.input) + ' tokens**' +
-        (usage.cached ? ' (' + count(usage.cached) + ' cached)' : ''));
-    }
+    if (usage.input !== null) lines.push('- Invoer: **' + count(usage.input) + ' tokens**');
     if (usage.output !== null) lines.push('- Uitvoer: **' + count(usage.output) + ' tokens**');
-    lines.push('- Geschatte API-kosten: **' + (usage.cost === null ? 'niet beschikbaar' : usd(usage.cost)) + '**');
+    if (usage.cachedVerified) {
+      lines.push('- Gerapporteerde cached input: **' + count(usage.cached) + ' tokens**');
+      lines.push('- Tariefberekening (incl. caching): **' + usd(usage.cost) + '**');
+    } else if (usage.costRange) {
+      lines.push('- Kostenindicatie bij onbekende cachekorting: **' +
+        usd(usage.costRange[0]) + ' – ' + usd(usage.costRange[1]) + '**');
+      lines.push('- Cachegebruik: **niet betrouwbaar vastgesteld**. De bovengrens rekent alle input als ongecachet.');
+    } else {
+      lines.push('- Kosten: **niet betrouwbaar te berekenen**');
+    }
     lines.push('- Bron: ' + usage.source);
   } else {
     lines.push('- Tokens en kosten: **niet beschikbaar** (geen betrouwbare gebruiksstatistieken gevonden).');
   }
-  lines.push('', 'Kostenindicatie op basis van Continue of standaard API-tarieven; caching, lange context en facturatie kunnen afwijken. [GitHub Actions-run](' + runUrl + ').');
+  lines.push('', 'Dit is geen factuur: OpenAI Platform is leidend voor werkelijk verbruik. Afwijkende verwerkingstarieven of lange context kunnen het berekende bereik veranderen. [GitHub Actions-run](' + runUrl + ').');
   return lines.join('\n');
 }
 
@@ -158,4 +175,4 @@ async function main() {
 if (require.main === module) {
   main().catch((error) => { console.error(error.message); process.exitCode = 1; });
 }
-module.exports = { collectContinueUsage, reviewUsage, formatReport };
+module.exports = { collectContinueUsage, reviewUsage, formatReport, estimateCost };
