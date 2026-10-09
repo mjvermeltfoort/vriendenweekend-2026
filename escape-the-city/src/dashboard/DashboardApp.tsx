@@ -28,6 +28,7 @@ type DialogState =
   | { kind: 'rotate'; team: DashboardTeam }
   | { kind: 'disable'; team: DashboardTeam }
   | { kind: 'reset'; team: DashboardTeam }
+  | { kind: 'delete'; team: DashboardTeam }
   | { kind: 'abandon'; team: DashboardTeam }
   | { kind: 'revoke'; team: DashboardTeam; participant: DashboardParticipant }
   | { kind: 'release'; team: DashboardTeam; stopName: string }
@@ -137,6 +138,7 @@ export function DashboardDialog({ state, busy, error, onClose, onSubmit }: {
     rotate: ['Nieuwe code genereren', 'De oude code werkt hierna niet meer voor nieuwe deelnemers. Bestaande actieve deelnemers blijven verbonden.'],
     disable: ['Team uitschakelen', 'Alle actieve teamsessies worden ingetrokken. Resultaten blijven bewaard.'],
     reset: ['Voortgang resetten', state.kind === 'reset' ? `Weet je zeker dat je de volledige voortgang van ${state.team.name} wilt resetten?` : ''],
+    delete: ['Team verwijderen', state.kind === 'delete' ? `Weet je zeker dat je ${state.team.name} wilt verwijderen? Alle data voor dit team verdwijnt.` : ''],
     abandon: ['Actieve opdracht beëindigen', 'De actieve opdracht wordt als afgebroken opgeslagen. Er wordt geen score toegekend.'],
     revoke: ['Sessie stoppen', 'Dit apparaat kan daarna niet meer schrijven en keert bij de volgende synchronisatie terug naar het codescherm.'],
     release: [
@@ -169,6 +171,12 @@ export function DashboardDialog({ state, busy, error, onClose, onSubmit }: {
           <label>
             Reden
             <textarea name="reason" minLength={3} maxLength={500} required autoFocus />
+          </label>
+        ) : null}
+        {state.kind === 'delete' ? (
+          <label>
+            Bevestig teamnaam
+            <input name="confirmName" minLength={2} maxLength={80} required autoFocus />
           </label>
         ) : null}
         {error ? <p className="dialog-error" role="alert">{error}</p> : null}
@@ -308,6 +316,15 @@ export function DashboardApp() {
         updated = await dashboardActions.resetProgress(dialog.team.id);
       } else if (dialog.kind === 'abandon') {
         updated = await dashboardActions.abandonGame(dialog.team.id);
+      } else if (dialog.kind === 'delete') {
+        const confirmName = String(formData.get('confirmName') ?? '').trim();
+        if (confirmName !== dialog.team.name) {
+          throw new Error('Typ teamnaam om verwijderen te bevestigen.');
+        }
+        await dashboardActions.deleteTeam(dialog.team.id);
+        dispatch({ type: 'select', teamId: state.teams.find((team) => team.id !== dialog.team.id)?.id ?? '' });
+        setDialog(null);
+        return;
       } else if (dialog.kind === 'release') {
         updated = await dashboardActions.releaseCurrentStop(
           dialog.team.id,
@@ -414,6 +431,7 @@ export function DashboardApp() {
                       ? <button type="button" onClick={() => setDialog({ kind: 'disable', team: selectedTeam })}>Uitschakelen</button>
                       : null}
                   <button className="danger" type="button" onClick={() => setDialog({ kind: 'reset', team: selectedTeam })}>Voortgang resetten</button>
+                  <button className="danger" type="button" onClick={() => setDialog({ kind: 'delete', team: selectedTeam })}>Team verwijderen</button>
                   {selectedTeam.activeGame
                     ? <button className="danger" type="button" onClick={() => setDialog({ kind: 'abandon', team: selectedTeam })}>Opdracht beëindigen</button>
                     : null}

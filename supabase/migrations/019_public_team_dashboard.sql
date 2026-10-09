@@ -714,6 +714,33 @@ begin
 end;
 $$;
 
+create or replace function public.dashboard_delete_team(
+  p_team_id uuid,
+  p_client_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  team_name text;
+begin
+  perform city_game.assert_dashboard_team(p_team_id);
+  if p_client_id is null then
+    raise exception using errcode = 'P0001', message = 'AUTH_REQUIRED';
+  end if;
+  select name into team_name from city_game.teams where id = p_team_id for update;
+  perform city_game.dashboard_audit(
+    p_team_id,
+    'team_deleted_from_dashboard',
+    p_client_id,
+    jsonb_build_object('teamName', team_name)
+  );
+  delete from city_game.teams where id = p_team_id;
+end;
+$$;
+
 revoke all on function public.get_dashboard_snapshot() from public, anon, authenticated;
 revoke all on function public.dashboard_create_team(text, text, uuid) from public, anon, authenticated;
 revoke all on function public.dashboard_update_team_name(uuid, text, uuid) from public, anon, authenticated;
@@ -722,6 +749,7 @@ revoke all on function public.dashboard_set_team_status(uuid, text, uuid) from p
 revoke all on function public.dashboard_reset_team_progress(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.dashboard_abandon_active_game(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.dashboard_revoke_team_session(uuid, uuid, uuid) from public, anon, authenticated;
+revoke all on function public.dashboard_delete_team(uuid, uuid) from public, anon, authenticated;
 
 grant execute on function public.get_dashboard_snapshot() to authenticated;
 grant execute on function public.dashboard_create_team(text, text, uuid) to authenticated;
@@ -731,6 +759,7 @@ grant execute on function public.dashboard_set_team_status(uuid, text, uuid) to 
 grant execute on function public.dashboard_reset_team_progress(uuid, uuid) to authenticated;
 grant execute on function public.dashboard_abandon_active_game(uuid, uuid) to authenticated;
 grant execute on function public.dashboard_revoke_team_session(uuid, uuid, uuid) to authenticated;
+grant execute on function public.dashboard_delete_team(uuid, uuid) to authenticated;
 
 revoke all on function city_game.generate_dashboard_join_code() from public, anon, authenticated;
 revoke all on function city_game.hash_dashboard_join_code(text) from public, anon, authenticated;
