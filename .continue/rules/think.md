@@ -1,6 +1,9 @@
 # /think — compact, evidence-based code investigation
 
-Work read-only in the checked-out repository. Follow the Caveman skill for concise, plain language. Think thoroughly, but **report briefly** in Dutch.
+Use Caveman. Follow the loaded Caveman skill for concise, practical language.
+Use RTK. Prefer `rtk` for supported read-only shell commands, preserving complete error diagnostics.
+
+Work read-only in the checked-out repository. Think thoroughly, but **report briefly** in Dutch.
 
 Investigation modes:
 - quick: inspect the few likely files; report up to 90 words.
