@@ -97,9 +97,21 @@ jobs:
                     + "\nFollow .continue/rules/think.md and the Caveman skill. Research in depth, reply concisely in Dutch with evidence. Do not edit files.")
           Path("/tmp/think-prompt.txt").write_text(prompt)
           PY
+          # Route lightweight research to Luna; reserve Mini for deep tracing.
+          if [[ "${COMMENT_BODY,,}" =~ ^/think[[:space:]]+deep([[:space:]]|$) ]]; then
+            CONFIG_FILE=.continue/config.yaml
+            MAX_SECONDS=480
+          else
+            CONFIG_FILE=.continue/config-luna.yaml
+            MAX_SECONDS=360
+            if [[ "${COMMENT_BODY,,}" =~ ^/think[[:space:]]+quick([[:space:]]|$) ]]; then MAX_SECONDS=240; fi
+          fi
+          test -f "$CONFIG_FILE"
+          printf '%s\n' "$CONFIG_FILE" > "${RUNNER_TEMP}/issue-bot-config-used"
+          echo "Think config: $CONFIG_FILE (max ${MAX_SECONDS}s)" >> "$GITHUB_STEP_SUMMARY"
           touch "${RUNNER_TEMP}/issue-bot-usage-start"
           set +e
-          env -u GITHUB_TOKEN -u GH_TOKEN cn --config .continue/config.yaml --rule .continue/rules/rtk.md --rule .continue/rules/think.md --rule "$CAVEMAN_SKILL" --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
+          timeout --signal=TERM --kill-after=15s "$MAX_SECONDS" env -u GITHUB_TOKEN -u GH_TOKEN cn --config "$CONFIG_FILE" --rule .continue/rules/rtk.md --rule .continue/rules/think.md --rule "$CAVEMAN_SKILL" --allow Bash -p "$(cat /tmp/think-prompt.txt)" > /tmp/think-output.txt 2>&1
           status=$?
           set -e
           git diff --exit-code
@@ -190,6 +202,16 @@ jobs:
           BOT_TMP="${RUNNER_TEMP}/issue-bot"
           BASE_SHA="$(git rev-parse HEAD)"
           PROMPT="$(printf "%s" "${COMMENT_BODY}" | sed -E 's#^/solve[[:space:]]*:?[[:space:]]*##')"
+          if [[ "${COMMENT_BODY,,}" =~ ^/solve[[:space:]]+deep([[:space:]]|$) ]]; then
+            CONFIG_FILE=.continue/config-sol.yaml
+            MAX_SECONDS=900
+          else
+            CONFIG_FILE=.continue/config.yaml
+            MAX_SECONDS=600
+          fi
+          test -f "$CONFIG_FILE"
+          printf '%s\n' "$CONFIG_FILE" > "${RUNNER_TEMP}/issue-bot-config-used"
+          echo "Solve config: $CONFIG_FILE (max ${MAX_SECONDS}s)" >> "$GITHUB_STEP_SUMMARY"
 
           COMMENTS_URL="https://api.github.com/repos/${REPO}/issues/${ISSUE_NUMBER}/comments?per_page=100"
           # Supply only latest successful investigation, not entire conversation history.
@@ -220,6 +242,10 @@ jobs:
             echo "- Dependencies are already installed in escape-the-city. Vitest is available."
             echo "- MUST run: npm --prefix escape-the-city run lint, npm --prefix escape-the-city test, and npm --prefix escape-the-city run build after code changes. Fix any failures before finishing."
             echo "- Start with targeted file searches, read only necessary lines, and test changed areas first."
+            echo "- Use Caveman and RTK throughout. Avoid rereading the same files or repeating identical searches."
+            echo "- Limit exploratory search to 2 focused passes. Stop when enough evidence is found; prefer edits over more investigation."
+            echo "- Run focused tests during edits. Run a complete lint/test/build pass after your final edit, not after every small change; the workflow verifies independently."
+            echo "- If tests fail, make at most 2 targeted repair passes, rerunning only affected checks."
             echo "- Stop investigating once root cause and fix are evidenced; avoid repeating searches."
           } > "${BOT_TMP}/prompt.txt"
 
@@ -229,7 +255,7 @@ jobs:
           command -v rtk
           echo "Continue skills: rtk=$(rtk --version), caveman=$CAVEMAN_SKILL" >> "$GITHUB_STEP_SUMMARY"
           touch "${RUNNER_TEMP}/issue-bot-usage-start"
-          env -u GITHUB_TOKEN -u GH_TOKEN cn             --config .continue/config.yaml             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
+          timeout --signal=TERM --kill-after=15s "$MAX_SECONDS" env -u GITHUB_TOKEN -u GH_TOKEN cn             --config "$CONFIG_FILE"             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
 
           # Check both uncommitted changes and commits created by the agent.
           if ! git merge-base --is-ancestor "$BASE_SHA" HEAD; then
@@ -259,7 +285,7 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "pr_title=fix: Resolve #${ISSUE_NUMBER} - ${ISSUE_TITLE} (bot via Continue)" >> "$GITHUB_OUTPUT"
             {
-              echo "This PR was generated by a Continue-based CI run using repo .continue/config.yaml."
+              echo "This PR was generated by a Continue-based CI run using ${CONFIG_FILE}."
               echo
               echo "- Issue: #${ISSUE_NUMBER}"
               echo "- Command: /solve"
