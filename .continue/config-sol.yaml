@@ -1,0 +1,11 @@
+name: GPT-6 Sol
+version: 1.0.0
+schema: v1
+
+models:
+  - name: GPT-6 Sol
+    provider: openai
+    model: gpt-6-sol
+    apiKey: "${{ secrets.OPENAI_API_KEY }}"
+    useResponsesApi: true
+    capabilities: [tool_use]
