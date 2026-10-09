@@ -8,6 +8,7 @@ export interface DashboardState {
 export type DashboardAction =
   | { type: 'snapshot'; teams: DashboardTeam[] }
   | { type: 'replace-team'; team: DashboardTeam }
+  | { type: 'remove-team'; teamId: string }
   | { type: 'select'; teamId: string | null };
 
 export const initialDashboardState: DashboardState = {
@@ -31,6 +32,15 @@ export function dashboardReducer(state: DashboardState, action: DashboardAction)
         ? state.teams.map((team) => team.id === action.team.id ? action.team : team)
         : [...state.teams, action.team],
       selectedTeamId: state.selectedTeamId ?? action.team.id
+    };
+  }
+  if (action.type === 'remove-team') {
+    const teams = state.teams.filter((team) => team.id !== action.teamId);
+    return {
+      teams,
+      selectedTeamId: state.selectedTeamId === action.teamId
+        ? teams[0]?.id ?? null
+        : state.selectedTeamId
     };
   }
   return { ...state, selectedTeamId: action.teamId };

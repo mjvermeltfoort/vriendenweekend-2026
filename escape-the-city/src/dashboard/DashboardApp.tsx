@@ -322,7 +322,9 @@ export function DashboardApp() {
           throw new Error('Typ teamnaam om verwijderen te bevestigen.');
         }
         await dashboardActions.deleteTeam(dialog.team.id);
-        dispatch({ type: 'select', teamId: state.teams.find((team) => team.id !== dialog.team.id)?.id ?? '' });
+        const nextSelectedTeamId = state.teams.find((team) => team.id !== dialog.team.id)?.id ?? '';
+        dispatch({ type: 'remove-team', teamId: dialog.team.id });
+        dispatch({ type: 'select', teamId: nextSelectedTeamId });
         setDialog(null);
         return;
       } else if (dialog.kind === 'release') {

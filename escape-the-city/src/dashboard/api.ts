@@ -45,6 +45,16 @@ async function mutate(functionName: string, parameters: Record<string, unknown>)
   return normalizeDashboardTeam(data);
 }
 
+async function deleteTeam(teamId: string): Promise<DashboardTeam | null> {
+  const client = requireClient();
+  const { data, error } = await client.rpc('dashboard_delete_team', {
+    p_team_id: teamId,
+    p_client_id: dashboardClientId()
+  });
+  if (error) throw new DashboardApiError(error.message, error.code);
+  return data && typeof data === 'object' ? normalizeDashboardTeam(data) : null;
+}
+
 export const dashboardActions = {
   createTeam: (name: string, code?: string) => mutate('dashboard_create_team', {
     p_name: name,
@@ -65,7 +75,7 @@ export const dashboardActions = {
     'dashboard_revoke_team_session',
     { p_team_id: teamId, p_session_id: sessionId }
   ),
-  deleteTeam: (teamId: string) => mutate('dashboard_delete_team', { p_team_id: teamId }),
+  deleteTeam,
   releaseCurrentStop: (teamId: string, reason: string) => mutate(
     'dashboard_release_current_stop',
     { p_team_id: teamId, p_reason: reason }

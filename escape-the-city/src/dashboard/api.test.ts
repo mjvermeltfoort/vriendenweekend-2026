@@ -43,6 +43,24 @@ describe('dashboard API', () => {
     );
   });
 
+  it('treats delete success without payload as success', async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: null });
+
+    await expect(dashboardActions.deleteTeam('team-1')).resolves.toBeNull();
+    expect(mocks.rpc).toHaveBeenCalledWith('dashboard_delete_team', {
+      p_team_id: 'team-1',
+      p_client_id: expect.any(String)
+    });
+  });
+
+  it('surfaces delete server errors unchanged', async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: 'TEAM_NOT_FOUND', code: 'P0001' } });
+
+    await expect(dashboardActions.deleteTeam('team-1')).rejects.toEqual(
+      expect.objectContaining({ message: 'TEAM_NOT_FOUND', code: 'P0001' })
+    );
+  });
+
   it('sends a mandatory dashboard release reason with the stable client id', async () => {
     mocks.rpc.mockResolvedValue({
       data: {
