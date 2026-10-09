@@ -109,9 +109,14 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
 
   const visibleBonusLocationsMemo = useMemo(() => visibleBonusLocations(gamePack, progress), [gamePack, progress]);
+  const visibleStopIdsKey = useMemo(() => visibleStops.map((stop) => stop.id).join('|'), [visibleStops]);
+  const mapLocationIdsKey = useMemo(
+    () => [...visibleStops, ...visibleBonusLocationsMemo].map((stop) => stop.id).join('|'),
+    [visibleStops, visibleBonusLocationsMemo]
+  );
   const mapLocations = useMemo<(RouteStop | BonusLocation)[]>(
     () => [...visibleStops, ...visibleBonusLocationsMemo],
-    [visibleStops, visibleBonusLocationsMemo]
+    [mapLocationIdsKey]
   );
   const selectedStop = mapLocations.find((stop) => stop.id === selectedStopId) ?? null;
   const selectedState = selectedStop ? progress?.stopProgress?.[selectedStop.id]?.state ?? 'locked' : 'locked';
@@ -278,7 +283,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [route, gamePack, mapLocations]);
+  }, [route, gamePack, mapLocationIdsKey]);
 
   useEffect(() => {
     const map = mapRef.current;
