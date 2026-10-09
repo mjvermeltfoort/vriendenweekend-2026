@@ -1,0 +1,11 @@
+name: GPT-6 Luna
+version: 1.0.0
+schema: v1
+
+models:
+  - name: GPT-6 Luna
+    provider: openai
+    model: gpt-6-luna
+    apiKey: "${{ secrets.OPENAI_API_KEY }}"
+    useResponsesApi: true
+    capabilities: [tool_use]
