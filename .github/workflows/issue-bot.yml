@@ -219,7 +219,7 @@ jobs:
             MAX_SECONDS=900
           else
             CONFIG_FILE=.continue/config.yaml
-            MAX_SECONDS=600
+            MAX_SECONDS=360
           fi
           test -f "$CONFIG_FILE"
           printf '%s\n' "$CONFIG_FILE" > "${RUNNER_TEMP}/issue-bot-config-used"
@@ -252,11 +252,11 @@ jobs:
             echo "- NEVER modify files under .github/workflows/ (including when requested in an issue)."
             echo "- RTK and Caveman are loaded as CLI rules. Use rtk for supported terminal commands; preserve raw diagnostics if RTK truncates important errors."
             echo "- Dependencies are already installed in escape-the-city. Vitest is available."
-            echo "- MUST run: npm --prefix escape-the-city run lint, npm --prefix escape-the-city test, and npm --prefix escape-the-city run build after code changes. Fix any failures before finishing."
+            echo "- Use focused tests only when needed during implementation; the independent verification step runs the full lint, Vitest and build checks, then auto-repairs failures."
             echo "- Start with targeted file searches, read only necessary lines, and test changed areas first."
             echo "- Use Caveman and RTK throughout. Avoid rereading the same files or repeating identical searches."
             echo "- Limit exploratory search to 2 focused passes. Stop when enough evidence is found; prefer edits over more investigation."
-            echo "- Run focused tests during edits. Run a complete lint/test/build pass after your final edit, not after every small change; the workflow verifies independently."
+            echo "- Complete the code change promptly and let GitHub Actions run all final checks; avoid duplicate full test/build runs."
             echo "- If tests fail, make at most 2 targeted repair passes, rerunning only affected checks."
             echo "- Stop investigating once root cause and fix are evidenced; avoid repeating searches."
           } > "${BOT_TMP}/prompt.txt"
@@ -267,7 +267,43 @@ jobs:
           command -v rtk
           echo "Continue skills: rtk=$(rtk --version), caveman=$CAVEMAN_SKILL" >> "$GITHUB_STEP_SUMMARY"
           touch "${RUNNER_TEMP}/issue-bot-usage-start"
+          # Do not let a timed-out CLI silently abort the workflow via pipefail.
+          # Retry once with a shorter task prompt; only successful agent runs
+          # may proceed to verification or a pull request.
+          set +e
           timeout --signal=TERM --kill-after=15s "$MAX_SECONDS" env -u GITHUB_TOKEN -u GH_TOKEN cn             --config "$CONFIG_FILE"             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue.log"
+          agent_status=${PIPESTATUS[0]}
+          set -e
+          echo "Continue initial exit code: $agent_status" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$agent_status" -eq 124 ] || [ "$agent_status" -eq 137 ]; then
+            echo "::warning::Continue exceeded ${MAX_SECONDS}s. Retrying once with a compact prompt."
+            echo "### Continue CLI timed out" >> "$GITHUB_STEP_SUMMARY"
+            echo "First attempt reached ${MAX_SECONDS}s; running one bounded retry." >> "$GITHUB_STEP_SUMMARY"
+            echo "Initial agent output (last 60 lines):"
+            tail -n 60 "${BOT_TMP}/continue.log" || true
+            {
+              printf 'Finish fixing GitHub issue #%s: %s\n' "$ISSUE_NUMBER" "$ISSUE_TITLE"
+              printf '%s\n' "${ISSUE_BODY:0:3000}"
+              echo
+              echo "Use Caveman and RTK. Keep the change minimal and focused."
+              echo "Continue from any existing working-tree edits if they exist."
+              echo "Do not edit .github/workflows/, stage, commit, push or create PRs."
+              echo "Do not rerun full lint/test/build: GitHub Actions does that next."
+              echo "Complete promptly. Prefer editing relevant files over extended investigation."
+            } > "${BOT_TMP}/retry-prompt.txt"
+            RETRY_SECONDS=180
+            set +e
+            timeout --signal=TERM --kill-after=15s "$RETRY_SECONDS" env -u GITHUB_TOKEN -u GH_TOKEN cn             --config "$CONFIG_FILE"             --rule .continue/rules/rtk.md             --rule "$CAVEMAN_SKILL"             --auto             --allow Write             --allow Edit             --allow Bash             -p "$(cat "${BOT_TMP}/retry-prompt.txt")"             2>&1 | tee "${BOT_TMP}/continue-retry.log"
+            agent_status=${PIPESTATUS[0]}
+            set -e
+            echo "Continue retry exit code: $agent_status" >> "$GITHUB_STEP_SUMMARY"
+            cat "${BOT_TMP}/continue-retry.log" >> "${BOT_TMP}/continue.log"
+          fi
+          if [ "$agent_status" -ne 0 ]; then
+            echo "::error::Continue failed or timed out (exit $agent_status); changes will not be published."
+            tail -n 100 "${BOT_TMP}/continue.log" || true
+            exit "$agent_status"
+          fi
 
           # Check both uncommitted changes and commits created by the agent.
           if ! git merge-base --is-ancestor "$BASE_SHA" HEAD; then
