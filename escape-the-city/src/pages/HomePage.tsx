@@ -69,13 +69,6 @@ export function HomePage({ pack }: { pack: GamePack }) {
           </section>
 
 
-          <section className="card stack">
-            <p className="eyebrow">De legende</p>
-            <h2>Herstel zeven herinneringen</h2>
-            <p>Reis door Den Bosch, vind bijzondere plekken en ontrafel het verhaal van de Moerasdraak. De eindlocatie wordt pas na alle opdrachten onthuld.</p>
-            <Link className="button secondary" to={lastTeam ? '/route' : '/team'}>{lastTeam ? 'Bekijk route' : 'Start met teamcode'}</Link>
-          </section>
-
           {lastTeam ? (
             <section className="card stack">
               <p className="eyebrow">Laatst gebruikt</p>
