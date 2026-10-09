@@ -113,6 +113,7 @@ export function AudioControl({ className = '' }: { className?: string }) {
 
 export function GameTopBar({ title, backTo }: { title: string; backTo?: string }) {
   const navigate = useNavigate();
+  const { syncStatus, syncMessage } = useGame();
   return (
     <header className="game-topbar">
       {backTo ? (
@@ -121,7 +122,10 @@ export function GameTopBar({ title, backTo }: { title: string; backTo?: string }
         </button>
       ) : <span className="topbar-spacer" />}
       <span className="game-topbar__title">{title}</span>
-      <AudioControl />
+      <div className="game-topbar__actions">
+        <SyncStatus status={syncStatus} message={syncMessage} compact />
+        <AudioControl />
+      </div>
     </header>
   );
 }
@@ -150,12 +154,7 @@ export function BottomGameNavigation() {
           <span>{item.label}</span>
         </NavLink>
       ))}
-      <div className="bottom-nav__status" aria-live="polite">
-        <SyncStatus
-          status={syncStatus}
-          message={syncMessage}
-        />
-      </div>
+
     </nav>
   );
 }
@@ -182,11 +181,11 @@ export function PageShell({
   );
 }
 
-export function SyncStatus({ status, message }: { status: 'saved' | 'local' | 'syncing' | 'failed' | 'offline'; message: string }) {
+export function SyncStatus({ status, message, compact = false }: { status: 'saved' | 'local' | 'syncing' | 'failed' | 'offline'; message: string; compact?: boolean }) {
   return (
-    <span className={`sync-status sync-status--${status}`} role="status">
+    <span className={`sync-status sync-status--${status}${compact ? ' sync-status--compact' : ''}`} role="status" aria-label={message} title={message}>
       <GameIcon name={status === 'offline' ? 'offline' : 'sync'} size={16} />
-      {message}
+      {compact ? <span className="visually-hidden">{message}</span> : message}
     </span>
   );
 }
