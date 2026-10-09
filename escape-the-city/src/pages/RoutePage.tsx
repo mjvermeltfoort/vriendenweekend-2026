@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { canStartFinale, isFinaleLocationRevealed, visibleBonusLocations } from '../features/game/gameState';
@@ -17,6 +17,7 @@ const statusLabels = {
 
 export function RoutePage({ pack }: { pack: GamePack }) {
   const { activeTeam, progress, syncStatus, syncMessage, teamLocation, activeSessionCount } = useGame();
+  const location = useLocation();
   const [view, setView] = useState<'list' | 'route'>('route');
   const [bonusIntroSeen, setBonusIntroSeen] = useState(true);
   const finale = progress ? canStartFinale(progress, pack) : { eligible: false, missingCount: pack.stops.length - 1, missingTitles: [] as string[] };
@@ -47,6 +48,10 @@ export function RoutePage({ pack }: { pack: GamePack }) {
     if (!bonusIntroKey || typeof window === 'undefined') return;
     setBonusIntroSeen(window.localStorage.getItem(bonusIntroKey) === 'seen');
   }, [bonusIntroKey]);
+
+  useEffect(() => {
+    if (location.state?.view === 'route') setView('route');
+  }, [location.state]);
 
   function dismissBonusIntro() {
     if (bonusIntroKey && typeof window !== 'undefined') window.localStorage.setItem(bonusIntroKey, 'seen');

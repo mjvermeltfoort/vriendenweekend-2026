@@ -135,7 +135,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
           <h1>Eindlocatie nog verborgen</h1>
           <p>Voltooi eerst alle eerdere opdrachten. Daarna verschijnt de finale automatisch op de route.</p>
         </section>
-      </PageShell>
+        </PageShell>
     );
   }
   if (!bonusVisible) {
@@ -251,7 +251,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
     || (isBonusLocation(currentStop) && !canPlay && !isCompleted && bonusQuestionAvailable));
 
   const gameCompleted = progress ? canViewResult(progress, pack) : false;
-  const showParchment = !gameCompleted && (progress ? (hasLocationUnlock(progress, currentStop.id) || canAccessChallenge(progress, currentStop.id)) : false);
+  const showParchment = !isCompleted && !gameCompleted && (progress ? (hasLocationUnlock(progress, currentStop.id) || canAccessChallenge(progress, currentStop.id)) : false);
 
   return (
     <PageShell title={isCompleted ? (isBonusLocation(currentStop) ? 'Drakenschub' : 'Herinnering') : 'Verhaal'} backTo="/route">
@@ -271,54 +271,56 @@ export function StopPage({ pack }: { pack: GamePack }) {
         </section>
       ) : null}
 
-      <section className="card card--compact stack stack--compact" style={{ marginTop: '0.5rem' }}>
-        <p className="eyebrow">Vind de locatie</p>
-        <h2>{currentStop.title}</h2>
-        <p className="muted">{currentStop.navigation.clue}</p>
-        <p className="muted small">{currentStop.locationName}</p>
+      {!isCompleted ? (
+        <section className="card card--compact stack stack--compact" style={{ marginTop: '0.5rem' }}>
+          <p className="eyebrow">Vind de locatie</p>
+          <h2>{currentStop.title}</h2>
+          <p className="muted">{currentStop.navigation.clue}</p>
+          <p className="muted small">{currentStop.locationName}</p>
 
-        {isBonusLocation(currentStop) ? (
-          <section className="active-stop-indicator" aria-label="Afstand tot verborgen schub">
-            <p className="eyebrow">Afstand tot schub</p>
-            {bonusDistance === null ? (
-              <p>Afstand bepalen…</p>
-            ) : (
-              <>
-                <p className="active-stop-indicator__distance">Nog ongeveer {formattedWalkingDistance(bonusDistance)} lopen</p>
-                <p className="muted small">Directe afstand vanaf jullie actuele GPS-locatie.</p>
-              </>
-            )}
-          </section>
-        ) : currentStopIsActive ? (
-          <ActiveStopIndicator
-            pack={pack}
-            progress={progress}
-            location={teamLocation}
-            showOpenButton
-            onOpenChallenge={() => {
-              void startStop(currentStop.id).then((started) => {
-                if (started) navigate(`/challenge/${currentStop.id}`);
-              }).catch((error) => {
-                setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.');
-              });
-            }}
-          />
-        ) : null}
+          {isBonusLocation(currentStop) ? (
+            <section className="active-stop-indicator" aria-label="Afstand tot verborgen schub">
+              <p className="eyebrow">Afstand tot schub</p>
+              {bonusDistance === null ? (
+                <p>Afstand bepalen…</p>
+              ) : (
+                <>
+                  <p className="active-stop-indicator__distance">Nog ongeveer {formattedWalkingDistance(bonusDistance)} lopen</p>
+                  <p className="muted small">Directe afstand vanaf jullie actuele GPS-locatie.</p>
+                </>
+              )}
+            </section>
+          ) : currentStopIsActive ? (
+            <ActiveStopIndicator
+              pack={pack}
+              progress={progress}
+              location={teamLocation}
+              showOpenButton
+              onOpenChallenge={() => {
+                void startStop(currentStop.id).then((started) => {
+                  if (started) navigate(`/challenge/${currentStop.id}`);
+                }).catch((error) => {
+                  setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.');
+                });
+              }}
+            />
+          ) : null}
 
-        {gpsMessage || (!canPlay && locationError) ? (
-          <div className="location-status" role="status" aria-live="polite">
-            <GameIcon name={canPlay ? 'check' : 'location'} />
-            <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
-          </div>
-        ) : null}
+          {gpsMessage || (!canPlay && locationError) ? (
+            <div className="location-status" role="status" aria-live="polite">
+              <GameIcon name={canPlay ? 'check' : 'location'} />
+              <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
+            </div>
+          ) : null}
 
-        {!isCompleted ? (
-          <>
-            {!canPlay ? <p className="muted">We controleren automatisch de beste actuele GPS van jullie team.</p> : null}
-            {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
-          </>
-        ) : null}
-      </section>
+          {!isCompleted ? (
+            <>
+              {!canPlay ? <p className="muted">We controleren automatisch de beste actuele GPS van jullie team.</p> : null}
+              {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
+            </>
+          ) : null}
+        </section>
+      ) : null}
 
       {!isBonusLocation(currentStop) && !canPlay && !isCompleted && fallbackDelayMs !== null ? (
         <section className="observation-fallback stack" aria-label="Locatie bevestigen zonder GPS">
@@ -377,76 +379,53 @@ export function StopPage({ pack }: { pack: GamePack }) {
         )
       ) : null}
 
-      {isDev ? (
-          <details>
-            <summary>GPS-devsimulator</summary>
-            <div className="stack">
-              <label className="field"><span>Mode</span>
-                <select value={devState.mode} onChange={(e) => setDevState((state) => ({ ...state, mode: e.target.value as SimulatorState['mode'] }))}>
-                  <option value="exact">Exact</option>
-                  <option value="outside">Buiten geofence</option>
-                  <option value="denied">Toegang geweigerd</option>
-                  <option value="timeout">Timeout</option>
-                  <option value="unavailable">Niet beschikbaar</option>
-                </select>
-              </label>
-              <label className="field"><span>Latitude</span><input value={devState.latitude} onChange={(e) => setDevState((state) => ({ ...state, latitude: Number(e.target.value) }))} /></label>
-              <label className="field"><span>Longitude</span><input value={devState.longitude} onChange={(e) => setDevState((state) => ({ ...state, longitude: Number(e.target.value) }))} /></label>
-              <label className="field"><span>Nauwkeurigheid</span><input value={devState.accuracy} onChange={(e) => setDevState((state) => ({ ...state, accuracy: Number(e.target.value) }))} /></label>
-              <button className="button secondary" type="button" onClick={() => void sendSimulatedLocation()}>
-                GPS-meting versturen
+      {isCompleted ? (
+        <div className="card card--success center">
+          <span style={{ fontSize: '2rem' }}>{currentStop.reward.symbol}</span>
+          {isBonusLocation(currentStop) ? (
+            <>
+              <h2>Drakenschub gevonden</h2>
+              <p><strong>{currentStop.reward.resultLabel}</strong><br />{currentStop.revealedDescription}</p>
+              <Link className="button secondary" to="/route">Terug naar hoofdroute</Link>
+            </>
+          ) : (
+            <>
+              <h2>Herinnering hersteld</h2>
+              <p><strong>{currentStop.reward.title}</strong><br />{currentStop.reward.text}</p>
+              {currentStop.challenge.kind === 'choice' ? (
+                <p className="muted small">{currentStop.challenge.correctFeedback}</p>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : (
+        <>
+          {otherActiveGame ? (
+            <div className="location-status" role="status">
+              <GameIcon name="team" />
+              <p>Jullie team is al bezig met een andere opdracht. Rond die opdracht eerst af.</p>
+              <button className="button secondary" onClick={() => navigate(`/challenge/${otherActiveGame.id}`)}>
+                Ga naar actieve opdracht
               </button>
             </div>
-          </details>
-        ) : null}
+          ) : null}
+          {!currentStopIsActive || !canPlay ? (
+            <button
+              className="button primary"
+              disabled={!canPlay || !finaleEligibility.eligible || Boolean(otherActiveGame)}
+              onClick={() => void startStop(currentStop.id).then((started) => {
+                if (started) navigate(`/challenge/${currentStop.id}`);
+              }).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.'))}
+            >
+              Opdracht openen
+            </button>
+          ) : null}
+        </>
+      )}
 
-        {isCompleted ? (
-          <div className="card card--success center">
-            <span style={{ fontSize: '2rem' }}>{currentStop.reward.symbol}</span>
-            {isBonusLocation(currentStop) ? (
-              <>
-                <h2>Drakenschub gevonden</h2>
-                <p><strong>{currentStop.reward.resultLabel}</strong><br />{currentStop.revealedDescription}</p>
-                <Link className="button secondary" to="/route">Terug naar hoofdroute</Link>
-              </>
-            ) : (
-              <>
-                <h2>Herinnering hersteld</h2>
-                <p><strong>{currentStop.reward.title}</strong><br />{currentStop.reward.text}</p>
-                {currentStop.challenge.kind === 'choice' ? (
-                  <p className="muted small">{currentStop.challenge.correctFeedback}</p>
-                ) : null}
-              </>
-            )}
-          </div>
-        ) : (
-          <>
-            {otherActiveGame ? (
-              <div className="location-status" role="status">
-                <GameIcon name="team" />
-                <p>Jullie team is al bezig met een andere opdracht. Rond die opdracht eerst af.</p>
-                <button className="button secondary" onClick={() => navigate(`/challenge/${otherActiveGame.id}`)}>
-                  Ga naar actieve opdracht
-                </button>
-              </div>
-            ) : null}
-            {!currentStopIsActive || !canPlay ? (
-              <button
-                className="button primary"
-                disabled={!canPlay || !finaleEligibility.eligible || Boolean(otherActiveGame)}
-                onClick={() => void startStop(currentStop.id).then((started) => {
-                  if (started) navigate(`/challenge/${currentStop.id}`);
-                }).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.'))}
-              >
-                Opdracht openen
-              </button>
-            ) : null}
-          </>
-        )}
-
-        {currentStop.isFinal && !finaleEligibility.eligible ? <p className="error">Nog {finaleEligibility.missingCount} opdrachten te voltooien.</p> : null}
-        {isCompleted && followingStop ? <Link className="button secondary" to={`/stop/${followingStop.id}`}>Volgende routepunt</Link> : null}
-        {isCompleted && !followingStop && !isBonusLocation(currentStop) ? <Link className="button primary" to="/resultaat">Bekijk resultaat</Link> : null}
+      {currentStop.isFinal && !finaleEligibility.eligible ? <p className="error">Nog {finaleEligibility.missingCount} opdrachten te voltooien.</p> : null}
+      {isCompleted && followingStop ? <Link className="button secondary" to="/route" state={{ view: 'route' }}>Bekijk volgende routepunt op kaart</Link> : null}
+      {isCompleted && !followingStop && !isBonusLocation(currentStop) ? <Link className="button primary" to="/resultaat">Bekijk resultaat</Link> : null}
     </PageShell>
   );
 }

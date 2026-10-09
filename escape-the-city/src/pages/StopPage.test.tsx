@@ -32,10 +32,20 @@ vi.mock('../app/gameContext', () => ({
 
 vi.mock('../components/GameUi', () => ({
   PageShell: ({ children, title }: { children: React.ReactNode; title: string }) => <main><header>{title}</header>{children}</main>,
-  GameIcon: () => <span aria-hidden="true" />
+  GameIcon: () => null
 }));
 vi.mock('../components/AudioPlayer', () => ({ AudioPlayer: () => null }));
 vi.mock('../features/location/ActiveStopIndicator', () => ({ ActiveStopIndicator: () => null }));
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    Link: ({ to, children, ...props }: React.ComponentProps<'a'> & { to: string | { pathname?: string }; children: React.ReactNode }) => {
+      const href = typeof to === 'string' ? to : to.pathname ?? '';
+      return <a href={href} {...props}>{children}</a>;
+    }
+  };
+});
 
 import { StopPage } from './StopPage';
 
@@ -65,7 +75,7 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).toContain('Terug naar hoofdroute');
     expect(container.textContent).not.toContain('Bekijk resultaat');
     expect(container.textContent).not.toContain('Hier beschermden een stadspoort en bolwerk');
-    expect(container.textContent).toContain('Vind de locatie');
+    expect(container.textContent).not.toContain('Vind de locatie');
     expect(container.textContent?.match(/De Poortschub is gevonden\./g) ?? []).toHaveLength(0);
   });
 
@@ -77,9 +87,9 @@ describe('StopPage completion copy', () => {
     ));
 
     expect(container.querySelector('header')?.textContent).toBe('Herinnering');
-    expect(container.textContent).toContain('De Moerasdraak heeft zeven herinneringen');
+    expect(container.textContent).not.toContain('De Moerasdraak heeft zeven herinneringen');
     expect(container.textContent).toContain('Goed: bij het water vinden jullie de herinnering aan vuur.');
-    expect(container.textContent).toContain('Vind de locatie');
+    expect(container.textContent).not.toContain('Vind de locatie');
   });
 
   it('shows the result action without a zero-opportunities error after the finale', async () => {
@@ -96,5 +106,21 @@ describe('StopPage completion copy', () => {
 
     expect(container.textContent).toContain('Bekijk resultaat');
     expect(container.textContent).not.toContain('Nog 0 opdrachten');
+  });
+
+  it('shows only the success card and route link for a completed main stop', async () => {
+    await act(async () => root.render(
+      <MemoryRouter initialEntries={['/stop/drakenfontein']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.textContent).toContain('Herinnering hersteld');
+    expect(container.textContent).toContain('Bekijk volgende routepunt op kaart');
+    expect(container.textContent).not.toContain('Vind de locatie');
+    expect(container.textContent).not.toContain('Opdracht openen');
+    expect(container.textContent).not.toContain('Locatie bevestigen zonder GPS');
+    expect(container.textContent).not.toContain('GPS-devsimulator');
+    expect(container.querySelector('a[href="/route"]')).toBeTruthy();
   });
 });

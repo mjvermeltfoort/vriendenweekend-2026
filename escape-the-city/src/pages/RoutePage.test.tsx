@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress } from '../features/game/gameState';
 import { gamePack } from '../game-data/moerasdraak/game';
@@ -88,5 +88,20 @@ describe('RoutePage finale states', () => {
     expect(text).toContain('Route');
     expect(text).toContain('Routekaart');
     expect(text).toContain('Verborgen eindlocatie');
+  });
+
+  it('opens route map by default from the completed stop link', async () => {
+    const progress = createInitialProgress('team-1', gamePack);
+    progress.stopProgress.drakenfontein.state = 'completed';
+    gameState.current = contextWith(progress);
+
+    await act(async () => root.render(
+      <MemoryRouter initialEntries={[{ pathname: '/route', state: { view: 'route' } }]}>
+        <Routes><Route path="/route" element={<RoutePage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.textContent).toContain('Routekaart');
+    expect(container.textContent).toContain('Route');
   });
 });
