@@ -65,7 +65,7 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).toContain('Terug naar hoofdroute');
     expect(container.textContent).not.toContain('Bekijk resultaat');
     expect(container.textContent).not.toContain('Hier beschermden een stadspoort en bolwerk');
-    expect(container.textContent).not.toContain('Vind de locatie');
+    expect(container.textContent).toContain('Vind de locatie');
     expect(container.textContent?.match(/De Poortschub is gevonden\./g) ?? []).toHaveLength(0);
   });
 
@@ -79,7 +79,7 @@ describe('StopPage completion copy', () => {
     expect(container.querySelector('header')?.textContent).toBe('Herinnering');
     expect(container.textContent).toContain('De Moerasdraak heeft zeven herinneringen');
     expect(container.textContent).toContain('Goed: bij het water vinden jullie de herinnering aan vuur.');
-    expect(container.textContent).not.toContain('Vind de locatie');
+    expect(container.textContent).toContain('Vind de locatie');
   });
 
   it('shows the result action without a zero-opportunities error after the finale', async () => {
