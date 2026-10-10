@@ -67,7 +67,12 @@ vi.mock('./RouteMarker', () => ({
 vi.mock('../components/GameUi', () => ({ GameIcon: () => null }));
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
-  return { ...actual, Link: () => null };
+  return {
+    ...actual,
+    Link: ({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) => (
+      <a href={to} className={className}>{children}</a>
+    )
+  };
 });
 vi.mock('./mapTypes', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./mapTypes')>();
