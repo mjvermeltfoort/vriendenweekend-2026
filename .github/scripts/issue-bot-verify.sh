@@ -101,7 +101,7 @@ for pass in 0 1 2; do
     echo "Never modify .github/workflows/ or access secrets. Do not create branches, stage, commit, push or open PRs."
     echo "Use a focused investigation and run the failing check locally. The workflow will independently rerun all checks."
     echo "Failure statuses: install=$install_status lint=$lint_status tests=$test_status build=$build_status."
-    echo "===== RELEVANT VERIFICATION LOGS (truncated) ====="
+    echo "===== CONCISE FAILURE DIAGNOSTICS ====="
     for label in install lint tests build; do
       case "$label" in
         install) failed="$install_status" ;;
@@ -112,7 +112,30 @@ for pass in 0 1 2; do
       file="$TEMP_DIR/verify-$pass-$label.log"
       if [ "$failed" -ne 0 ] && [ -f "$file" ]; then
         echo "===== FAILED: $label ====="
-        tail -n 100 "$file"
+        # Send only actionable error lines, never full application output or
+        # complete command transcripts. This reduces token use and keeps the
+        # agent's repair prompt focused on actionable diagnostics.
+        python3 - "$file" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+raw = Path(sys.argv[1]).read_text(errors="replace")
+raw = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", raw)
+lines = raw.splitlines()
+error_pattern = re.compile(
+    r"error TS\d+|AssertionError|^\s*(?:FAIL|Expected:|Received:|\u276f|>\s*\d+\s*\|)"
+    r"|\b(?:TypeError|SyntaxError|ReferenceError|ModuleNotFoundError):"
+    r"|\b(?:npm ERR!|Cannot find|Failed to resolve|error:)",
+    flags=re.IGNORECASE,
+)
+matches = [line.strip()[:240] for line in lines if error_pattern.search(line)]
+selected = matches[:35] if matches else [line.strip()[:240] for line in lines[-12:]]
+for line in selected:
+    print(line)
+if len(matches) > 35:
+    print(f"... {len(matches) - 35} additional error lines; consult CI log if needed")
+PY
       fi
     done
   } >"$prompt_file"
@@ -132,7 +155,11 @@ for pass in 0 1 2; do
 
   validate_agent_changes
   if [ "$code" -ne 0 ]; then
-    echo "::error::Continue repair $repair failed or timed out (exit $code). No PR will be created."
+    if grep -Fq 'your prompt was flagged as potentially violating our usage policy' "$TEMP_DIR/repair-$repair.log"; then
+      echo "::error::The model API rejected this repair prompt. No PR was created; review the issue and error summary before retrying."
+    else
+      echo "::error::Continue repair $repair failed or timed out (exit $code). No PR will be created."
+    fi
     exit 1
   fi
 done
