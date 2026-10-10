@@ -171,6 +171,17 @@ describe('RouteMap', () => {
     expect(mapState.fitBounds).toHaveBeenCalled();
     expect(mapState.getSource).toHaveBeenCalledWith('route-accuracy');
     expect(container.querySelector('[data-testid="route-gps-marker"]')).not.toBeNull();
+
+    // Icon-only controls stay accessible and keep their existing actions.
+    const locationButton = container.querySelector<HTMLButtonElement>('button[aria-label="Locatie aan"]');
+    const centerButton = container.querySelector<HTMLButtonElement>('button[aria-label="Centreer op mijn locatie"]');
+    expect(locationButton).not.toBeNull();
+    expect(centerButton).not.toBeNull();
+    expect(locationButton?.textContent?.trim()).toBe('');
+    expect(centerButton?.textContent?.trim()).toBe('');
+    expect(locationButton?.getAttribute('aria-pressed')).toBe('true');
+    await act(async () => centerButton?.click());
+    expect(mapState.easeTo).toHaveBeenCalledWith({ center: [5.3, 51.69], duration: 300 });
   });
 
   it('keeps map instance stable when visibleStops gets a new equal array', async () => {
