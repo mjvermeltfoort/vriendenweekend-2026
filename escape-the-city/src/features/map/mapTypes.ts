@@ -199,6 +199,8 @@ export function startLocationPolling(
   intervalMs = 15000
 ) {
   let active = true;
+  let stopWatching: (() => void) | null = null;
+  let intervalId = 0;
   const update = async () => {
     const outcome = await provider.getCurrentPosition({
       enableHighAccuracy: true,
@@ -208,9 +210,20 @@ export function startLocationPolling(
     if (active) onOutcome(outcome);
   };
   void update();
-  const intervalId = window.setInterval(() => void update(), intervalMs);
+  if (provider.watchPosition) {
+    stopWatching = provider.watchPosition((outcome) => {
+      if (active) onOutcome(outcome);
+    }, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 5000
+    });
+  } else {
+    intervalId = window.setInterval(() => void update(), intervalMs);
+  }
   return () => {
     active = false;
+    if (stopWatching) stopWatching();
     window.clearInterval(intervalId);
   };
 }
