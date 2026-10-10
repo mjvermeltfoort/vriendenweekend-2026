@@ -256,6 +256,7 @@ describe('StopPage completion copy', () => {
 
   it('updates bonus distance from live device GPS without a current team location', async () => {
     const progress = createProgress();
+    progress.stopProgress.binnendieze.state = 'completed';
     progress.stopProgress['bonus:zwanenbroedershuis'].state = 'available';
     const first: LocationResult = {
       latitude: 51.6905,
@@ -276,6 +277,7 @@ describe('StopPage completion copy', () => {
     expect(initial).toContain('Nog ongeveer');
     expect(container.textContent).toContain('Hemelsbrede afstand vanaf jouw actuele GPS-positie.');
     expect(container.textContent).not.toContain('Afstand bepalen…');
+    expect(container.textContent).not.toContain('We controleren automatisch de beste actuele GPS van jullie team.');
 
     gameState = {
       ...gameState,
@@ -288,6 +290,7 @@ describe('StopPage completion copy', () => {
 
   it('explains denied GPS instead of showing endless distance loading', async () => {
     const progress = createProgress();
+    progress.stopProgress.binnendieze.state = 'completed';
     progress.stopProgress['bonus:zwanenbroedershuis'].state = 'available';
     gameState = {
       ...gameState,
