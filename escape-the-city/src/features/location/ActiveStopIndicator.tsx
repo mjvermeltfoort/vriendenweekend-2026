@@ -50,8 +50,8 @@ export function ActiveStopIndicator({
   }, [stop?.id]);
 
   useEffect(() => {
-    if (!stop || !route || !location?.isCurrent || verified) return;
-    const leg = activeRouteLeg(route, stop.id);
+    if (!stop || !location?.isCurrent || verified) return;
+    const leg = route ? activeRouteLeg(route, stop.id) : null;
     const measurement = leg
       ? remainingRouteDistance(leg, location)
       : stop.id === pack.startStopId
@@ -64,7 +64,6 @@ export function ActiveStopIndicator({
     );
     setDisplayedDistance(filterRef.current.displayed);
   }, [location?.capturedAt, location?.isCurrent, pack.startStopId, route, stop, verified]);
-
   if (!stop || state === 'locked') return null;
   const leg = route ? activeRouteLeg(route, stop.id) : null;
   const totalDistance = leg ? routeLegLength(leg) : 0;
@@ -94,7 +93,7 @@ export function ActiveStopIndicator({
       ? 'Hemelsbrede afstand tot de eerste stop.'
       : walkingStatus(displayedDistance);
   } else {
-    mainLine = routeError ? 'Afstand bepalen…' : 'Locatie zoeken…';
+    mainLine = location?.isCurrent ? 'Afstand bepalen…' : routeError ? 'Afstand bepalen…' : 'Locatie zoeken…';
   }
 
   return (
