@@ -11,7 +11,7 @@ export function watchLocationWithRecovery(
   let disposed = false;
   let needsRecovery = false;
   let recoveryRunning = false;
-  let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
+  let recoveryTimer: number | null = null;
 
   const clearRecoveryTimer = () => {
     if (recoveryTimer !== null) {
