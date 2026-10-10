@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { createInitialProgress } from '../features/game/gameState';
 import { gamePack } from '../game-data/moerasdraak/game';
 import type { TeamLocation } from '../lib/supabase/sync';
+import type { LocationResult } from '../features/location/provider';
 
 const createProgress = () => {
   const value = createInitialProgress('team-1', gamePack);
@@ -33,6 +34,7 @@ let gameState = {
   progress: createProgress(),
   startStop: vi.fn(),
   teamLocation: null as TeamLocation | null,
+  deviceLocation: null as LocationResult | null,
   activeGameRun: null,
   locationError: null,
   currentObservation: null,
@@ -72,6 +74,7 @@ describe('StopPage completion copy', () => {
       progress: createProgress(),
       startStop: vi.fn(),
       teamLocation: null as TeamLocation | null,
+      deviceLocation: null as LocationResult | null,
       activeGameRun: null,
       locationError: null,
       currentObservation: null,
@@ -249,5 +252,55 @@ describe('StopPage completion copy', () => {
     ));
 
     expect(container.textContent).toContain('Afstand bepalen…');
+  });
+
+  it('updates bonus distance from live device GPS without a current team location', async () => {
+    const progress = createProgress();
+    progress.stopProgress['bonus:zwanenbroedershuis'].state = 'available';
+    const first: LocationResult = {
+      latitude: 51.6905,
+      longitude: 5.306,
+      accuracy: 12,
+      capturedAt: new Date().toISOString()
+    };
+    gameState = { ...gameState, progress, teamLocation: null, deviceLocation: first };
+
+    const screen = (key: string) => (
+      <MemoryRouter key={key} initialEntries={['/stop/bonus:zwanenbroedershuis']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    );
+    await act(async () => root.render(screen('device-first')));
+    const distanceLabel = () => container.querySelector('.active-stop-indicator__distance')?.textContent;
+    const initial = distanceLabel();
+    expect(initial).toContain('Nog ongeveer');
+    expect(container.textContent).toContain('Hemelsbrede afstand vanaf jouw actuele GPS-positie.');
+    expect(container.textContent).not.toContain('Afstand bepalen…');
+
+    gameState = {
+      ...gameState,
+      deviceLocation: { ...first, latitude: 51.688710, longitude: 5.309535, capturedAt: new Date().toISOString() }
+    };
+    await act(async () => root.render(screen('device-updated')));
+    expect(distanceLabel()).not.toBe(initial);
+    expect(container.textContent).not.toContain('Afstand bepalen…');
+  });
+
+  it('explains denied GPS instead of showing endless distance loading', async () => {
+    const progress = createProgress();
+    progress.stopProgress['bonus:zwanenbroedershuis'].state = 'available';
+    gameState = {
+      ...gameState,
+      progress,
+      teamLocation: null,
+      deviceLocation: null,
+      locationError: { kind: 'permission-denied', message: 'Locatietoegang geweigerd.' }
+    };
+    await act(async () => root.render(
+      <MemoryRouter key="device-denied" initialEntries={['/stop/bonus:zwanenbroedershuis']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+    expect(container.textContent).toContain('Geef Chrome locatietoegang om de afstand te zien.');
   });
 });
