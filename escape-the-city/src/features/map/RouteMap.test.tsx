@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress } from '../game/gameState';
 import { gamePack } from '../../game-data/moerasdraak/game';
 import type { RouteMapProps } from './mapTypes';
@@ -22,7 +22,7 @@ const mapState = vi.hoisted(() => ({
   getLayer: vi.fn(() => true),
   setData: vi.fn(),
   getSource: vi.fn(() => ({ setData: mapState.setData })),
-  project: vi.fn(() => ({ x: 100, y: 100 })),
+  project: vi.fn(([longitude, latitude]: [number, number]) => ({ x: longitude * 100, y: latitude * 100 })),
   setLayoutProperty: vi.fn(),
   setFilter: vi.fn(),
   resize: vi.fn(),
@@ -39,8 +39,14 @@ vi.mock('maplibre-gl', () => {
   class NavigationControl {}
   class AttributionControl {}
   class LngLatBounds {
-    constructor() {}
-    extend() { return this; }
+    coordinates: number[][];
+    constructor(start: number[], end: number[]) {
+      this.coordinates = [start, end];
+    }
+    extend(value: number[]) {
+      this.coordinates.push(value);
+      return this;
+    }
   }
   return { Map, NavigationControl, AttributionControl, LngLatBounds };
 });
@@ -101,11 +107,17 @@ function progressWithCurrentStop() {
 describe('RouteMap', () => {
   const container = document.createElement('div');
   const root = createRoot(container);
+  let testKey = 0;
 
   beforeAll(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     window.clearTimeout = vi.fn(window.clearTimeout);
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as never);
+  });
+
+  beforeEach(() => {
+    testKey += 1;
+    vi.clearAllMocks();
   });
 
   afterAll(() => {
@@ -119,7 +131,7 @@ describe('RouteMap', () => {
     deviceLocation?: RouteMapProps['deviceLocation']
   ) {
     await act(async () => root.render(
-      <MemoryRouter>
+      <MemoryRouter key={testKey}>
         <RouteMap
           gamePack={gamePack}
           progress={progress}
@@ -136,21 +148,21 @@ describe('RouteMap', () => {
     await render(visibleStops, progressWithCurrentStop());
 
     expect(mapState.easeTo).not.toHaveBeenCalled();
-    expect(mapState.fitBounds).toHaveBeenCalledTimes(1);
-    expect(mapState.getSource).toHaveBeenCalledWith('route-position');
+    expect(mapState.fitBounds).toHaveBeenCalled();
+    expect(mapState.getSource).toHaveBeenCalledWith('route-accuracy');
+    expect(container.querySelector('[data-testid="route-gps-marker"]')).not.toBeNull();
   });
 
   it('keeps map instance stable when visibleStops gets a new equal array', async () => {
     const visibleStops = gamePack.stops.filter((stop) => !stop.isFinal);
     await render(visibleStops, progressWithCurrentStop());
-    expect(mapState.addSource.mock.calls.length).toBe(3);
-    expect(mapState.addLayer.mock.calls.length).toBe(7);
-    expect(mapState.fitBounds.mock.calls.length).toBe(1);
-
+    expect(mapState.addSource.mock.calls.length).toBe(2);
+    expect(mapState.addLayer.mock.calls.length).toBe(6);
+    const fits = mapState.fitBounds.mock.calls.length;
     await render([...visibleStops], progressWithCurrentStop());
-    expect(mapState.addSource.mock.calls.length).toBe(3);
-    expect(mapState.addLayer.mock.calls.length).toBe(7);
-    expect(mapState.fitBounds.mock.calls.length).toBe(1);
+    expect(mapState.addSource.mock.calls.length).toBe(2);
+    expect(mapState.addLayer.mock.calls.length).toBe(6);
+    expect(mapState.fitBounds.mock.calls.length).toBe(fits);
   });
 
   it('moves the GPS marker on successive device updates without resetting the map', async () => {
@@ -158,17 +170,22 @@ describe('RouteMap', () => {
     const first = { latitude: 51.689, longitude: 5.302, accuracy: 14, capturedAt: new Date().toISOString() };
     await render(stops, progressWithCurrentStop(), first);
 
-    const hasPoint = (longitude: number, latitude: number) =>
-      mapState.setData.mock.calls.some(([data]) => data?.geometry?.type === 'Point'
-        && data.geometry.coordinates[0] === longitude && data.geometry.coordinates[1] === latitude);
-
-    expect(hasPoint(5.302, 51.689)).toBe(true);
+    const marker = container.querySelector('[data-testid="route-gps-marker"]');
+    expect(marker?.getAttribute('aria-label')).toBe('Jouw actuele GPS-positie');
+    const previousPosition = marker?.getAttribute('style');
+    expect(previousPosition).toContain('left:');
     const fitsBefore = mapState.fitBounds.mock.calls.length;
     const addBefore = mapState.addSource.mock.calls.length;
 
+    // GPS is part of the initial camera bounds; its marker remains independently
+    // visible above stop markers and moves without another map.fitBounds.
+    const initialBounds = mapState.fitBounds.mock.calls.at(-1)?.[0] as { coordinates: number[][] };
+    expect(initialBounds.coordinates).toContainEqual([first.longitude, first.latitude]);
+
     const second = { ...first, latitude: 51.691, longitude: 5.308, capturedAt: new Date().toISOString() };
     await render(stops, progressWithCurrentStop(), second);
-    expect(hasPoint(5.308, 51.691)).toBe(true);
+    expect(container.querySelector('[data-testid="route-gps-marker"]')?.getAttribute('style')).not.toBe(previousPosition);
+    expect(mapState.project).toHaveBeenCalledWith([second.longitude, second.latitude]);
     expect(mapState.fitBounds.mock.calls.length).toBe(fitsBefore);
     expect(mapState.addSource.mock.calls.length).toBe(addBefore);
     expect(mapState.easeTo).not.toHaveBeenCalled();
