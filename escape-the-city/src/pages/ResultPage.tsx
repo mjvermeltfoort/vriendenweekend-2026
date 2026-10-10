@@ -112,7 +112,13 @@ export function ResultPage({ pack }: { pack: GamePack }) {
       <section className="result-hero">
         <p className="eyebrow">De legende is hersteld</p>
         <h1>Avontuur voltooid!</h1>
-        <DragonEmblem />
+        <img
+          className="result-hero__emblem"
+          src={`${import.meta.env.BASE_URL}assets/moerasdraak-result-emblem.svg`}
+          alt="Gouden embleem van de Moerasdraak"
+          width="192"
+          height="192"
+        />
         <p>Jullie hebben het geheim van de Moerasdraak ontrafeld.</p>
         <p className="small">Datum: {resultDate}</p>
       </section>
@@ -130,7 +136,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
         <h2>{completedBonuses.length} / {bonuses.length} gevonden</h2>
         <p className="result-label__symbols" aria-label={`${completedBonuses.length} van ${bonuses.length} drakenschubben`}>{bonuses.map((bonus) => progress.stopProgress[bonus.id]?.state === 'completed' ? '◈' : '◇').join(' ')}</p>
         <p>Bonuspunten: {bonusPoints}</p>
-        {isSchubbenjagers ? <p className="feedback"><strong>SCHUBBENJAGERS</strong><br />Jullie vonden alle verborgen sporen van de Moerasdraak. +{pack.bonusCompletionReward?.points} verzamelbonus</p> : null}
+        {isSchubbenjagers ? <p className="feedback result-schubbenjagers"><strong>SCHUBBENJAGERS</strong><br />Jullie vonden alle verborgen sporen van de Moerasdraak. +{pack.bonusCompletionReward?.points} verzamelbonus</p> : null}
       </section>
 
       <section className="result-label result-section">
