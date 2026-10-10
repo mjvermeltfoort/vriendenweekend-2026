@@ -85,8 +85,11 @@ describe('StopPage completion copy', () => {
     ));
 
     expect(container.querySelector('header')?.textContent).toBe('Herinnering');
+    const links = Array.from(container.querySelectorAll('a.button')).map((link) => ({ href: link.getAttribute('href'), text: link.textContent }));
+
     expect(container.textContent).toContain('Herinnering hersteld');
-    expect(container.textContent).toContain('Bekijk volgende routepunt op kaart');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toMatchObject({ href: '/route', text: 'Bekijk volgende routepunt op kaart' });
     expect(container.textContent).not.toContain('Vind de locatie');
     expect(container.textContent).not.toContain('Opdracht 1 van 7');
     expect(container.textContent).not.toContain('GPS-devsimulator');
@@ -104,7 +107,11 @@ describe('StopPage completion copy', () => {
       </MemoryRouter>
     ));
 
+    const links = Array.from(container.querySelectorAll('a.button')).map((link) => ({ href: link.getAttribute('href'), text: link.textContent }));
+
     expect(container.textContent).toContain('Bekijk volgende routepunt op kaart');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toMatchObject({ href: '/route', text: 'Bekijk volgende routepunt op kaart' });
     expect(container.textContent).not.toContain('Volgende routepunt');
     expect(container.textContent).not.toContain('Vind de locatie');
   });
@@ -123,7 +130,11 @@ describe('StopPage completion copy', () => {
       </MemoryRouter>
     ));
 
+    const links = Array.from(container.querySelectorAll('a.button')).map((link) => ({ href: link.getAttribute('href'), text: link.textContent }));
+
     expect(container.textContent).toContain('Bekijk resultaat');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toMatchObject({ href: '/resultaat', text: 'Bekijk resultaat' });
     expect(container.textContent).not.toContain('Bekijk routekaart');
     expect(container.textContent).not.toContain('Volgende routepunt');
   });
@@ -137,8 +148,11 @@ describe('StopPage completion copy', () => {
       </MemoryRouter>
     ));
 
+    const links = Array.from(container.querySelectorAll('a.button')).map((link) => ({ href: link.getAttribute('href'), text: link.textContent }));
+
     expect(container.textContent).toContain('Drakenschub gevonden');
-    expect(container.textContent).toContain('Terug naar hoofdroute');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toMatchObject({ href: '/route', text: 'Terug naar hoofdroute' });
     expect(container.textContent).not.toContain('Opdracht 1 van 7');
     expect(container.textContent).not.toContain('Vind de locatie');
   });
