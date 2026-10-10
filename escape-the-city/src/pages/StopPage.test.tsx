@@ -55,7 +55,11 @@ vi.mock('../components/GameUi', () => ({
   GameIcon: () => <span aria-hidden="true" />
 }));
 vi.mock('../components/AudioPlayer', () => ({ AudioPlayer: ({ transcript }: { transcript: string }) => <p>{transcript}</p> }));
-vi.mock('../features/location/ActiveStopIndicator', () => ({ ActiveStopIndicator: () => null }));
+vi.mock('../features/location/ActiveStopIndicator', () => ({
+  ActiveStopIndicator: ({ location }: { location: LocationResult | null }) => (
+    <div data-testid="active-stop-gps">{location ? `${location.latitude},${location.longitude}` : 'Locatie zoeken…'}</div>
+  )
+}));
 
 import { StopPage } from './StopPage';
 
@@ -184,6 +188,31 @@ describe('StopPage completion copy', () => {
     expect(links[0]).toMatchObject({ href: '/route', text: 'Terug naar hoofdroute' });
     expect(container.textContent).not.toContain('Opdracht 1 van 7');
     expect(container.textContent).not.toContain('Vind de locatie');
+  });
+
+  it('uses phone GPS for main stops and hides redundant status copy', async () => {
+    const progress = createProgress();
+    progress.currentStopId = 'kruithuis';
+    progress.stopProgress.kruithuis.state = 'available';
+    gameState = {
+      ...gameState,
+      progress,
+      teamLocation: null,
+      deviceLocation: {
+        latitude: 51.693,
+        longitude: 5.305,
+        accuracy: 11,
+        capturedAt: new Date().toISOString()
+      }
+    };
+    await act(async () => root.render(
+      <MemoryRouter key="main-device" initialEntries={['/stop/kruithuis']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+    expect(container.querySelector('[data-testid="active-stop-gps"]')?.textContent).toBe('51.693,5.305');
+    expect(container.textContent).not.toContain('We controleren automatisch de beste actuele GPS van jullie team.');
+    expect(container.textContent?.split('Vuur en Water').length).toBe(2);
   });
 
   it('shows bonus arrival and verification text by distance and unlock state', async () => {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { hasLocationUnlock, type GameProgress } from '../game/gameState';
 import type { GamePack } from '../game/gameTypes';
-import type { TeamLocation } from '../../lib/supabase/sync';
+import type { LocationResult } from './provider';
 import {
   activeRouteLeg,
   filterWalkingDistance,
@@ -24,7 +24,7 @@ export function ActiveStopIndicator({
 }: {
   pack: GamePack;
   progress: GameProgress | null;
-  location: TeamLocation | null;
+  location: LocationResult | null;
   showOpenButton?: boolean;
   onOpenChallenge?: () => void;
 }) {
@@ -50,7 +50,11 @@ export function ActiveStopIndicator({
   }, [stop?.id]);
 
   useEffect(() => {
-    if (!stop || !location?.isCurrent || verified) return;
+    if (!stop || !location || verified) {
+      filterRef.current = { samples: [], displayed: null, increaseCount: 0 };
+      setDisplayedDistance(null);
+      return;
+    }
     const leg = route ? activeRouteLeg(route, stop.id) : null;
     const measurement = leg
       ? remainingRouteDistance(leg, location)
@@ -63,18 +67,17 @@ export function ActiveStopIndicator({
       measurement
     );
     setDisplayedDistance(filterRef.current.displayed);
-  }, [location?.capturedAt, location?.isCurrent, pack.startStopId, route, stop, verified]);
+  }, [location?.capturedAt, location?.latitude, location?.longitude, pack.startStopId, route, stop, verified]);
   if (!stop || state === 'locked') return null;
   const leg = route ? activeRouteLeg(route, stop.id) : null;
   const totalDistance = leg ? routeLegLength(leg) : 0;
   const progressValue = displayedDistance === null || totalDistance === 0
     ? 0
     : Math.max(0, Math.min(100, (1 - displayedDistance / totalDistance) * 100));
-  const gpsStatus = !location?.isCurrent
-    ? 'Locatie zoeken…'
-    : location.accuracyM <= 20
+  const gpsStatus = !location ? null
+    : location.accuracy <= 20
       ? 'Locatie nauwkeurig'
-      : location.accuracyM <= 40
+      : location.accuracy <= 40
         ? 'Locatie redelijk'
         : 'Locatie nog onnauwkeurig';
 
@@ -93,20 +96,19 @@ export function ActiveStopIndicator({
       ? 'Hemelsbrede afstand tot de eerste stop.'
       : walkingStatus(displayedDistance);
   } else {
-    mainLine = location?.isCurrent ? 'Afstand bepalen…' : routeError ? 'Afstand bepalen…' : 'Locatie zoeken…';
+    mainLine = !location ? 'Locatie zoeken…' : routeError ? 'Loopafstand tijdelijk niet beschikbaar.' : 'Afstand bepalen…';
   }
 
   return (
     <section className="active-stop-indicator" aria-label="Afstand tot actuele stop">
-      <p className="eyebrow">Actuele stop</p>
-      <h2>{stop.title}</h2>
+      <p className="eyebrow">Afstand tot de locatie</p>
       <div aria-live="polite">
         <p className={verified ? 'active-stop-indicator__status' : 'active-stop-indicator__distance'}>{mainLine}</p>
-        {!verified && displayedDistance !== null ? (
+        {!verified && displayedDistance !== null && totalDistance > 0 ? (
           <progress max="100" value={progressValue} aria-label="Voortgang naar de stop" />
         ) : null}
         {subLine ? <p className="muted small">{subLine}</p> : null}
-        {!verified ? <p className="muted small">{gpsStatus}</p> : null}
+        {!verified && gpsStatus ? <p className="muted small">{gpsStatus}</p> : null}
       </div>
       {verified && showOpenButton ? (
         <button className="button primary" type="button" onClick={onOpenChallenge}>

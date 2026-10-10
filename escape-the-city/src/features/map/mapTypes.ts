@@ -1,6 +1,6 @@
 import type { GameProgress, StopStatus } from '../game/gameState';
 import type { GamePack, RouteStop } from '../game/gameTypes';
-import type { LocationOutcome, LocationProvider, LocationResult } from '../location/provider';
+import type { LocationErrorResult, LocationOutcome, LocationProvider, LocationResult } from '../location/provider';
 import { haversineDistanceMeters } from '../location/distance';
 
 export type LngLat = [longitude: number, latitude: number];
@@ -37,6 +37,9 @@ export interface RouteMapProps {
   progress: GameProgress | null;
   visibleStops: RouteStop[];
   locationProvider: LocationProvider;
+  /** De lokale GPS-meting uit de gedeelde applicatiecontext; null betekent nog geen fix. */
+  deviceLocation?: LocationResult | null;
+  locationError?: LocationErrorResult | null;
 }
 
 export type RouteMarkerStatus = StopStatus | 'current' | 'finale';
