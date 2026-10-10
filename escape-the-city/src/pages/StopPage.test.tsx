@@ -305,5 +305,7 @@ describe('StopPage completion copy', () => {
       </MemoryRouter>
     ));
     expect(container.textContent).toContain('Geef Chrome locatietoegang om de afstand te zien.');
+    expect(container.textContent).not.toContain('Locatietoegang geweigerd.');
+    expect(container.textContent).not.toContain('Kom dichter bij de schub.');
   });
 });
