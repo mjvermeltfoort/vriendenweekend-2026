@@ -176,6 +176,14 @@ export function StopPage({ pack }: { pack: GamePack }) {
     && Number.isFinite(teamLocation.longitude)
   );
   const bonusPosition = deviceFixIsCurrent ? deviceLocation : teamFixIsCurrent ? teamLocation : null;
+  const mainStopPosition = deviceFixIsCurrent ? deviceLocation : teamFixIsCurrent && teamLocation
+    ? {
+      latitude: teamLocation.latitude,
+      longitude: teamLocation.longitude,
+      accuracy: teamLocation.accuracyM,
+      capturedAt: teamLocation.capturedAt
+    }
+    : null;
   const bonusDistance = isBonusLocation(currentStop) && bonusPosition
     ? haversineDistanceMeters(
       { latitude: bonusPosition.latitude, longitude: bonusPosition.longitude },
@@ -333,7 +341,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
           <ActiveStopIndicator
             pack={pack}
             progress={progress}
-            location={teamLocation}
+            location={mainStopPosition}
             showOpenButton
             onOpenChallenge={() => {
               void startStop(currentStop.id).then((started) => {
@@ -354,9 +362,6 @@ export function StopPage({ pack }: { pack: GamePack }) {
 
         {!isCompleted ? (
           <>
-            {!canPlay && !isBonusLocation(currentStop) ? (
-              <p className="muted">We controleren automatisch de beste actuele GPS van jullie team.</p>
-            ) : null}
             {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
           </>
         ) : null}
