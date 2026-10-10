@@ -10,6 +10,24 @@ import { BellChallengeAudio } from '../components/BellChallengeAudio';
 import { narrationAudio } from '../features/audio/audioConfig';
 import { audioTranscripts } from '../features/audio/audioTranscripts';
 
+const compositeCategoryLabels: Record<string, string> = {
+  head: 'Hoofd',
+  body: 'Lijf',
+  object: 'Voorwerp'
+};
+
+const compositeOptionLabels: Record<string, Record<string, string>> = {
+  head: { Horn: 'Hoorn' }
+};
+
+function labelForCompositeCategory(category: string) {
+  return compositeCategoryLabels[category] ?? category;
+}
+
+function labelForCompositeOption(category: string, option: string) {
+  return compositeOptionLabels[category]?.[option] ?? option;
+}
+
 export function ChallengePage({ pack }: { pack: GamePack }) {
   const { stopId } = useParams();
   const navigate = useNavigate();
@@ -211,13 +229,17 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           <div className="stack">
             {Object.entries(currentStop.challenge.categories).map(([category, options]) => (
               <label key={category} className="field">
-                <span>{category}</span>
-                <select value={composite[category] ?? ''} onChange={(event) => {
-                  setComposite((current) => ({ ...current, [category]: event.target.value }));
-                  setMessage('');
-                }}>
-                  <option value="">Kies</option>
-                  {options.map((option) => <option key={option} value={option}>{option}</option>)}
+                <span>{labelForCompositeCategory(category)}</span>
+                <select
+                  value={composite[category] ?? ''}
+                  aria-label={labelForCompositeCategory(category)}
+                  onChange={(event) => {
+                    setComposite((current) => ({ ...current, [category]: event.target.value }));
+                    setMessage('');
+                  }}
+                >
+                  <option value="">Kies {labelForCompositeCategory(category).toLowerCase()}</option>
+                  {options.map((option) => <option key={option} value={option}>{labelForCompositeOption(category, option)}</option>)}
                 </select>
               </label>
             ))}
