@@ -342,6 +342,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
             pack={pack}
             progress={progress}
             location={mainStopPosition}
+            locationError={locationError}
             showOpenButton
             onOpenChallenge={() => {
               void startStop(currentStop.id).then((started) => {
@@ -353,7 +354,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
           />
         ) : null}
 
-        {gpsMessage || (!isBonusLocation(currentStop) && !canPlay && locationError) ? (
+        {gpsMessage || (!isBonusLocation(currentStop) && !currentStopIsActive && !canPlay && locationError) ? (
           <div className="location-status" role="status" aria-live="polite">
             <GameIcon name={canPlay ? 'check' : 'location'} />
             <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
