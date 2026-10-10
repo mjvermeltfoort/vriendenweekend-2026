@@ -1,6 +1,7 @@
 import type { GamePack } from '../game/gameTypes';
 import { haversineDistanceMeters } from './distance';
 import { validateRouteGeoJson, type LngLat, type RouteGeoJson, type RouteLegFeature } from '../map/mapTypes';
+import type { RouteStop } from '../game/gameTypes';
 
 export const DISTANCE_STATUS = {
   FAR: 500,
@@ -96,6 +97,17 @@ export function remainingRouteDistance(
 
 export function activeRouteLeg(route: RouteGeoJson, currentStopId: string) {
   return route.features.find((feature) => feature.properties.toStopId === currentStopId) ?? null;
+}
+
+export function stopDistanceMeters(
+  stop: Pick<RouteStop, 'coordinates'>,
+  location: { latitude: number; longitude: number } | { coordinates: { latitude: number; longitude: number } }
+) {
+  const coordinates = 'coordinates' in location ? location.coordinates : location;
+  return haversineDistanceMeters(
+    { latitude: coordinates.latitude, longitude: coordinates.longitude },
+    { latitude: stop.coordinates.latitude!, longitude: stop.coordinates.longitude! }
+  );
 }
 
 export function roundedWalkingDistance(distanceM: number) {
