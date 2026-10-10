@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { hasLocationUnlock, type GameProgress } from '../game/gameState';
 import type { GamePack } from '../game/gameTypes';
-import type { LocationResult } from './provider';
+import type { LocationErrorResult, LocationResult } from './provider';
 import {
   activeRouteLeg,
   filterWalkingDistance,
@@ -19,12 +19,14 @@ export function ActiveStopIndicator({
   pack,
   progress,
   location,
+  locationError,
   showOpenButton = false,
   onOpenChallenge
 }: {
   pack: GamePack;
   progress: GameProgress | null;
   location: LocationResult | null;
+  locationError?: LocationErrorResult | null;
   showOpenButton?: boolean;
   onOpenChallenge?: () => void;
 }) {
@@ -96,7 +98,13 @@ export function ActiveStopIndicator({
       ? 'Hemelsbrede afstand tot de eerste stop.'
       : walkingStatus(displayedDistance);
   } else {
-    mainLine = !location ? 'Locatie zoeken…' : routeError ? 'Loopafstand tijdelijk niet beschikbaar.' : 'Afstand bepalen…';
+    mainLine = !location
+      ? locationError?.kind === 'timeout' || locationError?.kind === 'unavailable'
+        ? 'GPS tijdelijk niet beschikbaar – er wordt opnieuw gezocht…'
+        : locationError?.kind === 'permission-denied'
+          ? 'Geef Chrome toestemming om je locatie te gebruiken.'
+          : 'Locatie zoeken…'
+      : routeError ? 'Loopafstand tijdelijk niet beschikbaar.' : 'Afstand bepalen…';
   }
 
   return (

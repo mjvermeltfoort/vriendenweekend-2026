@@ -45,6 +45,19 @@ describe('ActiveStopIndicator for regular stops', () => {
     expect(container.textContent).toContain('Afstand tot de locatie');
   });
 
+  it('explains that GPS is retrying instead of endlessly showing location searching', async () => {
+    await act(async () => root.render(
+      <ActiveStopIndicator
+        pack={gamePack}
+        progress={progress}
+        location={null}
+        locationError={{ kind: 'timeout', message: 'Locatie duurde te lang.' }}
+      />
+    ));
+    expect(container.textContent).toContain('GPS tijdelijk niet beschikbaar – er wordt opnieuw gezocht…');
+    expect(container.textContent).not.toContain('Locatie zoeken…');
+  });
+
   it('shows a usable distance when a new device GPS fix arrives', async () => {
     await show({
       latitude: 51.6900,
