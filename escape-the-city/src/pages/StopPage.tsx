@@ -251,7 +251,10 @@ export function StopPage({ pack }: { pack: GamePack }) {
     || (isBonusLocation(currentStop) && !canPlay && !isCompleted && bonusQuestionAvailable));
 
   const gameCompleted = progress ? canViewResult(progress, pack) : false;
-  const showParchment = !gameCompleted && (progress ? (hasLocationUnlock(progress, currentStop.id) || canAccessChallenge(progress, currentStop.id)) : false);
+  const showParchment = !gameCompleted && !isCompleted && (progress ? (hasLocationUnlock(progress, currentStop.id) || canAccessChallenge(progress, currentStop.id)) : false);
+  const showStopDetails = !isCompleted;
+  const completedRouteHref = followingStop ? '/route' : '/resultaat';
+  const completedRouteLabel = followingStop ? 'Bekijk volgende routepunt op kaart' : 'Bekijk resultaat';
 
   return (
     <PageShell title={isCompleted ? (isBonusLocation(currentStop) ? 'Drakenschub' : 'Herinnering') : 'Verhaal'} backTo="/route">
@@ -271,6 +274,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
         </section>
       ) : null}
 
+      {showStopDetails ? (
       <section className="card card--compact stack stack--compact" style={{ marginTop: '0.5rem' }}>
         <p className="eyebrow">Vind de locatie</p>
         <h2>{currentStop.title}</h2>
@@ -319,6 +323,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
           </>
         ) : null}
       </section>
+      ) : null}
 
       {!isBonusLocation(currentStop) && !canPlay && !isCompleted && fallbackDelayMs !== null ? (
         <section className="observation-fallback stack" aria-label="Locatie bevestigen zonder GPS">
@@ -377,7 +382,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
         )
       ) : null}
 
-      {isDev ? (
+      {showStopDetails && isDev ? (
         <details>
           <summary>GPS-devsimulator</summary>
           <div className="stack">
@@ -416,7 +421,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
                 {currentStop.challenge.kind === 'choice' ? (
                   <p className="muted small">{currentStop.challenge.correctFeedback}</p>
                 ) : null}
-                <Link className="button secondary" to="/route">Bekijk routekaart</Link>
+                <Link className="button secondary" to={completedRouteHref}>{completedRouteLabel}</Link>
               </>
             )}
         </div>
@@ -446,8 +451,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
       )}
 
       {currentStop.isFinal && !finaleEligibility.eligible ? <p className="error">Nog {finaleEligibility.missingCount} opdrachten te voltooien.</p> : null}
-      {isCompleted && followingStop ? <Link className="button secondary" to={`/stop/${followingStop.id}`}>Volgende routepunt</Link> : null}
-      {isCompleted && !followingStop && !isBonusLocation(currentStop) ? <Link className="button primary" to="/resultaat">Bekijk resultaat</Link> : null}
+      {isCompleted ? <Link className={`button ${followingStop ? 'secondary' : 'primary'}`} to={completedRouteHref}>{completedRouteLabel}</Link> : null}
     </PageShell>
   );
 }
