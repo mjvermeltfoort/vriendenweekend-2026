@@ -178,7 +178,8 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
     if (nearbyBonusId) {
       selectionOriginRef.current = 'gps';
       sheetDismissedRef.current = false;
-      revealSheetRef.current = true;
+      // Automatische GPS-selectie mag niet zelf de pagina laten verspringen.
+      revealSheetRef.current = false;
       setSelectedStopId(nearbyBonusId);
     } else if (selectionOriginRef.current === 'gps') {
       selectionOriginRef.current = 'default';
@@ -189,8 +190,9 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   useEffect(() => {
     if (!selectedStopId || !revealSheetRef.current || !sheetRef.current) return;
     revealSheetRef.current = false;
-    // De geselecteerde kaart moet zichtbaar zijn, ook met vaste mobiele ondernavigatie.
-    sheetRef.current.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+    // Na een tik op een marker scrollt de pagina net genoeg om de kaartinformatie
+    // inclusief knoppen boven de vaste mobiele ondernavigatie zichtbaar te maken.
+    sheetRef.current.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
   }, [selectedStopId]);
 
   function selectMapStop(stop: RouteStop | BonusLocation) {
@@ -199,7 +201,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
     revealSheetRef.current = true;
     setSelectedStopId(stop.id);
     if (selectedStopId === stop.id) {
-      sheetRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+      sheetRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
       revealSheetRef.current = false;
     }
   }
@@ -590,6 +592,8 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           </button>
         ) : null}
         {mode === 'fallback' ? <span className="map-fallback-badge">Offline kaart</span> : null}
+      </div>
+      <p className="map-location-message" aria-live="polite">{locationMessage}</p>
       {selectedStop && (selectedState !== 'locked' || isBonusLocation(selectedStop)) ? (
         <section ref={sheetRef} className="route-bottom-sheet" aria-label={isBonusLocation(selectedStop) ? `Schub: ${selectedStop.title}` : `Stop ${selectedStop.order}: ${selectedStop.title}`}>
           <button className="route-bottom-sheet__close" type="button" aria-label="Stopinformatie sluiten" onClick={closeStopSheet}>×</button>
@@ -612,8 +616,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           </div>
         </section>
       ) : null}
-      </div>
-      <p className="map-location-message" aria-live="polite">{locationMessage}</p>
     </section>
   );
 }
