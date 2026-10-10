@@ -161,6 +161,13 @@ export function StopPage({ pack }: { pack: GamePack }) {
       { latitude: currentStop.coordinates.latitude!, longitude: currentStop.coordinates.longitude! }
     )
     : null;
+  const bonusDistanceText = bonusDistance === null
+    ? null
+    : bonusDistance === 0
+      ? canPlay
+        ? 'Locatie gevonden – opdracht beschikbaar'
+        : 'Je bent vlak bij de schub – locatie wordt gecontroleerd'
+      : `Nog ongeveer ${formattedWalkingDistance(bonusDistance)} (hemelsbreed)`;
   const finaleEligibility = currentStop.isFinal && progress ? canStartFinale(progress, pack) : { eligible: true, missingCount: 0, missingTitles: [] as string[] };
   const isDev = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true';
   const followingStop = isBonusLocation(currentStop) ? null : nextStop(pack, currentStop.id);
@@ -292,7 +299,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
               <p>Afstand bepalen…</p>
             ) : (
               <>
-                <p className="active-stop-indicator__distance">Nog ongeveer {formattedWalkingDistance(bonusDistance)} lopen</p>
+                <p className="active-stop-indicator__distance">{bonusDistanceText}</p>
                 <p className="muted small">Directe afstand vanaf jullie actuele GPS-locatie.</p>
               </>
             )}

@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress } from '../features/game/gameState';
 import { gamePack } from '../game-data/moerasdraak/game';
+import type { TeamLocation } from '../lib/supabase/sync';
 
 const createProgress = () => {
   const value = createInitialProgress('team-1', gamePack);
@@ -17,10 +18,21 @@ const createProgress = () => {
 
 const selectBonus = vi.fn().mockResolvedValue(undefined);
 
+const setTeamLocation = (overrides: Partial<TeamLocation> = {}): TeamLocation => ({
+  sourceSessionId: 'session-1',
+  capturedAt: '2026-10-10T18:17:00.000Z',
+  selectedAt: '2026-10-10T18:17:00.000Z',
+  isCurrent: true,
+  latitude: 51.69,
+  longitude: 5.3,
+  accuracyM: 12,
+  ...overrides
+});
+
 let gameState = {
   progress: createProgress(),
   startStop: vi.fn(),
-  teamLocation: null,
+  teamLocation: null as TeamLocation | null,
   activeGameRun: null,
   locationError: null,
   currentObservation: null,
@@ -59,7 +71,7 @@ describe('StopPage completion copy', () => {
       ...gameState,
       progress: createProgress(),
       startStop: vi.fn(),
-      teamLocation: null,
+      teamLocation: null as TeamLocation | null,
       activeGameRun: null,
       locationError: null,
       currentObservation: null,
@@ -153,7 +165,6 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).not.toContain('Luister naar het verhaal');
   });
 
-
   it('keeps bonus completion separate from main stop controls', async () => {
     gameState = { ...gameState, progress: createProgress() };
 
@@ -170,5 +181,73 @@ describe('StopPage completion copy', () => {
     expect(links[0]).toMatchObject({ href: '/route', text: 'Terug naar hoofdroute' });
     expect(container.textContent).not.toContain('Opdracht 1 van 7');
     expect(container.textContent).not.toContain('Vind de locatie');
+  });
+
+  it('shows bonus arrival and verification text by distance and unlock state', async () => {
+    const progress = createProgress();
+    progress.currentStopId = 'bonus:bolwerk-sint-jan';
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'available';
+    progress.stopProgress['bonus:bolwerk-sint-jan'].unlockMethod = 'gps';
+
+    gameState = { ...gameState, progress, teamLocation: setTeamLocation({ latitude: 51.6902, longitude: 5.3002 }) };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bonus-arrival" initialEntries={['/stop/bonus:bolwerk-sint-jan']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.textContent).toContain('Nog ongeveer 120 m (hemelsbreed)');
+    expect(container.textContent).not.toContain('Nog ongeveer 0 m lopen');
+    expect(container.textContent).toContain('Opdracht openen');
+
+    const lockedProgress = createProgress();
+    lockedProgress.currentStopId = 'bonus:bolwerk-sint-jan';
+    lockedProgress.stopProgress['bonus:bolwerk-sint-jan'].state = 'locked';
+    gameState = { ...gameState, progress: lockedProgress, teamLocation: setTeamLocation({ latitude: 51.6902, longitude: 5.3002 }) };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bonus-check" initialEntries={['/stop/bonus:bolwerk-sint-jan']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.textContent).toContain('Nog ongeveer 120 m (hemelsbreed)');
+    expect(container.textContent).not.toContain('Nog ongeveer 0 m lopen');
+    expect(container.textContent).toContain('Opdracht openen');
+  });
+
+  it('shows hemelsbrede distance for positive bonus distance', async () => {
+    const progress = createProgress();
+    progress.currentStopId = 'bonus:bolwerk-sint-jan';
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'available';
+    progress.stopProgress['bonus:bolwerk-sint-jan'].unlockMethod = 'gps';
+
+    gameState = { ...gameState, progress, teamLocation: setTeamLocation({ latitude: 51.6905, longitude: 5.301 }) };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bonus-distance" initialEntries={['/stop/bonus:bolwerk-sint-jan']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.textContent).toContain('Nog ongeveer');
+    expect(container.textContent).toContain('(hemelsbreed)');
+    expect(container.textContent).not.toContain('lopen');
+  });
+
+  it('keeps GPS fallback text when no usable location exists', async () => {
+    const progress = createProgress();
+    progress.currentStopId = 'bonus:bolwerk-sint-jan';
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'available';
+    gameState = { ...gameState, progress, teamLocation: null };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bonus-no-gps" initialEntries={['/stop/bonus:bolwerk-sint-jan']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.textContent).toContain('Afstand bepalen…');
   });
 });
