@@ -91,6 +91,32 @@ export function autoSelectedStopId(
   return state === 'locked' ? null : currentStopId;
 }
 
+export function nearestUnfinishedBonus(
+  location: LocationResult | null,
+  bonuses: BonusLocation[],
+  progress: RouteMapProps['progress'],
+  previousId: string | null = null
+): string | null {
+  if (!location || !progress || !Number.isFinite(location.latitude)
+    || !Number.isFinite(location.longitude) || !Number.isFinite(location.accuracy)) return null;
+
+  const matches = bonuses
+    .filter((bonus) => progress.stopProgress[bonus.id]?.state !== 'completed'
+      && progress.stopProgress[bonus.id]?.state !== 'locked'
+      && location.accuracy <= bonus.coordinates.maximumAccuracyMeters)
+    .map((bonus) => ({
+      bonus,
+      distance: haversineDistanceMeters(location, {
+        latitude: bonus.coordinates.latitude!,
+        longitude: bonus.coordinates.longitude!
+      })
+    }))
+    .filter(({ bonus, distance }) => distance <= bonus.coordinates.radiusMeters + (bonus.id === previousId ? 30 : 0))
+    .sort((a, b) => a.distance - b.distance);
+
+  return matches[0]?.bonus.id ?? null;
+}
+
 export function mapFocusStops(currentStopId: string | undefined, visibleStops: RouteStop[]) {
   const currentIndex = visibleStops.findIndex((stop) => stop.id === currentStopId);
   return currentIndex === -1 ? visibleStops : visibleStops.slice(currentIndex, currentIndex + 2);
@@ -110,6 +136,11 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
   const [markerPositions, setMarkerPositions] = useState<Record<string, MarkerPosition>>({});
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const selectionOriginRef = useRef<'default' | 'gps' | 'manual'>('default');
+  const nearbyBonusRef = useRef<string | null>(null);
+  const sheetRef = useRef<HTMLElement | null>(null);
+  const revealSheetRef = useRef(false);
+  const sheetDismissedRef = useRef(false);
   const [location, setLocation] = useState<LocationResult | null>(null);
   const [locationMessage, setLocationMessage] = useState('');
   const [locationEnabled, setLocationEnabled] = useState(false);
@@ -129,12 +160,56 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   );
   const selectedStop = mapLocations.find((stop) => stop.id === selectedStopId) ?? null;
   const selectedState = selectedStop ? progress?.stopProgress?.[selectedStop.id]?.state ?? 'locked' : 'locked';
+  const nearbyBonusId = nearestUnfinishedBonus(location, visibleBonusLocationsMemo, progress, nearbyBonusRef.current);
+  const selectedNearbyBonus = selectedStopId !== null && selectedStopId === nearbyBonusId;
 
   useEffect(() => {
-    if (selectedStopId) return;
+    if (selectedStopId || sheetDismissedRef.current || selectionOriginRef.current !== 'default') return;
     const suggestedStopId = autoSelectedStopId(progress?.currentStopId, progress, visibleStops);
     if (suggestedStopId) setSelectedStopId(suggestedStopId);
   }, [progress, selectedStopId, visibleStops]);
+
+  useEffect(() => {
+    // Alleen een verse, bruikbare positie activeert een schub. Een tijdelijke
+    // GPS-time-out mag de gekozen opdracht niet laten verspringen.
+    if (!location) return;
+    if (nearbyBonusId === nearbyBonusRef.current) return;
+    nearbyBonusRef.current = nearbyBonusId;
+    if (nearbyBonusId) {
+      selectionOriginRef.current = 'gps';
+      sheetDismissedRef.current = false;
+      revealSheetRef.current = true;
+      setSelectedStopId(nearbyBonusId);
+    } else if (selectionOriginRef.current === 'gps') {
+      selectionOriginRef.current = 'default';
+      setSelectedStopId(autoSelectedStopId(progress?.currentStopId, progress, visibleStops));
+    }
+  }, [nearbyBonusId, location, progress, visibleStops]);
+
+  useEffect(() => {
+    if (!selectedStopId || !revealSheetRef.current || !sheetRef.current) return;
+    revealSheetRef.current = false;
+    // De geselecteerde kaart moet zichtbaar zijn, ook met vaste mobiele ondernavigatie.
+    sheetRef.current.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+  }, [selectedStopId]);
+
+  function selectMapStop(stop: RouteStop | BonusLocation) {
+    selectionOriginRef.current = 'manual';
+    sheetDismissedRef.current = false;
+    revealSheetRef.current = true;
+    setSelectedStopId(stop.id);
+    if (selectedStopId === stop.id) {
+      sheetRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+      revealSheetRef.current = false;
+    }
+  }
+
+  function closeStopSheet() {
+    selectionOriginRef.current = 'manual';
+    sheetDismissedRef.current = true;
+    revealSheetRef.current = false;
+    setSelectedStopId(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -495,10 +570,10 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
               <RouteMarker
                 key={stop.id}
                 stop={stop}
-                status={markerStatus(stop, state, progress?.currentStopId)}
+                status={isBonusLocation(stop) && nearbyBonusId === stop.id ? 'current' : markerStatus(stop, state, progress?.currentStopId)}
                 selected={selectedStopId === stop.id}
                 style={position}
-                onSelect={(selected) => setSelectedStopId(selected.id)}
+                onSelect={selectMapStop}
               />
             );
           })}
@@ -515,15 +590,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           </button>
         ) : null}
         {mode === 'fallback' ? <span className="map-fallback-badge">Offline kaart</span> : null}
-      </div>
-
-      <p className="map-location-message" aria-live="polite">{locationMessage}</p>
-
       {selectedStop && (selectedState !== 'locked' || isBonusLocation(selectedStop)) ? (
-        <section className="route-bottom-sheet" aria-label={isBonusLocation(selectedStop) ? 'Verborgen vondst' : `Stop ${selectedStop.order}: ${selectedStop.title}`}>
-          <button className="route-bottom-sheet__close" type="button" aria-label="Stopinformatie sluiten" onClick={() => setSelectedStopId(null)}>×</button>
-          <span className="route-stop__meta">{isBonusLocation(selectedStop) ? 'Verborgen vondst' : selectedStop.isFinal ? 'Finale' : `Opdracht ${selectedStop.order}`} · {stopStatusLabels[selectedState]}</span>
-          <h2>{isBonusLocation(selectedStop) && selectedState !== 'completed' ? 'Verborgen schub' : selectedStop.title}</h2>
+        <section ref={sheetRef} className="route-bottom-sheet" aria-label={isBonusLocation(selectedStop) ? `Schub: ${selectedStop.title}` : `Stop ${selectedStop.order}: ${selectedStop.title}`}>
+          <button className="route-bottom-sheet__close" type="button" aria-label="Stopinformatie sluiten" onClick={closeStopSheet}>×</button>
+          <span className="route-stop__meta">{isBonusLocation(selectedStop)
+            ? selectedNearbyBonus ? 'Verborgen schub · Jullie zijn hier' : 'Verborgen vondst'
+            : selectedStop.isFinal ? 'Finale' : `Opdracht ${selectedStop.order}`} · {stopStatusLabels[selectedState]}</span>
+          <h2>{isBonusLocation(selectedStop) && selectedState !== 'completed' && !selectedNearbyBonus ? 'Verborgen schub' : selectedStop.title}</h2>
           <p>{isBonusLocation(selectedStop) && selectedState !== 'completed' ? selectedStop.hiddenClue : selectedStop.navigation.clue}</p>
           {isBonusLocation(selectedStop) ? <p className="muted small">Omweg: circa {selectedStop.estimatedDetourMinutes} minuten · maximaal {selectedStop.maximumPoints} bonuspunten</p> : null}
           <div className="route-bottom-sheet__actions">
@@ -535,10 +608,12 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
             >
               Open navigatie
             </a>
-            <Link className="button primary" to={`/stop/${selectedStop.id}`}>{isBonusLocation(selectedStop) ? 'Maak dit mijn doel' : 'Bekijk stop'}</Link>
+            <Link className="button primary" to={`/stop/${selectedStop.id}`}>{isBonusLocation(selectedStop) ? selectedNearbyBonus ? 'Open schubopdracht' : 'Bekijk schub' : 'Bekijk stop'}</Link>
           </div>
         </section>
       ) : null}
+      </div>
+      <p className="map-location-message" aria-live="polite">{locationMessage}</p>
     </section>
   );
 }
