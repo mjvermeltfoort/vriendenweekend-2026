@@ -8,6 +8,7 @@ import type { RouteMapProps } from './mapTypes';
 
 const mapState = vi.hoisted(() => ({
   fitBounds: vi.fn(),
+  easeTo: vi.fn(),
   remove: vi.fn(),
   addControl: vi.fn(),
   addSource: vi.fn(),
@@ -59,7 +60,11 @@ vi.mock('./mapTypes', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./mapTypes')>();
   return {
     ...actual,
-    startLocationPolling: vi.fn(() => vi.fn()),
+    startLocationPolling: vi.fn((provider, onOutcome) => {
+      void provider.getCurrentPosition?.();
+      void onOutcome({ latitude: 51.69, longitude: 5.3, accuracy: 12 });
+      return vi.fn();
+    }),
     shouldUseFallbackForMapError: vi.fn(() => false)
   };
 });
@@ -82,7 +87,7 @@ import { RouteMap } from './RouteMap';
 
 function locationProvider(): RouteMapProps['locationProvider'] {
   return {
-    getCurrentPosition: vi.fn(async () => ({ kind: 'unavailable' as const, message: 'x' }))
+    getCurrentPosition: vi.fn(async () => ({ latitude: 51.69, longitude: 5.3, accuracy: 12 }))
   };
 }
 
@@ -119,6 +124,15 @@ describe('RouteMap', () => {
       </MemoryRouter>
     ));
   }
+
+  it('starts location polling automatically and keeps manual recenter available', async () => {
+    const visibleStops = gamePack.stops.filter((stop) => !stop.isFinal);
+    await render(visibleStops, progressWithCurrentStop());
+
+    expect(mapState.easeTo).not.toHaveBeenCalled();
+    expect(mapState.fitBounds).toHaveBeenCalledTimes(1);
+    expect(mapState.getSource).toHaveBeenCalledWith('route-position');
+  });
 
   it('keeps map instance stable when visibleStops gets a new equal array', async () => {
     const visibleStops = gamePack.stops.filter((stop) => !stop.isFinal);
