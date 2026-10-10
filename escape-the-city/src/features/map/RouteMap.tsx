@@ -3,17 +3,15 @@ import { Link } from 'react-router-dom';
 import type { FilterSpecification, GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { GameIcon } from '../../components/GameUi';
-import type { LocationOutcome, LocationResult } from '../location/provider';
+import type { LocationResult } from '../location/provider';
 import { loadRouteGeoJson } from '../location/routeDistance';
 import { applyMoerasdraakTheme, legFilter, MAP_STYLE_URL, mapColors } from './mapStyle';
 import {
   createAccuracyPolygon,
   externalNavigationUrl,
   getRoutePresentation,
-  isLocationResult,
   markerStatus,
   shouldUseFallbackForMapError,
-  startLocationPolling,
   type LngLat,
   type RouteGeoJson,
   type RouteMapProps
@@ -95,20 +93,13 @@ export function mapFocusStops(currentStopId: string | undefined, visibleStops: R
   return currentIndex === -1 ? visibleStops : visibleStops.slice(currentIndex, currentIndex + 2);
 }
 
-export function RouteMap({ gamePack, progress, visibleStops, locationProvider }: RouteMapProps) {
+export function RouteMap({ gamePack, progress, visibleStops, location, locationError }: RouteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const stopPollingRef = useRef<(() => void) | null>(null);
-  const autoStartedRef = useRef(false);
-  const lastKnownLocationRef = useRef<LocationResult | null>(null);
   const [mode, setMode] = useState<MapMode>('loading');
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
   const [markerPositions, setMarkerPositions] = useState<Record<string, MarkerPosition>>({});
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
-  const [location, setLocation] = useState<LocationResult | null>(null);
-  const [locationMessage, setLocationMessage] = useState('');
-  const [locationEnabled, setLocationEnabled] = useState(false);
-  const [locationCentered, setLocationCentered] = useState(false);
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
 
   const visibleBonusLocationsMemo = useMemo(() => visibleBonusLocations(gamePack, progress), [gamePack, progress]);
@@ -312,43 +303,16 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
     accuracySource?.setData(location ? accuracyFeature(location) : emptyFeatureCollection);
   }, [location, mode]);
 
-  useEffect(() => () => stopPollingRef.current?.(), []);
-
-  useEffect(() => {
-    if (location) lastKnownLocationRef.current = location;
-  }, [location]);
-
-  useEffect(() => {
-    if (autoStartedRef.current || stopPollingRef.current) return;
-    autoStartedRef.current = true;
-    stopPollingRef.current = startLocationPolling(locationProvider, handleLocationOutcome);
-    setLocationEnabled(true);
-  }, [locationProvider]);
-
-  function handleLocationOutcome(outcome: LocationOutcome) {
-    if (isLocationResult(outcome)) {
-      setLocation(outcome);
-      setLocationMessage(`Jij bent hier. Nauwkeurig tot ongeveer ${Math.round(outcome.accuracy)} meter.`);
-      return;
-    }
-    setLocationMessage(outcome.message);
-  }
-
-  function enableLocation() {
-    if (locationEnabled) return;
-    setLocationEnabled(true);
-    stopPollingRef.current = startLocationPolling(locationProvider, handleLocationOutcome);
-  }
-
   function centerOnLocation() {
     const map = mapRef.current;
-    const current = location ?? lastKnownLocationRef.current;
-    if (!map || !current) return;
-    setLocationCentered(true);
-    map.easeTo({ center: [current.longitude, current.latitude], duration: 300 });
+    if (!map || !location) return;
+    map.easeTo({ center: [location.longitude, location.latitude], duration: 300 });
   }
 
-  const activeLocation = location ?? lastKnownLocationRef.current;
+  const activeLocation = location;
+  const locationMessage = location
+    ? `Jij bent hier. Nauwkeurig tot ongeveer ${Math.round(location.accuracy)} meter.`
+    : locationError?.message ?? 'Locatie wordt bepaald…';
   const fallbackLocationPosition = activeLocation
     ? projectFallback([activeLocation.longitude, activeLocation.latitude])
     : null;
@@ -430,10 +394,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
           })}
         </div>
 
-        <button className="map-location-button" type="button" onClick={enableLocation} aria-pressed={locationEnabled}>
-          <GameIcon name="location" size={18} />
-          {locationEnabled ? 'Locatie aan' : 'Mijn locatie'}
-        </button>
         {activeLocation ? (
           <button className="map-location-button map-location-button--secondary" type="button" onClick={centerOnLocation}>
             <GameIcon name="compass" size={18} />
@@ -488,5 +448,4 @@ export function hasWebGlSupport() {
     return false;
   }
 }
-
 

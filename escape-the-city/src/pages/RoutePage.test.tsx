@@ -14,7 +14,11 @@ vi.mock('../components/GameUi', () => ({
   SyncStatus: () => null,
   GameIcon: () => <span aria-hidden="true" />
 }));
-vi.mock('../features/map/RouteMap', () => ({ RouteMap: () => <div>Routekaart</div> }));
+vi.mock('../features/map/RouteMap', () => ({
+  RouteMap: ({ location }: { location: { latitude: number } | null }) => (
+    <div data-gps-latitude={location?.latitude ?? ''}>Routekaart</div>
+  )
+}));
 
 import { RoutePage } from './RoutePage';
 
@@ -25,6 +29,8 @@ function contextWith(progress: ReturnType<typeof createInitialProgress>) {
     syncStatus: 'saved',
     syncMessage: 'Alles opgeslagen',
     teamLocation: null,
+    localLocation: null,
+    locationError: null,
     activeSessionCount: 1
   };
 }
@@ -88,5 +94,18 @@ describe('RoutePage finale states', () => {
     expect(text).toContain('Route');
     expect(text).toContain('Routekaart');
     expect(text).toContain('Verborgen eindlocatie');
+  });
+
+  it('passes the current device location to the route map', async () => {
+    const localLocation = { latitude: 51.69, longitude: 5.3, accuracy: 12 };
+    gameState.current = {
+      ...contextWith(createInitialProgress('team-1', gamePack)),
+      localLocation
+    };
+    await act(async () => root.render(
+      <MemoryRouter><RoutePage pack={gamePack} /></MemoryRouter>
+    ));
+
+    expect(container.querySelector('[data-gps-latitude]')?.getAttribute('data-gps-latitude')).toBe('51.69');
   });
 });

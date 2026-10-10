@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { canStartFinale, isFinaleLocationRevealed, visibleBonusLocations } from '../features/game/gameState';
 import { GameIcon, PageShell, ProgressBar, SyncStatus } from '../components/GameUi';
 import { RouteMap } from '../features/map/RouteMap';
-import type { LocationProvider } from '../features/location/provider';
 
 const statusLabels = {
   locked: 'Vergrendeld',
@@ -16,7 +15,7 @@ const statusLabels = {
 };
 
 export function RoutePage({ pack }: { pack: GamePack }) {
-  const { activeTeam, progress, syncStatus, syncMessage, teamLocation, activeSessionCount } = useGame();
+  const { activeTeam, progress, syncStatus, syncMessage, localLocation, locationError, activeSessionCount } = useGame();
   const [view, setView] = useState<'list' | 'route'>('route');
   const [bonusIntroSeen, setBonusIntroSeen] = useState(true);
   const finale = progress ? canStartFinale(progress, pack) : { eligible: false, missingCount: pack.stops.length - 1, missingTitles: [] as string[] };
@@ -28,19 +27,6 @@ export function RoutePage({ pack }: { pack: GamePack }) {
     const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
     return state !== 'completed';
   });
-  const teamLocationProvider = useMemo<LocationProvider>(() => ({
-    async getCurrentPosition() {
-      if (!teamLocation?.isCurrent) {
-        return { kind: 'unavailable', message: 'Laatst bekende locatie — we wachten op een actuele teammeting.' };
-      }
-      return {
-        latitude: teamLocation.latitude,
-        longitude: teamLocation.longitude,
-        accuracy: teamLocation.accuracyM,
-        capturedAt: teamLocation.capturedAt
-      };
-    }
-  }), [teamLocation]);
   const bonusIntroKey = activeTeam ? `moerasdraak-bonus-intro:${activeTeam.id}` : '';
 
   useEffect(() => {
@@ -115,7 +101,8 @@ export function RoutePage({ pack }: { pack: GamePack }) {
           gamePack={pack}
           progress={progress}
           visibleStops={visibleStops}
-          locationProvider={teamLocationProvider}
+          location={localLocation}
+          locationError={locationError}
         />
       )}
 
@@ -141,4 +128,3 @@ export function RoutePage({ pack }: { pack: GamePack }) {
     </PageShell>
   );
 }
-
