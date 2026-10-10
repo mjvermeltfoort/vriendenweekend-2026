@@ -345,7 +345,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   }
 
   function enableLocation() {
-    if (deviceLocation !== undefined || locationEnabled) return;
+    if (deviceLocation !== undefined) {
+      // Handmatige herpoging wanneer de browser nog geen geldige GPS-meting levert.
+      void locationProvider.getCurrentPosition({ enableHighAccuracy: true, maximumAge: 0, timeout: 10000 })
+        .then(handleLocationOutcome);
+      return;
+    }
+    if (locationEnabled) return;
     setLocationEnabled(true);
     stopPollingRef.current = startLocationPolling(locationProvider, handleLocationOutcome);
   }
@@ -439,7 +445,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           })}
         </div>
 
-        <button className="map-location-button" type="button" onClick={enableLocation} aria-pressed={locationEnabled} disabled={deviceLocation !== undefined}>
+        <button className="map-location-button" type="button" onClick={enableLocation} aria-pressed={locationEnabled}>
           <GameIcon name="location" size={18} />
           {locationEnabled ? 'Locatie aan' : 'Mijn locatie'}
         </button>
