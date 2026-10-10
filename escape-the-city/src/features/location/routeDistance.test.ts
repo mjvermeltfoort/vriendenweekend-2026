@@ -8,6 +8,7 @@ import {
   remainingRouteDistance,
   roundedWalkingDistance,
   routeLegLength,
+  stopDistanceMeters,
   walkingStatus,
   type DistanceFilterState
 } from './routeDistance';
@@ -33,6 +34,13 @@ describe('walking route distance', () => {
     expect(remaining).toBeGreaterThan(140);
     expect(remaining).toBeLessThan(total);
     expect(activeRouteLeg(route, 'a')).toBeNull();
+  });
+
+  it('measures straight-line distance to the start stop', () => {
+    expect(stopDistanceMeters(
+      { coordinates: { longitude: 5.3, latitude: 51.69, radiusMeters: 20, maximumAccuracyMeters: 40, needsOnSiteVerification: false } },
+      { longitude: 5.3005, latitude: 51.6905 }
+    )).toBeGreaterThan(60);
   });
 
   it('includes perpendicular off-route distance in the total', () => {

@@ -9,6 +9,7 @@ import {
   loadRouteGeoJson,
   remainingRouteDistance,
   routeLegLength,
+  stopDistanceMeters,
   walkingStatus,
   type DistanceFilterState
 } from './routeDistance';
@@ -51,13 +52,18 @@ export function ActiveStopIndicator({
   useEffect(() => {
     if (!stop || !route || !location?.isCurrent || verified) return;
     const leg = activeRouteLeg(route, stop.id);
-    if (!leg) return;
+    const measurement = leg
+      ? remainingRouteDistance(leg, location)
+      : stop.id === pack.startStopId
+        ? stopDistanceMeters(stop, location)
+        : null;
+    if (measurement === null) return;
     filterRef.current = filterWalkingDistance(
       filterRef.current,
-      remainingRouteDistance(leg, location)
+      measurement
     );
     setDisplayedDistance(filterRef.current.displayed);
-  }, [location?.capturedAt, location?.isCurrent, route, stop, verified]);
+  }, [location?.capturedAt, location?.isCurrent, pack.startStopId, route, stop, verified]);
 
   if (!stop || state === 'locked') return null;
   const leg = route ? activeRouteLeg(route, stop.id) : null;
@@ -79,14 +85,16 @@ export function ActiveStopIndicator({
 
   if (verified) {
     mainLine = 'Locatie bereikt';
-  } else if (stop.id === pack.startStopId) {
-    mainLine = `Startlocatie: ${stop.locationName}`;
-    subLine = 'GPS wordt automatisch gecontroleerd.';
   } else if (displayedDistance !== null) {
-    mainLine = `Nog ${formattedWalkingDistance(displayedDistance)}`;
-    subLine = walkingStatus(displayedDistance);
+    const isStartStop = stop.id === pack.startStopId;
+    mainLine = isStartStop
+      ? `Nog ongeveer ${formattedWalkingDistance(displayedDistance)} hemelsbreed tot ${stop.title}`
+      : `Nog ${formattedWalkingDistance(displayedDistance)}`;
+    subLine = isStartStop
+      ? 'Hemelsbrede afstand tot de eerste stop.'
+      : walkingStatus(displayedDistance);
   } else {
-    mainLine = routeError ? 'Loopafstand tijdelijk niet beschikbaar.' : 'Loopafstand bepalen…';
+    mainLine = routeError ? 'Afstand bepalen…' : 'Locatie zoeken…';
   }
 
   return (
