@@ -65,6 +65,8 @@ interface GameContextValue {
   syncStatus: 'saved' | 'local' | 'syncing' | 'failed' | 'offline';
   syncMessage: string;
   teamLocation: TeamLocation | null;
+  /** Actuele GPS-positie van dit toestel, onafhankelijk van de gedeelde teampositie. */
+  deviceLocation: LocationResult | null;
   activeSessionCount: number;
   activeGameRun: TeamGameRun | null;
   locationError: LocationErrorResult | null;
@@ -116,6 +118,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [syncStatus, setSyncStatus] = useState<GameContextValue['syncStatus']>('saved');
   const [syncMessage, setSyncMessage] = useState('Alles opgeslagen');
   const [teamLocation, setTeamLocation] = useState<TeamLocation | null>(null);
+  const [deviceLocation, setDeviceLocation] = useState<LocationResult | null>(null);
   const [activeSessionCount, setActiveSessionCount] = useState(0);
   const [activeGameRun, setActiveGameRun] = useState<TeamGameRun | null>(null);
   const [locationError, setLocationError] = useState<LocationErrorResult | null>(null);
@@ -368,6 +371,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, [activeTeam?.id, session?.id, fetchServerState, replayObservationQueue]);
 
   useEffect(() => {
+    // Een nieuwe teamsessie mag nooit de lokale positie van de vorige sessie tonen.
+    setDeviceLocation(null);
     if (!session || !browserLocationProvider.watchPosition) return;
     let disposed = false;
     let sending = false;
@@ -377,8 +382,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (disposed) return;
       if ('kind' in outcome) {
         setLocationError(outcome);
+        if (outcome.kind === 'permission-denied') setDeviceLocation(null);
         return;
       }
+      // Publiceer elke lokale GPS-meting direct, ook offline of tijdens upload.
+      setDeviceLocation(outcome);
       setLocationError(null);
       if (sending || !navigator.onLine) return;
       const now = Date.now();
@@ -731,6 +739,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     syncStatus,
     syncMessage,
     teamLocation,
+    deviceLocation,
     activeSessionCount,
     activeGameRun,
     locationError,
@@ -759,7 +768,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     useHint,
     attemptAnswer,
     completeFinale
-  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, activeSessionCount, activeGameRun, locationError, teamRadioMessages, currentObservation, observationStatus, sendRadioMessage, hasUnreadTeamRadio, markTeamRadioRead, teams.length, activeTeam?.id, sessionRef.current?.teamId]);
+  }), [loading, teams, activeTeam, progress, settings, syncStatus, syncMessage, teamLocation, deviceLocation, activeSessionCount, activeGameRun, locationError, teamRadioMessages, currentObservation, observationStatus, sendRadioMessage, hasUnreadTeamRadio, markTeamRadioRead, teams.length, activeTeam?.id, sessionRef.current?.teamId]);
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
