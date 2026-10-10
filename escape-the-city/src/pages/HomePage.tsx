@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { AudioControl, GameIcon, SyncStatus } from '../components/GameUi';
+import { HintHenkIntro } from '../components/HintHenkIntro';
 import { useAudio } from '../features/audio/audioContext';
 
 export function isHomeSyncStatusVisible(status: 'saved' | 'local' | 'syncing' | 'failed' | 'offline') {
@@ -32,6 +33,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
           </div>
           <div className="home-hero__content">
             <p className="home-subtitle">Een escape the city-avontuur vol raadsels, geheimen en Bossche legendes.</p>
+            <HintHenkIntro />
             <div className="home-actions">
               {lastTeam ? (
                 <Link className="button primary" to="/voorbereiden" onClick={unlockAudio}>Verder met team {lastTeam.team.name}</Link>

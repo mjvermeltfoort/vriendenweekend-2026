@@ -1,5 +1,10 @@
 # Audio-assets
 
+## Hint Henk
+
+- Plaats de door de gebruiker aangeleverde opname als `hint-henk-intro.mp3` in deze map. De startpagina toont een introductiedialoog met een afspeelknop (mobiele browsers blokkeren automatisch afspelen zonder interactie).
+- Via ‘Luister naar Hint Henk’ kan de speler de uitleg opnieuw openen. De dialoog kan overgeslagen worden en verschijnt eenmaal per browsersessie.
+
 ## Vertelling
 
 - `00-welkom.mp3`: voorbereiding
