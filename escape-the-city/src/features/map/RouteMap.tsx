@@ -104,6 +104,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   const locationRef = useRef<LocationResult | null>(null);
   const hasIncludedLocationRef = useRef(false);
   const userMovedMapRef = useRef(false);
+  const fittingMapRef = useRef(false);
   const [gpsMarkerPosition, setGpsMarkerPosition] = useState<MarkerPosition | null>(null);
   const [mode, setMode] = useState<MapMode>('loading');
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
@@ -264,17 +265,24 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
             (result, coordinate) => result.extend(coordinate),
             new maplibregl.LngLatBounds(coordinates[0], coordinates[0])
           );
-          map.fitBounds(bounds, {
-            padding: { top: 46, right: 46, bottom: 104, left: 46 },
-            maxZoom: 16.8,
-            duration: 0
-          });
+          fittingMapRef.current = true;
+          try {
+            map.fitBounds(bounds, {
+              padding: { top: 46, right: 46, bottom: 104, left: 46 },
+              maxZoom: 16.8,
+              duration: 0
+            });
+          } finally {
+            fittingMapRef.current = false;
+          }
         }
         updateMarkerPositions();
         setMode('live');
       });
       map.on('dragstart', () => { userMovedMapRef.current = true; });
-      map.on('zoomstart', () => { userMovedMapRef.current = true; });
+      map.on('zoomstart', () => {
+        if (!fittingMapRef.current) userMovedMapRef.current = true;
+      });
       map.on('move', updateMarkerPositions);
       map.on('resize', updateMarkerPositions);
       map.on('error', (event) => {
@@ -338,11 +346,16 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           new LngLatBounds(coordinates[0], coordinates[0])
         );
         hasIncludedLocationRef.current = true;
-        map.fitBounds(bounds, {
-          padding: { top: 46, right: 46, bottom: 104, left: 46 },
-          maxZoom: 16.8,
-          duration: 0
-        });
+        fittingMapRef.current = true;
+        try {
+          map.fitBounds(bounds, {
+            padding: { top: 46, right: 46, bottom: 104, left: 46 },
+            maxZoom: 16.8,
+            duration: 0
+          });
+        } finally {
+          fittingMapRef.current = false;
+        }
       });
     }
   }, [location, mode, progress?.currentStopId, visibleStopIdsKey]);
