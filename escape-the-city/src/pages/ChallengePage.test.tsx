@@ -140,7 +140,12 @@ describe('ChallengePage', () => {
     expect(container.querySelector<HTMLInputElement>('input[value="a"]')!.checked).toBe(true);
 
     routeTo('bosch-wezen');
+    const labels = [...container.querySelectorAll('label span')].map((item) => item.textContent);
     const firstSelect = container.querySelector<HTMLSelectElement>('select')!;
+    expect(labels).toEqual(expect.arrayContaining(['Hoofd', 'Lijf', 'Voorwerp']));
+    expect(container.textContent).toContain('Hoorn');
+    expect(firstSelect.getAttribute('aria-label')).toBe('Hoofd');
+    expect([...firstSelect.options].map((option) => option.textContent)).toContain('Hoorn');
     act(() => setFormValue(firstSelect, 'Masker'));
     expect(firstSelect.value).toBe('Masker');
 
@@ -169,6 +174,35 @@ describe('ChallengePage', () => {
     expect(button('Controleer antwoord').textContent).toContain('Controleer antwoord');
     await act(async () => resolveAttempt({ correct: false, message: 'Verouderd bericht' }));
     expect(container.textContent).not.toContain('Verouderd bericht');
+  });
+
+  it('submits canonical composite values while showing Dutch labels', async () => {
+    attemptAnswer.mockResolvedValueOnce({ correct: false, message: 'Probeer opnieuw.' });
+    render('bosch-wezen');
+
+    const selects = container.querySelectorAll<HTMLSelectElement>('select');
+    expect(selects).toHaveLength(3);
+    expect([...selects].map((select) => select.getAttribute('aria-label'))).toEqual(['Hoofd', 'Lijf', 'Voorwerp']);
+    expect(container.textContent).toContain('Kies een hoofd');
+    expect(container.textContent).toContain('Hoorn');
+
+    act(() => setFormValue(selects[0], 'Horn'));
+    act(() => setFormValue(selects[1], 'Schubben'));
+    act(() => setFormValue(selects[2], 'Lantaarn'));
+    await act(async () => button('Controleer antwoord').click());
+
+    expect(attemptAnswer).toHaveBeenLastCalledWith('bosch-wezen', expect.anything(), {
+      head: 'Horn',
+      body: 'Schubben',
+      object: 'Lantaarn'
+    });
+  });
+
+  it('keeps existing Dutch composite labels intact', () => {
+    render('binnendieze');
+    expect(container.textContent).toContain('Oud');
+    expect(container.textContent).toContain('Modern');
+    expect(container.textContent).toContain('Spoor in straat');
   });
 
   it('allows wrong and correct lens attempts without revealing the solution in button state', async () => {

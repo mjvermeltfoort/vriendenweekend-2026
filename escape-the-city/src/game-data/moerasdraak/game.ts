@@ -111,7 +111,7 @@ export const gamePack: GamePack = {
       navigation: { clue: 'Combineer wat je op gevels herkent.', fallbackDirections: 'Ga naar de Markt en kijk rond.', externalMapsQuery: 'Markt Den Bosch' },
       challenge: {
         kind: 'composite',
-        prompt: 'Kies hoofd, lijf en object.',
+        prompt: 'Kies een hoofd, een lijf en een voorwerp.',
         categories: {
           head: ['Masker', 'Horn', 'Kroon'],
           body: ['Mantel', 'Steen', 'Schubben'],
