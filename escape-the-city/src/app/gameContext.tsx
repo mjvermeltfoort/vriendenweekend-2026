@@ -53,6 +53,7 @@ import {
 } from '../lib/supabase/sync';
 import type { ChallengeConfig } from '../features/game/gameTypes';
 import { browserLocationProvider } from '../features/location/browserProvider';
+import { watchLocationWithRecovery } from '../features/location/locationRecovery';
 import { shouldSendLocation, type LastSentLocation } from '../features/location/locationThrottle';
 import type { LocationErrorResult, LocationResult } from '../features/location/provider';
 
@@ -373,12 +374,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Een nieuwe teamsessie mag nooit de lokale positie van de vorige sessie tonen.
     setDeviceLocation(null);
-    if (!session || !browserLocationProvider.watchPosition) return;
+    if (!session) return;
     let disposed = false;
     let sending = false;
     let lastSent: LastSentLocation | null = null;
 
-    const stopWatching = browserLocationProvider.watchPosition((outcome) => {
+    const stopWatching = watchLocationWithRecovery(browserLocationProvider, (outcome) => {
       if (disposed) return;
       if ('kind' in outcome) {
         setLocationError(outcome);
@@ -414,7 +415,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }).finally(() => {
         sending = false;
       });
-    }, { enableHighAccuracy: true, maximumAge: 3_000, timeout: 15_000 });
+    });
 
     return () => {
       disposed = true;
