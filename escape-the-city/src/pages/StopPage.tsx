@@ -354,7 +354,9 @@ export function StopPage({ pack }: { pack: GamePack }) {
 
         {!isCompleted ? (
           <>
-            {!canPlay ? <p className="muted">We controleren automatisch de beste actuele GPS van jullie team.</p> : null}
+            {!canPlay && !isBonusLocation(currentStop) ? (
+              <p className="muted">We controleren automatisch de beste actuele GPS van jullie team.</p>
+            ) : null}
             {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
           </>
         ) : null}
