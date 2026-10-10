@@ -95,12 +95,11 @@ export function mapFocusStops(currentStopId: string | undefined, visibleStops: R
   return currentIndex === -1 ? visibleStops : visibleStops.slice(currentIndex, currentIndex + 2);
 }
 
-export function RouteMap({ gamePack, progress, visibleStops, locationProvider }: RouteMapProps) {
+export function RouteMap({ gamePack, progress, visibleStops, locationProvider, deviceLocation, locationError }: RouteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const stopPollingRef = useRef<(() => void) | null>(null);
   const autoStartedRef = useRef(false);
-  const lastKnownLocationRef = useRef<LocationResult | null>(null);
   const [mode, setMode] = useState<MapMode>('loading');
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
   const [markerPositions, setMarkerPositions] = useState<Record<string, MarkerPosition>>({});
@@ -108,7 +107,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
   const [location, setLocation] = useState<LocationResult | null>(null);
   const [locationMessage, setLocationMessage] = useState('');
   const [locationEnabled, setLocationEnabled] = useState(false);
-  const [locationCentered, setLocationCentered] = useState(false);
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
 
   const visibleBonusLocationsMemo = useMemo(() => visibleBonusLocations(gamePack, progress), [gamePack, progress]);
@@ -314,16 +312,28 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
 
   useEffect(() => () => stopPollingRef.current?.(), []);
 
+  // De gamecontext kijkt al continu naar de GPS van dit toestel. Gebruik die
+  // metingen rechtstreeks zodat de marker niet aan een verouderde teampositie hangt.
   useEffect(() => {
-    if (location) lastKnownLocationRef.current = location;
-  }, [location]);
+    if (deviceLocation === undefined) return;
+    const age = deviceLocation?.capturedAt ? Date.now() - Date.parse(deviceLocation.capturedAt) : Number.POSITIVE_INFINITY;
+    const isCurrent = Boolean(deviceLocation && Number.isFinite(deviceLocation.latitude)
+      && Number.isFinite(deviceLocation.longitude) && Number.isFinite(age) && age >= 0 && age <= 60_000);
+    const current = isCurrent ? deviceLocation! : null;
+    setLocation(current);
+    setLocationEnabled(Boolean(current));
+    setLocationMessage(current
+      ? `Jij bent hier. Nauwkeurig tot ongeveer ${Math.round(current.accuracy)} meter.`
+      : locationError?.message ?? 'GPS-positie bepalen…');
+  }, [deviceLocation, locationError]);
 
+  // Fallback voor losse kaartweergaven buiten de gamecontext (o.a. componenttests).
   useEffect(() => {
-    if (autoStartedRef.current || stopPollingRef.current) return;
+    if (deviceLocation !== undefined || autoStartedRef.current || stopPollingRef.current) return;
     autoStartedRef.current = true;
     stopPollingRef.current = startLocationPolling(locationProvider, handleLocationOutcome);
     setLocationEnabled(true);
-  }, [locationProvider]);
+  }, [locationProvider, deviceLocation]);
 
   function handleLocationOutcome(outcome: LocationOutcome) {
     if (isLocationResult(outcome)) {
@@ -335,20 +345,19 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
   }
 
   function enableLocation() {
-    if (locationEnabled) return;
+    if (deviceLocation !== undefined || locationEnabled) return;
     setLocationEnabled(true);
     stopPollingRef.current = startLocationPolling(locationProvider, handleLocationOutcome);
   }
 
   function centerOnLocation() {
     const map = mapRef.current;
-    const current = location ?? lastKnownLocationRef.current;
+    const current = location;
     if (!map || !current) return;
-    setLocationCentered(true);
     map.easeTo({ center: [current.longitude, current.latitude], duration: 300 });
   }
 
-  const activeLocation = location ?? lastKnownLocationRef.current;
+  const activeLocation = location;
   const fallbackLocationPosition = activeLocation
     ? projectFallback([activeLocation.longitude, activeLocation.latitude])
     : null;
@@ -430,7 +439,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider }:
           })}
         </div>
 
-        <button className="map-location-button" type="button" onClick={enableLocation} aria-pressed={locationEnabled}>
+        <button className="map-location-button" type="button" onClick={enableLocation} aria-pressed={locationEnabled} disabled={deviceLocation !== undefined}>
           <GameIcon name="location" size={18} />
           {locationEnabled ? 'Locatie aan' : 'Mijn locatie'}
         </button>
