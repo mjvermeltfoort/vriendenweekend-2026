@@ -40,7 +40,7 @@ vi.mock('../components/GameUi', () => ({
   PageShell: ({ children, title }: { children: React.ReactNode; title: string }) => <main><header>{title}</header>{children}</main>,
   GameIcon: () => <span aria-hidden="true" />
 }));
-vi.mock('../components/AudioPlayer', () => ({ AudioPlayer: () => null }));
+vi.mock('../components/AudioPlayer', () => ({ AudioPlayer: ({ transcript }: { transcript: string }) => <p>{transcript}</p> }));
 vi.mock('../features/location/ActiveStopIndicator', () => ({ ActiveStopIndicator: () => null }));
 
 import { StopPage } from './StopPage';
@@ -138,6 +138,21 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).not.toContain('Bekijk routekaart');
     expect(container.textContent).not.toContain('Volgende routepunt');
   });
+
+  it('shows intro text once without audio and preserves audio transcript content', async () => {
+    gameState = { ...gameState, progress: createProgress() };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bonus-text" initialEntries={['/stop/bonus:halve-peer']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.textContent).toContain('Zoek een belangrijk man die maar voor de helft aanwezig is.');
+    expect(container.textContent?.split('Zoek een belangrijk man die maar voor de helft aanwezig is.').length).toBe(2);
+    expect(container.textContent).not.toContain('Luister naar het verhaal');
+  });
+
 
   it('keeps bonus completion separate from main stop controls', async () => {
     gameState = { ...gameState, progress: createProgress() };

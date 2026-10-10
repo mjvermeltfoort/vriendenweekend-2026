@@ -263,14 +263,18 @@ export function StopPage({ pack }: { pack: GamePack }) {
           <p className="eyebrow">{isBonusLocation(currentStop) ? 'Verborgen vondst' : `Opdracht ${currentStop.order} van ${pack.stops.length}`}</p>
           {!isCompleted ? <p className="parchment-instruction small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p> : null}
           <h1>{currentStop.intro.title}</h1>
-          <p>{currentStop.intro.text}</p>
           {currentStop.intro.audioSrc ? (
-            <AudioPlayer
-              source={currentStop.intro.audioSrc}
-              title="Luister naar het verhaal"
-              transcript={currentStop.intro.transcript ?? currentStop.intro.text}
-            />
-          ) : <p>{currentStop.intro.transcript ?? currentStop.intro.text}</p>}
+            <>
+              <p>{currentStop.intro.text}</p>
+              <AudioPlayer
+                source={currentStop.intro.audioSrc}
+                title="Luister naar het verhaal"
+                transcript={currentStop.intro.transcript ?? currentStop.intro.text}
+              />
+            </>
+          ) : (
+            <p>{currentStop.intro.transcript ?? currentStop.intro.text}</p>
+          )}
         </section>
       ) : null}
 
