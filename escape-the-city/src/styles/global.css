@@ -2060,3 +2060,16 @@ details {
   .hint-henk__dialog { padding: .8rem; }
   .hint-henk__tagline { margin-bottom: .5rem; }
 }
+
+.hint-henk__portrait--speaking .hint-henk__mouth {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hint-henk-speaking .24s ease-in-out infinite alternate;
+}
+@keyframes hint-henk-speaking {
+  from { transform: scaleY(.55); }
+  to { transform: scaleY(1.3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint-henk__portrait--speaking .hint-henk__mouth { animation: none; }
+}
