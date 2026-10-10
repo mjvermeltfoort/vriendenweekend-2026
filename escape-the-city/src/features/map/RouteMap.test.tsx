@@ -20,7 +20,8 @@ const mapState = vi.hoisted(() => ({
   }),
   loaded: vi.fn(() => true),
   getLayer: vi.fn(() => true),
-  getSource: vi.fn(() => ({ setData: vi.fn() })),
+  setData: vi.fn(),
+  getSource: vi.fn(() => ({ setData: mapState.setData })),
   project: vi.fn(() => ({ x: 100, y: 100 })),
   setLayoutProperty: vi.fn(),
   setFilter: vi.fn(),
@@ -112,7 +113,11 @@ describe('RouteMap', () => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  async function render(visibleStops: RouteMapProps['visibleStops'], progress: RouteMapProps['progress']) {
+  async function render(
+    visibleStops: RouteMapProps['visibleStops'],
+    progress: RouteMapProps['progress'],
+    deviceLocation?: RouteMapProps['deviceLocation']
+  ) {
     await act(async () => root.render(
       <MemoryRouter>
         <RouteMap
@@ -120,6 +125,7 @@ describe('RouteMap', () => {
           progress={progress}
           visibleStops={visibleStops}
           locationProvider={locationProvider()}
+          deviceLocation={deviceLocation}
         />
       </MemoryRouter>
     ));
@@ -145,5 +151,26 @@ describe('RouteMap', () => {
     expect(mapState.addSource.mock.calls.length).toBe(3);
     expect(mapState.addLayer.mock.calls.length).toBe(7);
     expect(mapState.fitBounds.mock.calls.length).toBe(1);
+  });
+
+  it('moves the GPS marker on successive device updates without resetting the map', async () => {
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    const first = { latitude: 51.689, longitude: 5.302, accuracy: 14, capturedAt: new Date().toISOString() };
+    await render(stops, progressWithCurrentStop(), first);
+
+    const hasPoint = (longitude: number, latitude: number) =>
+      mapState.setData.mock.calls.some(([data]) => data?.geometry?.type === 'Point'
+        && data.geometry.coordinates[0] === longitude && data.geometry.coordinates[1] === latitude);
+
+    expect(hasPoint(5.302, 51.689)).toBe(true);
+    const fitsBefore = mapState.fitBounds.mock.calls.length;
+    const addBefore = mapState.addSource.mock.calls.length;
+
+    const second = { ...first, latitude: 51.691, longitude: 5.308, capturedAt: new Date().toISOString() };
+    await render(stops, progressWithCurrentStop(), second);
+    expect(hasPoint(5.308, 51.691)).toBe(true);
+    expect(mapState.fitBounds.mock.calls.length).toBe(fitsBefore);
+    expect(mapState.addSource.mock.calls.length).toBe(addBefore);
+    expect(mapState.easeTo).not.toHaveBeenCalled();
   });
 });
