@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { FilterSpecification, GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
+import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import { GameIcon } from '../../components/GameUi';
 import type { LocationOutcome, LocationResult } from '../location/provider';
 import { loadRouteGeoJson } from '../location/routeDistance';
+import { haversineDistanceMeters } from '../location/distance';
 import { applyMoerasdraakTheme, legFilter, MAP_STYLE_URL, mapColors } from './mapStyle';
 import {
   createAccuracyPolygon,
@@ -42,17 +43,6 @@ const stopStatusLabels = {
 
 const emptyFeatureCollection: FeatureCollection = { type: 'FeatureCollection', features: [] };
 
-function pointFeature(location: LocationResult): Feature<Point> {
-  return {
-    type: 'Feature',
-    properties: {},
-    geometry: {
-      type: 'Point',
-      coordinates: [location.longitude, location.latitude]
-    }
-  };
-}
-
 function accuracyFeature(location: LocationResult): Feature<Polygon> {
   return {
     type: 'Feature',
@@ -78,6 +68,17 @@ function hiddenLegFilter() {
   return ['==', ['get', 'legIndex'], -1] as FilterSpecification;
 }
 
+// De eerste GPS-meting mag het startbeeld corrigeren wanneer de deelnemer
+// werkelijk in de buurt van de route is. Latere metingen bewegen alleen de stip.
+export function locationNearRoute(location: LocationResult, stops: RouteStop[]) {
+  return stops.some((stop) => Number.isFinite(stop.coordinates.latitude)
+    && Number.isFinite(stop.coordinates.longitude)
+    && haversineDistanceMeters(location, {
+      latitude: stop.coordinates.latitude!,
+      longitude: stop.coordinates.longitude!
+    }) < 3000);
+}
+
 export function autoSelectedStopId(
   currentStopId: string | undefined,
   progress: RouteMapProps['progress'],
@@ -100,6 +101,10 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   const mapRef = useRef<MapLibreMap | null>(null);
   const stopPollingRef = useRef<(() => void) | null>(null);
   const autoStartedRef = useRef(false);
+  const locationRef = useRef<LocationResult | null>(null);
+  const hasIncludedLocationRef = useRef(false);
+  const userMovedMapRef = useRef(false);
+  const [gpsMarkerPosition, setGpsMarkerPosition] = useState<MarkerPosition | null>(null);
   const [mode, setMode] = useState<MapMode>('loading');
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
   const [markerPositions, setMarkerPositions] = useState<Record<string, MarkerPosition>>({});
@@ -107,6 +112,8 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   const [location, setLocation] = useState<LocationResult | null>(null);
   const [locationMessage, setLocationMessage] = useState('');
   const [locationEnabled, setLocationEnabled] = useState(false);
+  // Ook bij de initiële map.load-callback moet de nieuwste GPS-fix beschikbaar zijn.
+  locationRef.current = location;
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
 
   const visibleBonusLocationsMemo = useMemo(() => visibleBonusLocations(gamePack, progress), [gamePack, progress]);
@@ -184,6 +191,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           positions[stop.id] = { left: `${projected.x}px`, top: `${projected.y}px` };
         }
         setMarkerPositions(positions);
+        const userLocation = locationRef.current;
+        if (userLocation) {
+          const p = map.project([userLocation.longitude, userLocation.latitude]);
+          setGpsMarkerPosition({ left: `${p.x}px`, top: `${p.y}px` });
+        } else {
+          setGpsMarkerPosition(null);
+        }
       };
 
       map.on('load', () => {
@@ -193,7 +207,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
         applyMoerasdraakTheme(map);
         map.addSource('moerasdraak-route', { type: 'geojson', data: route });
         map.addSource('route-accuracy', { type: 'geojson', data: emptyFeatureCollection });
-        map.addSource('route-position', { type: 'geojson', data: emptyFeatureCollection });
         map.addLayer({
           id: 'route-full',
           type: 'line',
@@ -237,22 +250,15 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           source: 'route-accuracy',
           paint: { 'line-color': mapColors.accuracy, 'line-width': 2, 'line-opacity': 0.82 }
         });
-        map.addLayer({
-          id: 'route-position',
-          type: 'circle',
-          source: 'route-position',
-          paint: {
-            'circle-radius': 7,
-            'circle-color': mapColors.active,
-            'circle-stroke-color': '#f4e6c5',
-            'circle-stroke-width': 3
-          }
-        });
-
         const coordinates = mapFocusStops(progress?.currentStopId, visibleStops).map((stop) => [
           stop.coordinates.longitude!,
           stop.coordinates.latitude!
         ] as LngLat);
+        const initialLocation = locationRef.current;
+        if (initialLocation && locationNearRoute(initialLocation, visibleStops)) {
+          coordinates.push([initialLocation.longitude, initialLocation.latitude]);
+          hasIncludedLocationRef.current = true;
+        }
         if (coordinates.length) {
           const bounds = coordinates.reduce(
             (result, coordinate) => result.extend(coordinate),
@@ -267,6 +273,8 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
         updateMarkerPositions();
         setMode('live');
       });
+      map.on('dragstart', () => { userMovedMapRef.current = true; });
+      map.on('zoomstart', () => { userMovedMapRef.current = true; });
       map.on('move', updateMarkerPositions);
       map.on('resize', updateMarkerPositions);
       map.on('error', (event) => {
@@ -303,12 +311,41 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || mode !== 'live' || !map.getSource('route-position')) return;
-    const positionSource = map.getSource('route-position') as GeoJSONSource | undefined;
+    if (!map || mode !== 'live') return;
     const accuracySource = map.getSource('route-accuracy') as GeoJSONSource | undefined;
-    positionSource?.setData(location ? pointFeature(location) : emptyFeatureCollection);
     accuracySource?.setData(location ? accuracyFeature(location) : emptyFeatureCollection);
-  }, [location, mode]);
+    if (!location) {
+      setGpsMarkerPosition(null);
+      return;
+    }
+    const projected = map.project([location.longitude, location.latitude]);
+    setGpsMarkerPosition({ left: `${projected.x}px`, top: `${projected.y}px` });
+
+    // Eenmalig GPS toevoegen aan het startbeeld, ook als de eerste fix pas na
+    // het laden van de kaart arriveert. Niet bijwerken als iemand zelf heeft
+    // gezoomd of gesleept; latere GPS-updates beïnvloeden de camera nooit.
+    if (!hasIncludedLocationRef.current && !userMovedMapRef.current
+      && locationNearRoute(location, visibleStops)) {
+      const coordinates = mapFocusStops(progress?.currentStopId, visibleStops).map((stop) => [
+        stop.coordinates.longitude!,
+        stop.coordinates.latitude!
+      ] as LngLat);
+      coordinates.push([location.longitude, location.latitude]);
+      void import('maplibre-gl').then(({ LngLatBounds }) => {
+        if (mapRef.current !== map || userMovedMapRef.current) return;
+        const bounds = coordinates.reduce(
+          (result, coordinate) => result.extend(coordinate),
+          new LngLatBounds(coordinates[0], coordinates[0])
+        );
+        hasIncludedLocationRef.current = true;
+        map.fitBounds(bounds, {
+          padding: { top: 46, right: 46, bottom: 104, left: 46 },
+          maxZoom: 16.8,
+          duration: 0
+        });
+      });
+    }
+  }, [location, mode, progress?.currentStopId, visibleStopIdsKey]);
 
   useEffect(() => () => stopPollingRef.current?.(), []);
 
@@ -426,6 +463,15 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
         ) : null}
 
         <div className="route-marker-layer">
+          {mode === 'live' && location && gpsMarkerPosition ? (
+            <span
+              className="route-map__my-location"
+              style={gpsMarkerPosition}
+              role="img"
+              aria-label="Jouw actuele GPS-positie"
+              data-testid="route-gps-marker"
+            />
+          ) : null}
           {mapLocations.map((stop) => {
             const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
             const position = mode === 'fallback'
