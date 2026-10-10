@@ -581,14 +581,25 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           })}
         </div>
 
-        <button className="map-location-button" type="button" onClick={enableLocation} aria-pressed={locationEnabled}>
-          <GameIcon name="location" size={18} />
-          {locationEnabled ? 'Locatie aan' : 'Mijn locatie'}
+        <button
+          className="map-location-button"
+          type="button"
+          onClick={enableLocation}
+          aria-pressed={locationEnabled}
+          aria-label={locationEnabled ? 'Locatie aan' : 'Mijn locatie inschakelen'}
+          title={locationEnabled ? 'Locatie aan' : 'Mijn locatie inschakelen'}
+        >
+          <GameIcon name="location" size={20} />
         </button>
         {activeLocation ? (
-          <button className="map-location-button map-location-button--secondary" type="button" onClick={centerOnLocation}>
-            <GameIcon name="compass" size={18} />
-            Centreer op mijn locatie
+          <button
+            className="map-location-button map-location-button--secondary"
+            type="button"
+            onClick={centerOnLocation}
+            aria-label="Centreer op mijn locatie"
+            title="Centreer op mijn locatie"
+          >
+            <GameIcon name="compass" size={20} />
           </button>
         ) : null}
         {mode === 'fallback' ? <span className="map-fallback-badge">Offline kaart</span> : null}
