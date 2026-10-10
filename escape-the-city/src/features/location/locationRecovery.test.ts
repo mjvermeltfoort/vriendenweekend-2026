@@ -3,14 +3,14 @@ import { GPS_RECOVERY_RETRY_MS, watchLocationWithRecovery } from './locationReco
 import type { LocationOutcome, LocationProvider } from './provider';
 
 describe('watchLocationWithRecovery', () => {
-  let watcher: ((outcome: LocationOutcome) => void) | null = null;
+  let watcher: (outcome: LocationOutcome) => void = () => undefined;
   const stopWatcher = vi.fn();
   const onOutcome = vi.fn();
   const getCurrentPosition = vi.fn<LocationProvider['getCurrentPosition']>();
 
   beforeEach(() => {
     vi.useFakeTimers();
-    watcher = null;
+    watcher = () => undefined;
     stopWatcher.mockClear();
     onOutcome.mockClear();
     getCurrentPosition.mockReset();
@@ -37,7 +37,7 @@ describe('watchLocationWithRecovery', () => {
       latitude: 51.69, longitude: 5.3, accuracy: 35, capturedAt: new Date().toISOString()
     });
 
-    watcher!({ kind: 'timeout', message: 'Locatie duurde te lang.' });
+    watcher({ kind: 'timeout', message: 'Locatie duurde te lang.' });
     expect(onOutcome).toHaveBeenCalledWith({ kind: 'timeout', message: 'Locatie duurde te lang.' });
     await vi.advanceTimersByTimeAsync(GPS_RECOVERY_RETRY_MS);
     expect(getCurrentPosition).toHaveBeenCalledWith({
@@ -53,11 +53,11 @@ describe('watchLocationWithRecovery', () => {
   it('continues recovering after a failed retry and stops after permission denial', async () => {
     const stop = start();
     getCurrentPosition.mockResolvedValue({ kind: 'timeout', message: 'Locatie duurde te lang.' });
-    watcher!({ kind: 'unavailable', message: 'GPS niet beschikbaar.' });
+    watcher({ kind: 'unavailable', message: 'GPS niet beschikbaar.' });
     await vi.advanceTimersByTimeAsync(GPS_RECOVERY_RETRY_MS * 2);
     expect(getCurrentPosition).toHaveBeenCalledTimes(2);
 
-    watcher!({ kind: 'permission-denied', message: 'Geen locatietoegang.' });
+    watcher({ kind: 'permission-denied', message: 'Geen locatietoegang.' });
     await vi.advanceTimersByTimeAsync(GPS_RECOVERY_RETRY_MS * 2);
     expect(getCurrentPosition).toHaveBeenCalledTimes(2);
     stop();
@@ -65,12 +65,12 @@ describe('watchLocationWithRecovery', () => {
 
   it('cancels pending recoveries when the session stops or a watch fix arrives', async () => {
     const stop = start();
-    watcher!({ kind: 'timeout', message: 'Locatie duurde te lang.' });
-    watcher!({ latitude: 51.69, longitude: 5.3, accuracy: 12, capturedAt: new Date().toISOString() });
+    watcher({ kind: 'timeout', message: 'Locatie duurde te lang.' });
+    watcher({ latitude: 51.69, longitude: 5.3, accuracy: 12, capturedAt: new Date().toISOString() });
     await vi.advanceTimersByTimeAsync(GPS_RECOVERY_RETRY_MS * 2);
     expect(getCurrentPosition).not.toHaveBeenCalled();
     stop();
-    watcher!({ kind: 'timeout', message: 'Locatie duurde te lang.' });
+    watcher({ kind: 'timeout', message: 'Locatie duurde te lang.' });
     await vi.advanceTimersByTimeAsync(GPS_RECOVERY_RETRY_MS * 2);
     expect(getCurrentPosition).not.toHaveBeenCalled();
   });
