@@ -191,12 +191,15 @@ describe('RouteMap', () => {
     const atCitadel = { latitude: 51.695161, longitude: 5.302865, accuracy: 12, capturedAt: new Date().toISOString() };
     await render(stops, progress, atCitadel);
 
-    const sheet = container.querySelector('.interactive-route-map > .route-bottom-sheet');
+    const sheet = container.querySelector('.route-map-view > .route-bottom-sheet');
     expect(sheet).not.toBeNull();
     expect(sheet?.textContent).toContain('De Citadel');
     expect(sheet?.textContent).toContain('Jullie zijn hier');
     expect(sheet?.textContent).toContain('Open schubopdracht');
     expect(sheet?.querySelector('a[href="/stop/bonus:citadel"]')).not.toBeNull();
+    expect(sheet?.closest('.interactive-route-map')).toBeNull();
+    // Automatische GPS-updates mogen de pagina niet spontaan verschuiven.
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
     expect(progress.currentStopId).toBe('bossche-brouwers');
   });
 
@@ -209,10 +212,10 @@ describe('RouteMap', () => {
     await act(async () => {
       (container.querySelector('[data-testid="map-select-bossche-brouwers"]') as HTMLButtonElement).click();
     });
-    const sheet = container.querySelector('.interactive-route-map > .route-bottom-sheet');
+    const sheet = container.querySelector('.route-map-view > .route-bottom-sheet');
     expect(sheet?.textContent).toContain('De Brouwcode');
     expect(sheet?.querySelector('a[href="/stop/bossche-brouwers"]')).not.toBeNull();
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'end' });
 
     await render(stops, progress, { ...gps, latitude: gps.latitude + 0.00001 });
     expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('De Brouwcode');
@@ -221,6 +224,7 @@ describe('RouteMap', () => {
       (container.querySelector('[data-testid="map-select-bonus:citadel"]') as HTMLButtonElement).click();
     });
     expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('De Citadel');
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'end' });
 
     await act(async () => {
       (container.querySelector('[aria-label="Stopinformatie sluiten"]') as HTMLButtonElement).click();
