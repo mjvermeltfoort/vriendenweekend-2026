@@ -6,6 +6,7 @@ export function audioAsset(path: string) {
 }
 
 export const narrationAudio = {
+  hintHenk: audioAsset('hint-henk-intro.mp3'),
   welcome: audioAsset('00-welkom.mp3'),
   finale: audioAsset('08-finale.mp3'),
   completed: audioAsset('09-voltooid.mp3')
