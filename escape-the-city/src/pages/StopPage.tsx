@@ -451,7 +451,6 @@ export function StopPage({ pack }: { pack: GamePack }) {
       )}
 
       {currentStop.isFinal && !finaleEligibility.eligible ? <p className="error">Nog {finaleEligibility.missingCount} opdrachten te voltooien.</p> : null}
-      {isCompleted ? <Link className={`button ${followingStop ? 'secondary' : 'primary'}`} to={completedRouteHref}>{completedRouteLabel}</Link> : null}
     </PageShell>
   );
 }
