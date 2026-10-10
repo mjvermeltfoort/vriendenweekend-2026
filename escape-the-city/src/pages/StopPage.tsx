@@ -22,6 +22,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
     progress,
     startStop,
     teamLocation,
+    deviceLocation,
     activeGameRun,
     locationError,
     currentObservation,
@@ -155,9 +156,29 @@ export function StopPage({ pack }: { pack: GamePack }) {
       { latitude: currentStop.coordinates.latitude!, longitude: currentStop.coordinates.longitude! }
     ) <= currentStop.coordinates.discoveryRadiusMeters
   );
-  const bonusDistance = isBonusLocation(currentStop) && teamLocation?.isCurrent
+  // De gedeelde teamlocatie is afhankelijk van server-sync en kan ontbreken of verouderen.
+  // Voor het tonen van afstanden gebruiken we eerst de actuele GPS van dit toestel.
+  // Toegang tot de bonusopdracht blijft apart via de bestaande teamverificatie verlopen.
+  const deviceFixAgeMs = deviceLocation?.capturedAt
+    ? Date.now() - Date.parse(deviceLocation.capturedAt)
+    : Number.POSITIVE_INFINITY;
+  const deviceFixIsCurrent = Boolean(
+    deviceLocation
+    && Number.isFinite(deviceLocation.latitude)
+    && Number.isFinite(deviceLocation.longitude)
+    && Number.isFinite(deviceFixAgeMs)
+    && deviceFixAgeMs >= 0
+    && deviceFixAgeMs <= 60_000
+  );
+  const teamFixIsCurrent = Boolean(
+    teamLocation?.isCurrent
+    && Number.isFinite(teamLocation.latitude)
+    && Number.isFinite(teamLocation.longitude)
+  );
+  const bonusPosition = deviceFixIsCurrent ? deviceLocation : teamFixIsCurrent ? teamLocation : null;
+  const bonusDistance = isBonusLocation(currentStop) && bonusPosition
     ? haversineDistanceMeters(
-      { latitude: teamLocation.latitude, longitude: teamLocation.longitude },
+      { latitude: bonusPosition.latitude, longitude: bonusPosition.longitude },
       { latitude: currentStop.coordinates.latitude!, longitude: currentStop.coordinates.longitude! }
     )
     : null;
@@ -296,11 +317,15 @@ export function StopPage({ pack }: { pack: GamePack }) {
           <section className="active-stop-indicator" aria-label="Afstand tot verborgen schub">
             <p className="eyebrow">Afstand tot schub</p>
             {bonusDistance === null ? (
-              <p>Afstand bepalen…</p>
+              <p role="status">{locationError?.kind === 'permission-denied'
+                ? 'Geef Chrome locatietoegang om de afstand te zien.'
+                : locationError?.message ?? 'Afstand bepalen… GPS-locatie zoeken.'}</p>
             ) : (
               <>
                 <p className="active-stop-indicator__distance">{bonusDistanceText}</p>
-                <p className="muted small">Directe afstand vanaf jullie actuele GPS-locatie.</p>
+                <p className="muted small">{deviceFixIsCurrent
+                  ? 'Hemelsbrede afstand vanaf jouw actuele GPS-positie.'
+                  : 'Hemelsbrede afstand vanaf de actuele teampositie.'}</p>
               </>
             )}
           </section>
