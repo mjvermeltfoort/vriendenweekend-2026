@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allBellChallengeImages, allEffectAudio, allScenicAudio, allStandaloneNarration, bellChallengeAudio, scenicAudio, scenicForPath } from './audioConfig';
+import { allBellChallengeImages, allEffectAudio, allScenicAudio, allStandaloneNarration, bellChallengeAudio, narrationAudio, scenicAudio, scenicForPath } from './audioConfig';
 import { audioTranscripts } from './audioTranscripts';
 
 describe('audio configuration', () => {
@@ -14,7 +14,8 @@ describe('audio configuration', () => {
   });
 
   it('lists all standalone audio for offline preparation', () => {
-    expect(allStandaloneNarration()).toHaveLength(3);
+    expect(allStandaloneNarration()).toHaveLength(4);
+    expect(allStandaloneNarration()).toContain(narrationAudio.hintHenk);
     expect(allScenicAudio()).toHaveLength(6);
     expect(allEffectAudio()).toHaveLength(6);
     expect(allBellChallengeImages()).toHaveLength(5);
