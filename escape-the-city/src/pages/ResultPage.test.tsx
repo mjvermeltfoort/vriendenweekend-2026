@@ -55,5 +55,11 @@ describe('ResultPage', () => {
     expect(container.textContent).toContain('Fouten');
     expect(container.textContent).toContain('7');
     expect(container.textContent).toContain('SCHUBBENJAGERS');
+    const emblem = container.querySelector<HTMLImageElement>('img.result-hero__emblem');
+    expect(emblem?.getAttribute('src')).toContain('assets/moerasdraak-result-emblem.svg');
+    expect(emblem?.getAttribute('alt')).toBe('Gouden embleem van de Moerasdraak');
+    expect(container.querySelectorAll('.result-hero__emblem')).toHaveLength(1);
+    expect(container.querySelectorAll('.result-schubbenjagers')).toHaveLength(1);
+    expect(container.querySelector('.result-schubbenjagers')?.textContent).toContain('verzamelbonus');
   });
 });
