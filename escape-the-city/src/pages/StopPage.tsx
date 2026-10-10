@@ -345,7 +345,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
           />
         ) : null}
 
-        {gpsMessage || (!canPlay && locationError) ? (
+        {gpsMessage || (!isBonusLocation(currentStop) && !canPlay && locationError) ? (
           <div className="location-status" role="status" aria-live="polite">
             <GameIcon name={canPlay ? 'check' : 'location'} />
             <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
@@ -412,12 +412,12 @@ export function StopPage({ pack }: { pack: GamePack }) {
             <label className="field"><span>Jullie antwoord</span><input value={answer} onChange={(event) => setAnswer(event.target.value)} autoComplete="off" /></label>
             <button className="button primary" type="button" disabled={observationBusy || !answer.trim()} onClick={() => void checkBonusObservation()}>{observationBusy ? 'Controleren…' : 'Antwoord controleren'}</button>
           </section>
-        ) : (
+        ) : bonusDistance !== null ? (
           <section className="location-status" aria-live="polite">
             <GameIcon name="location" />
             <p>Kom dichter bij de schub. De verificatievraag verschijnt zodra jullie in de buurt zijn.</p>
           </section>
-        )
+        ) : null
       ) : null}
 
       {showStopDetails && isDev ? (
