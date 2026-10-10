@@ -2040,12 +2040,35 @@ details {
   border-radius: var(--radius-large);
   box-shadow: 0 18px 65px rgba(0, 0, 0, .8);
 }
-.hint-henk__portrait {
-  display: block;
-  width: clamp(112px, 33vw, 154px);
-  height: auto;
+/* Exact flame markup and animations are bundled from games/game-assistant.css. */
+.hint-henk__mascot {
+  display: grid;
+  width: 150px;
+  height: 166px;
   margin: 0 auto 0.4rem;
-  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .4));
+  place-items: center;
+  filter: drop-shadow(0 0 12px rgba(240, 130, 12, .14));
+}
+.hint-henk__mascot .asst-character {
+  display: block;
+  flex: none;
+  scale: 1.8;
+  cursor: default;
+  pointer-events: none;
+}
+.hint-henk__mascot--speaking {
+  animation: hint-henk-glow 1.3s ease-in-out infinite alternate;
+}
+.hint-henk__mascot--speaking .asst-mouth {
+  animation: hint-henk-mouth .24s ease-in-out infinite alternate;
+}
+@keyframes hint-henk-mouth {
+  from { height: 7px; border-bottom-width: 2.5px; }
+  to { height: 14px; border-bottom-width: 4px; }
+}
+@keyframes hint-henk-glow {
+  from { filter: drop-shadow(0 0 10px rgba(255, 164, 25, .15)); }
+  to { filter: drop-shadow(0 0 19px rgba(255, 164, 25, .55)); }
 }
 .hint-henk__dialog h2 {
   margin: 0 0 0.4rem;
@@ -2074,20 +2097,13 @@ details {
   outline-offset: 3px;
 }
 @media (max-height: 580px) {
-  .hint-henk__portrait { width: 84px; }
+  .hint-henk__mascot { width: 105px; height: 117px; }
+  .hint-henk__mascot .asst-character { scale: 1.2; }
   .hint-henk__dialog { padding: .8rem; }
   .hint-henk__tagline { margin-bottom: .5rem; }
 }
 
-.hint-henk__portrait--speaking .hint-henk__mouth {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: hint-henk-speaking .24s ease-in-out infinite alternate;
-}
-@keyframes hint-henk-speaking {
-  from { transform: scaleY(.55); }
-  to { transform: scaleY(1.3); }
-}
 @media (prefers-reduced-motion: reduce) {
-  .hint-henk__portrait--speaking .hint-henk__mouth { animation: none; }
+  .hint-henk__mascot--speaking,
+  .hint-henk__mascot--speaking .asst-mouth { animation: none; }
 }
