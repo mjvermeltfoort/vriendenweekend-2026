@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { createInitialProgress } from '../features/game/gameState';
 import { gamePack } from '../game-data/moerasdraak/game';
 import type { TeamLocation } from '../lib/supabase/sync';
-import type { LocationResult } from '../features/location/provider';
+import type { LocationErrorResult, LocationResult } from '../features/location/provider';
 
 const createProgress = () => {
   const value = createInitialProgress('team-1', gamePack);
@@ -36,7 +36,7 @@ let gameState = {
   teamLocation: null as TeamLocation | null,
   deviceLocation: null as LocationResult | null,
   activeGameRun: null,
-  locationError: null,
+  locationError: null as LocationErrorResult | null,
   currentObservation: null,
   observationStatus: 'unavailable' as const,
   submitObservation: vi.fn(),
@@ -76,7 +76,7 @@ describe('StopPage completion copy', () => {
       teamLocation: null as TeamLocation | null,
       deviceLocation: null as LocationResult | null,
       activeGameRun: null,
-      locationError: null,
+      locationError: null as LocationErrorResult | null,
       currentObservation: null,
       observationStatus: 'unavailable',
       submitObservation: vi.fn(),
