@@ -14,9 +14,9 @@ function shouldShowIntro() {
   }
 }
 
-function HenkPortrait() {
+function HenkPortrait({ speaking }: { speaking: boolean }) {
   return (
-    <svg className="hint-henk__portrait" viewBox="0 0 180 180" role="img" aria-label="Hint Henk met een grote bril en een eigenwijze glimlach">
+    <svg className={speaking ? "hint-henk__portrait hint-henk__portrait--speaking" : "hint-henk__portrait"} viewBox="0 0 180 180" role="img" aria-label="Hint Henk met een grote bril en een eigenwijze glimlach">
       <circle cx="90" cy="90" r="85" fill="#16392d" stroke="#c4974d" strokeWidth="3" />
       <path d="M36 165c8-30 28-40 54-40s46 10 54 40" fill="#37554c" stroke="#e0bc78" strokeWidth="3" />
       <path d="M69 128l21 26 21-26" fill="#f4e6c5" stroke="#bba17a" strokeWidth="2" />
@@ -29,7 +29,7 @@ function HenkPortrait() {
       <path d="M90 91h3M47 90l-6-5m94 5 6-5" stroke="#302e2c" strokeWidth="6" strokeLinecap="round" />
       <circle cx="72" cy="95" r="4" fill="#302e2c" /><circle cx="111" cy="95" r="4" fill="#302e2c" />
       <path d="M91 97l-5 18 11 1" fill="none" stroke="#a56f51" strokeWidth="3" strokeLinecap="round" />
-      <path d="M74 126q18 14 34-2" fill="none" stroke="#7d4839" strokeWidth="4" strokeLinecap="round" />
+      <path className="hint-henk__mouth" d="M74 126q18 14 34-2" fill="none" stroke="#7d4839" strokeWidth="4" strokeLinecap="round" />
       <path d="M65 168h49" stroke="#c4974d" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
@@ -79,7 +79,7 @@ export function HintHenkIntro() {
         <div className="hint-henk__overlay">
           <section className="hint-henk__dialog" role="dialog" aria-modal="true" aria-labelledby="hint-henk-title" aria-describedby="hint-henk-description">
             <button type="button" className="hint-henk__close" aria-label="Uitleg van Hint Henk sluiten" onClick={dismiss}>×</button>
-            <HenkPortrait />
+            <HenkPortrait speaking={narration.source === narrationAudio.hintHenk && narration.playing} />
             <p className="eyebrow center hint-henk__eyebrow">Jullie onmisbare hulp</p>
             <h2 id="hint-henk-title" tabIndex={-1} ref={headingRef}>Hint Henk</h2>
             <p id="hint-henk-description" className="hint-henk__tagline">
