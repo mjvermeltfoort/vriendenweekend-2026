@@ -103,30 +103,34 @@ export const gamePack: GamePack = {
       id: 'bosch-wezen',
       order: 4,
       slug: 'bosch-wezen',
-      title: 'Het Monster van Bosch',
-      shortTitle: 'Wezen',
+      title: 'De Verbeelding',
+      shortTitle: 'Verbeelding',
       locationName: 'Huis van Bosch, Markt 29',
       coordinates: { latitude: 51.688968, longitude: 5.304617, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      intro: { title: 'Gevels worden lichaam', text: 'Stel een fantasiewezen samen uit drie delen.', audioSrc: audioAsset('04-jheronimus-bosch.mp3'), transcript: audioTranscripts.jheronimusBosch },
-      navigation: { clue: 'Combineer wat je op gevels herkent.', fallbackDirections: 'Ga naar de Markt en kijk rond.', externalMapsQuery: 'Markt Den Bosch' },
-      challenge: {
-        kind: 'composite',
-        prompt: 'Kies een hoofd, een lijf en een voorwerp.',
-        categories: {
-          head: ['Masker', 'Horn', 'Kroon'],
-          body: ['Mantel', 'Steen', 'Schubben'],
-          object: ['Vork', 'Lantaarn', 'Sleutel']
-        },
-        correctAnswer: {
-          head: 'Horn',
-          body: 'Schubben',
-          object: 'Lantaarn'
-        },
-        summaryTemplate: 'Hoofd: {head}, lijf: {body}, object: {object}.',
-        wrongFeedback: 'Nog niet de juiste combinatie.'
+      intro: {
+        title: 'De schilder kijkt terug',
+        text: 'Draai je vanaf het Huis van Bosch naar de Markt en zoek Jheronimus Bosch. Wat hij in zijn handen draagt, herstelt de herinnering aan zijn verbeelding.',
+        transcript: audioTranscripts.jheronimusBosch
       },
-      hints: [{ id: 'h1', text: 'Zoek naar het meest drakige hoofd.' }],
-      reward: { title: 'Verbeelding', text: 'Het wezen krijgt vorm.', symbol: '✨' }
+      navigation: {
+        clue: 'Zoek niet naar het antwoord op de gevel. Kijk vanaf het Huis van Bosch de Markt op.',
+        fallbackDirections: 'Ga naar Markt 29 en zoek het standbeeld van Jheronimus Bosch op de Markt.',
+        externalMapsQuery: 'Huis van Bosch Markt 29 Den Bosch'
+      },
+      challenge: {
+        kind: 'choice',
+        prompt: 'Welke twee voorwerpen houdt Jheronimus Bosch in zijn handen?',
+        options: [
+          { id: 'a', label: 'Een penseel en een schilderspalet', correct: true },
+          { id: 'b', label: 'Een boek en een ganzenveer', correct: false },
+          { id: 'c', label: 'Een sleutel en een perkamentrol', correct: false },
+          { id: 'd', label: 'Een hamer en een beitel', correct: false }
+        ],
+        correctFeedback: 'Juist. Penseel en palet — gereedschap waarmee Bosch werelden schilderde die niemand vóór hem had gezien.',
+        wrongFeedback: 'Niet juist. Kijk naar het standbeeld op de Markt en let op beide handen.'
+      },
+      hints: [{ id: 'h1', text: 'Zoek niet naar het antwoord op de gevel. Kijk vanaf het Huis van Bosch de Markt op.' }],
+      reward: { title: 'Verbeelding', text: 'De herinnering aan de Verbeelding is hersteld.', symbol: '✨' }
     },
     {
       id: 'sint-jan',
