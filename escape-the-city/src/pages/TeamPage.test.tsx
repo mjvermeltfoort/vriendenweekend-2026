@@ -71,4 +71,19 @@ describe('TeamPage', () => {
     expect(container.textContent).not.toContain('teamnaam');
     expect(container.textContent).not.toContain('Nieuw team');
   });
+  it('opens preparation after joining with a valid teamcode', async () => {
+    mockResumeWithJoinCode.mockResolvedValue('team-3');
+    await act(async () => root.render(<TeamPage pack={gamePack} />));
+    const input = container.querySelector<HTMLInputElement>('#team-code');
+    expect(input).not.toBeNull();
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, 'abc123');
+      input?.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(mockResumeWithJoinCode).toHaveBeenCalledWith('ABC123');
+    expect(mockNavigate).toHaveBeenCalledWith('/voorbereiden');
+  });
 });

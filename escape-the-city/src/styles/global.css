@@ -1472,7 +1472,8 @@ select {
 }
 
 .result-hero { padding-top: var(--space-5); text-align: center; }
-.result-hero__emblem {
+.result-hero__emblem,
+.preparation-hero__emblem {
   display: block;
   width: clamp(150px, 43vw, 192px);
   height: auto;

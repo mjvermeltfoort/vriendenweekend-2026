@@ -4,7 +4,7 @@ import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { isSupabaseAvailable } from '../lib/supabase/sync';
 import { buildAssetManifest, precacheRouteAssets } from '../features/offline/offlinePack';
-import { DragonEmblem, GameIcon, PageShell, ProgressBar, SyncStatus } from '../components/GameUi';
+import { GameIcon, PageShell, ProgressBar, SyncStatus } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { narrationAudio } from '../features/audio/audioConfig';
 import { audioTranscripts } from '../features/audio/audioTranscripts';
@@ -30,7 +30,13 @@ export function PreparationPage({ pack }: { pack: GamePack }) {
 
   return (
     <PageShell title="Voorbereiden" backTo="/team" navigation={false}>
-      <div className="center"><DragonEmblem /></div>
+      <img
+        className="preparation-hero__emblem"
+        src={`${import.meta.env.BASE_URL}assets/moerasdraak-result-emblem.svg`}
+        alt="Gouden embleem van de Moerasdraak"
+        width="192"
+        height="192"
+      />
       <h1 className="screen-title">Spel voorbereiden</h1>
       <section className="card stack stack--large">
         <AudioPlayer
