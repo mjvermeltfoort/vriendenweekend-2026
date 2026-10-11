@@ -29,10 +29,10 @@ export const audioTranscripts = {
   ].join('\n\n'),
   jheronimusBosch: [
     'Hier groeide een jongen op die de wereld anders zag dan ieder ander.',
-    'Waar anderen een gevel, regenpijp of toren zagen, ontdekte Jheronimus Bosch vreemde dieren, monsters en wonderlijke machines.',
+    'Jheronimus Bosch maakte van verf en verbeelding werelden vol vreemde dieren, monsters en wonderlijke machines.',
     'Zijn verbeelding is uit de herinneringen van de stad verdwenen. Zonder haar wordt alles gewoon, stil en voorspelbaar.',
-    'Kijk naar de gebouwen om je heen. Zoek ogen waar ramen zitten, klauwen waar goten lopen en hoorns waar torens omhoogsteken.',
-    'Bouw het wezen dat alleen jullie kunnen zien.'
+    'Draai je vanaf het Huis van Bosch naar de Markt en zoek de schilder zelf.',
+    'Een meester herken je niet alleen aan zijn naam. Kijk goed naar wat hij in zijn handen draagt.'
   ].join('\n\n'),
   bellendeEngel: [
     'Hoog boven de stad probeert een engel contact te maken.',
