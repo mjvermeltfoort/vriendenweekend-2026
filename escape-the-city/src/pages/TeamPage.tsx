@@ -26,7 +26,7 @@ export function TeamPage({ pack }: { pack: GamePack }) {
     setError('');
     try {
       await resumeWithJoinCode(code);
-      navigate('/route');
+      navigate('/voorbereiden');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Deze teamcode is niet geldig.');
     } finally {
