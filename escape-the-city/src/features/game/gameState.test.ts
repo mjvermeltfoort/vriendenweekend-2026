@@ -79,17 +79,23 @@ describe('gameState', () => {
   });
 
   it('checks every category of a composite answer', () => {
-    const composite = gamePack.stops.find((stop) => stop.id === 'bosch-wezen')!.challenge;
+    const composite = gamePack.stops.find((stop) => stop.id === 'binnendieze')!.challenge;
     expect(challengeAnswerIsCorrect(composite, {
-      head: 'Horn',
-      body: 'Schubben',
-      object: 'Lantaarn'
+      Oud: 'Bakstenen resten',
+      Modern: 'Stalen poort',
+      'Spoor in straat': 'Blauwe stenen'
     })).toBe(true);
     expect(challengeAnswerIsCorrect(composite, {
-      head: 'Masker',
-      body: 'Schubben',
-      object: 'Lantaarn'
+      Oud: 'Betonresten',
+      Modern: 'Stalen poort',
+      'Spoor in straat': 'Blauwe stenen'
     })).toBe(false);
+  });
+
+  it('checks the Bosch statue observation answer', () => {
+    const bosch = gamePack.stops.find((stop) => stop.id === 'bosch-wezen')!.challenge;
+    expect(challengeAnswerIsCorrect(bosch, 'a')).toBe(true);
+    expect(challengeAnswerIsCorrect(bosch, 'b')).toBe(false);
   });
 
   it('only exposes a complete, finalized result', () => {
