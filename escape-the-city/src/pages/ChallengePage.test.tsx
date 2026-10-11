@@ -140,14 +140,11 @@ describe('ChallengePage', () => {
     expect(container.querySelector<HTMLInputElement>('input[value="a"]')!.checked).toBe(true);
 
     routeTo('bosch-wezen');
-    const labels = [...container.querySelectorAll('label span')].map((item) => item.textContent);
-    const firstSelect = container.querySelector<HTMLSelectElement>('select')!;
-    expect(labels).toEqual(expect.arrayContaining(['Hoofd', 'Lijf', 'Voorwerp']));
-    expect(container.textContent).toContain('Hoorn');
-    expect(firstSelect.getAttribute('aria-label')).toBe('Hoofd');
-    expect([...firstSelect.options].map((option) => option.textContent)).toContain('Hoorn');
-    act(() => setFormValue(firstSelect, 'Masker'));
-    expect(firstSelect.value).toBe('Masker');
+    expect(container.textContent).toContain('Welke twee voorwerpen houdt Jheronimus Bosch in zijn handen?');
+    expect(container.textContent).toContain('Een penseel en een schilderspalet');
+    const boschWrongAnswer = container.querySelector<HTMLInputElement>('input[value="b"]')!;
+    act(() => boschWrongAnswer.click());
+    expect(boschWrongAnswer.checked).toBe(true);
 
     routeTo('bonus:citadel');
     expect(button('Controleer antwoord').disabled).toBe(true);
@@ -159,7 +156,7 @@ describe('ChallengePage', () => {
     routeTo('drakenfontein');
     expect(container.querySelector<HTMLInputElement>('input[value="a"]')!.checked).toBe(false);
     routeTo('bosch-wezen');
-    expect(container.querySelector<HTMLSelectElement>('select')!.value).toBe('');
+    expect(container.querySelector<HTMLInputElement>('input[value="b"]')!.checked).toBe(false);
     routeTo('bonus:citadel');
     expect(button('Controleer antwoord').disabled).toBe(true);
     routeTo('sint-jan');
@@ -176,26 +173,16 @@ describe('ChallengePage', () => {
     expect(container.textContent).not.toContain('Verouderd bericht');
   });
 
-  it('submits canonical composite values while showing Dutch labels', async () => {
-    attemptAnswer.mockResolvedValueOnce({ correct: false, message: 'Probeer opnieuw.' });
+  it('submits the Bosch statue observation as a choice answer', async () => {
+    attemptAnswer.mockResolvedValueOnce({ correct: true, message: 'Goed.' });
     render('bosch-wezen');
 
-    const selects = container.querySelectorAll<HTMLSelectElement>('select');
-    expect(selects).toHaveLength(3);
-    expect([...selects].map((select) => select.getAttribute('aria-label'))).toEqual(['Hoofd', 'Lijf', 'Voorwerp']);
-    expect(container.textContent).toContain('Kies een hoofd');
-    expect(container.textContent).toContain('Hoorn');
-
-    act(() => setFormValue(selects[0], 'Horn'));
-    act(() => setFormValue(selects[1], 'Schubben'));
-    act(() => setFormValue(selects[2], 'Lantaarn'));
+    const answer = container.querySelector<HTMLInputElement>('input[value="a"]')!;
+    expect(container.textContent).toContain('Een penseel en een schilderspalet');
+    act(() => answer.click());
     await act(async () => button('Controleer antwoord').click());
 
-    expect(attemptAnswer).toHaveBeenLastCalledWith('bosch-wezen', expect.anything(), {
-      head: 'Horn',
-      body: 'Schubben',
-      object: 'Lantaarn'
-    });
+    expect(attemptAnswer).toHaveBeenLastCalledWith('bosch-wezen', expect.anything(), 'a');
   });
 
   it('keeps existing Dutch composite labels intact', () => {
