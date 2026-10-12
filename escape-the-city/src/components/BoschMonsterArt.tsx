@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import './BoschMonsterPuzzle.css';
 
 export type MonsterSelection = { head?: string; body?: string; object?: string };
 
