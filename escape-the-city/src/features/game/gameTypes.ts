@@ -47,6 +47,8 @@ export interface RouteStop {
     symbol: string;
   };
   isFinal?: boolean;
+  /** Background information revealed only after the stop is completed. */
+  answerExplanation?: string;
 }
 
 /** An optional stop which never participates in the numbered main route. */
@@ -67,8 +69,6 @@ export interface BonusLocation extends RouteStop {
     questionId: string;
     question: string;
   };
-  /** Historical context revealed only after successfully completing this bonus challenge. */
-  answerExplanation?: string;
   reward: RouteStop['reward'] & {
     id: string;
     resultLabel: string;
