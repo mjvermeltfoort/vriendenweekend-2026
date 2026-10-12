@@ -231,15 +231,18 @@ describe('RouteMap', () => {
       latitude: gerritje.coordinates.latitude!, longitude: gerritje.coordinates.longitude!,
       accuracy: 12, capturedAt: new Date().toISOString()
     };
-    // De oude pin lag ~44 m van Gerritje; de gecorrigeerde pin ligt bij de Binnendieze.
+    // Het exacte nieuwe punt ligt ~22 m van Gerritje; vermijd activering op de hoofdstop.
     await render(stops, progress, atGerritje);
     expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('Zoete Lieve Gerritje');
     expect(container.querySelector('.route-bottom-sheet')?.textContent).not.toContain('De Halve Peer');
     expect(nearestUnfinishedBonus(atGerritje, [halvePeer], progress, null, gerritje)).toBeNull();
 
-    // Zelfs het vroegere (foutieve) kaartpunt mag de schub niet meer activeren.
+    // Beide eerdere foutieve kaartpunten mogen de schub niet activeren.
     const atFormerWrongPin = { ...atGerritje, latitude: 51.689444, longitude: 5.299722 };
+    const atFormerMigrationPin = { ...atGerritje, latitude: 51.688846, longitude: 5.300058 };
     expect(nearestUnfinishedBonus(atFormerWrongPin, [halvePeer], progress, null, gerritje)).toBeNull();
+    expect(nearestUnfinishedBonus(atFormerMigrationPin, [halvePeer], progress, null, gerritje)).toBeNull();
+    expect(nearestUnfinishedBonus({ ...atGerritje, accuracy: 20 }, [halvePeer], progress, null, gerritje)).toBeNull();
 
     const midpoint = {
       ...atGerritje,
@@ -263,6 +266,8 @@ describe('RouteMap', () => {
     await render(stops, progress, atPeer);
     expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('De Halve Peer');
     expect(nearestUnfinishedBonus(atPeer, [halvePeer], progress, null, gerritje)).toBe(halvePeer.id);
+    // Dezelfde nauwkeurigheid volstaat niet om de dichtbije schub te onderscheiden.
+    expect(nearestUnfinishedBonus({ ...atPeer, accuracy: 22 }, [halvePeer], progress, null, gerritje)).toBeNull();
 
     await act(async () => {
       (container.querySelector('[data-testid="map-select-zoete-lieve-gerritje"]') as HTMLButtonElement).click();

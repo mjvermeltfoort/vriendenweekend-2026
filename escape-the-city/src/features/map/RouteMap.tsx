@@ -138,9 +138,19 @@ export function nearestUnfinishedBonus(
       longitude: mainStop.coordinates.longitude!
     });
     const mainCouldBeHere = mainDistance <= mainStop.coordinates.radiusMeters + location.accuracy;
+    const mainToBonusDistance = haversineDistanceMeters(
+      { latitude: mainStop.coordinates.latitude!, longitude: mainStop.coordinates.longitude! },
+      { latitude: candidate.bonus.coordinates.latitude!, longitude: candidate.bonus.coordinates.longitude! }
+    );
+    const extremelyClose = mainToBonusDistance < 50;
+    // Gerritje en Halve Peer liggen maar ~22 m uit elkaar: gebruik bij deze
+    // overlappende punten uitsluitend nauwkeurige fixes vlak bij de schub.
+    // Anders zou de bonus bij Gerritje onterecht verschijnen, of juist nooit bij Peer.
+    if (mainCouldBeHere && extremelyClose && candidate.bonus.id !== previousId
+      && (location.accuracy > 15 || candidate.distance > 15)) return null;
     const neededDifference = candidate.bonus.id === previousId
       ? -Math.max(10, location.accuracy)
-      : Math.max(20, location.accuracy * 2);
+      : extremelyClose ? Math.max(12, location.accuracy) : Math.max(20, location.accuracy * 2);
     if (mainCouldBeHere && mainDistance - candidate.distance <= neededDifference) return null;
   }
 

@@ -23,8 +23,8 @@ export const bonusLocations: BonusLocation[] = [
   },
   {
     id: 'bonus:halve-peer', isBonus: true, order: 0, slug: 'halve-peer', title: 'De Halve Peer', shortTitle: 'Verborgen vondst', locationName: 'Molenstraat, bij de Binnendieze (gevel Drie Kronen)',
-    // Kaartcoördinaat monument Bossche Encyclopedie, aan de gevel boven de Binnendieze.
-    coordinates: coordinate(51.688846, 5.300058, 55, 120, 130),
+    // Ter plekke bevestigde exacte GPS-positie, ter vervanging van het eerdere kaartpunt.
+    coordinates: coordinate(51.68961800908911, 5.299956048272589, 55, 120, 130),
     hiddenClue: 'Zoek een belangrijk man die maar voor de helft aanwezig is.', revealedDescription: 'In Oeteldonk is een halve oplossing soms precies genoeg.', estimatedDetourMinutes: 5,
     recommendedBetween: { afterStopId: 'zoete-lieve-gerritje', beforeStopId: 'binnendieze' }, visibleAfterStopId: 'drakenfontein', maximumPoints: 200,
     manualVerification: { questionId: 'bonus-halve-peer-primary', question: 'Waar bevindt de afgebeelde helft zich?' },
