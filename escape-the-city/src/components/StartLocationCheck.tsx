@@ -57,7 +57,7 @@ export function StartLocationCheck({ blockedByIntro = false }: { blockedByIntro?
     setOpen(false);
     markVisited();
     // Focus wordt na het sluiten teruggezet naar de knop op de beginpagina.
-    window.requestAnimationFrame(() => triggerRef.current?.focus());
+    triggerRef.current?.focus();
   }, []);
 
   const testLocation = useCallback(async () => {
