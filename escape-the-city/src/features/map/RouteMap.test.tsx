@@ -345,7 +345,7 @@ describe('nearestUnfinishedBonus', () => {
     const progress = progressNearFinale();
     expect(nearestUnfinishedBonus({ ...position, accuracy: 65 }, [bonus], progress)).toBeNull();
     expect(nearestUnfinishedBonus({ ...position, accuracy: 65 }, [bonus], progress, bonus.id)).toBe(bonus.id);
-    const offCenter = { ...position, latitude: position.latitude + 45 / 111_000 };
+    const offCenter = { ...position, latitude: position.latitude + (bonus.coordinates.radiusMeters - 5) / 111_000 };
     expect(nearestUnfinishedBonus(offCenter, [bonus], progress, null)).toBeNull();
   });
 
