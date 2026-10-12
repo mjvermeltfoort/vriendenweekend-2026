@@ -167,8 +167,8 @@ describe('StopPage completion copy', () => {
       </MemoryRouter>
     ));
 
-    expect(container.textContent).toContain('Zoek een belangrijk man die maar voor de helft aanwezig is.');
-    expect(container.textContent?.split('Zoek een belangrijk man die maar voor de helft aanwezig is.').length).toBe(2);
+    expect(container.textContent).toContain('Zoek een belangrijk man die maar voor de helft aanwezig is, boven de Binnendieze.');
+    expect(container.textContent?.split('Zoek een belangrijk man die maar voor de helft aanwezig is, boven de Binnendieze.').length).toBe(2);
     expect(container.textContent).not.toContain('Luister naar het verhaal');
   });
 
