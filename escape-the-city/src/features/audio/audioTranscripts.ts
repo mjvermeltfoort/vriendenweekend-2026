@@ -28,11 +28,11 @@ export const audioTranscripts = {
     'Kijk naar bruggen, muren en openingen. Het water vertelt waar het heen wil.'
   ].join('\n\n'),
   jheronimusBosch: [
-    'Hier groeide een jongen op die de wereld anders zag dan ieder ander.',
-    'Waar anderen een gevel, regenpijp of toren zagen, ontdekte Jheronimus Bosch vreemde dieren, monsters en wonderlijke machines.',
-    'Zijn verbeelding is uit de herinneringen van de stad verdwenen. Zonder haar wordt alles gewoon, stil en voorspelbaar.',
-    'Kijk naar de gebouwen om je heen. Zoek ogen waar ramen zitten, klauwen waar goten lopen en hoorns waar torens omhoogsteken.',
-    'Bouw het wezen dat alleen jullie kunnen zien.'
+    'Voor jullie staat Jheronimus Bosch, de schilder met een fantasie die verder reikte dan de stadsmuren.',
+    'De Moerasdraak heeft een blad uit zijn schetsboek verscheurd. Alleen twee aanwijzingen op dit standbeeld kunnen het boek openen.',
+    'Bestudeer wat hij vasthoudt en wat er op de sokkel staat.',
+    'Open het schetsboek en geef het verloren monster opnieuw een gezicht, een lijf en benen.',
+    'Pas als alle delen kloppen, keert de verbeelding terug.'
   ].join('\n\n'),
   bellendeEngel: [
     'Hoog boven de stad probeert een engel contact te maken.',

@@ -164,6 +164,31 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).not.toContain('Vind de locatie');
   });
 
+  it('reveals the animated Bosch monster and history only after completing the statue puzzle', async () => {
+    const initial = createProgress();
+    initial.currentStopId = 'bosch-wezen';
+    initial.stopProgress['bosch-wezen'].state = 'available';
+    gameState = { ...gameState, progress: initial };
+    const page = (key: string) => (
+      <MemoryRouter key={key} initialEntries={['/stop/bosch-wezen']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    );
+    await act(async () => root.render(page('bosch-unfinished')));
+    expect(container.querySelector('.bosch-monster-completed')).toBeNull();
+    expect(container.textContent).not.toContain('Het standbeeld op de Markt is gemaakt');
+
+    const completed = createProgress();
+    completed.stopProgress['bosch-wezen'].state = 'completed';
+    completed.stopProgress['bosch-wezen'].unlockMethod = 'gps';
+    gameState = { ...gameState, progress: completed };
+    await act(async () => root.render(page('bosch-completed')));
+    expect(container.textContent).toContain('Jullie fantasiewezen is tot leven gewekt!');
+    expect(container.querySelector('.bosch-monster-completed .bosch-art--alive')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')?.textContent).toContain('August Falise');
+    expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Bekijk volgende routepunt op kaart');
+  });
+
   it('shows the result action without route duplication after the finale', async () => {
     const finaleProgress = createProgress();
     for (const stop of gamePack.stops) {

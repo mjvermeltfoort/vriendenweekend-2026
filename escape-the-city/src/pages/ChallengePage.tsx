@@ -7,6 +7,7 @@ import { isBonusLocation } from '../features/game/gameTypes';
 import { GameIcon, HintDialog, PageShell } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { BellChallengeAudio } from '../components/BellChallengeAudio';
+import { BoschMonsterPuzzle } from '../components/BoschMonsterPuzzle';
 import { narrationAudio } from '../features/audio/audioConfig';
 import { audioTranscripts } from '../features/audio/audioTranscripts';
 
@@ -37,6 +38,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const [code, setCode] = useState('');
   const [list, setList] = useState<string[]>(stop?.challenge.kind === 'reorder' ? [...stop.challenge.items] : []);
   const [composite, setComposite] = useState<Record<string, string>>({});
+  const [boschBookOpen, setBoschBookOpen] = useState(false);
   const [lensLeft, setLensLeft] = useState(0);
   const [lensRight, setLensRight] = useState(0);
   const [lensInteracted, setLensInteracted] = useState(false);
@@ -52,6 +54,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     setCode('');
     setList(stop?.challenge.kind === 'reorder' ? [...stop.challenge.items] : []);
     setComposite({});
+    setBoschBookOpen(false);
     setLensLeft(0);
     setLensRight(0);
     setLensInteracted(false);
@@ -99,7 +102,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     if (currentStop.challenge.kind === 'choice') return choice.length > 0;
     if (currentStop.challenge.kind === 'code') return code.length === currentStop.challenge.answerLength;
     if (currentStop.challenge.kind === 'reorder') return list.length === currentStop.challenge.correctOrder.length;
-    if (currentStop.challenge.kind === 'composite') return Object.keys(composite).length === Object.keys(currentStop.challenge.categories).length;
+    if (currentStop.challenge.kind === 'composite') return (currentStop.id !== 'bosch-wezen' || boschBookOpen) && Object.keys(composite).length === Object.keys(currentStop.challenge.categories).length;
     if (currentStop.challenge.kind === 'lens') return lensInteracted;
     return false;
   })();
@@ -162,13 +165,13 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           <p>{currentStop.challenge.prompt}</p>
         </div>
 
-        <div className="audio-panel" aria-label="Opdrachtillustratie niet beschikbaar">
+        {currentStop.id !== 'bosch-wezen' ? <div className="audio-panel" aria-label="Opdrachtillustratie niet beschikbaar">
           <span className="audio-icon"><GameIcon name="scroll" /></span>
           <div>
             <strong>Bekijk de plek</strong>
             <p>Gebruik details op locatie om deze opdracht op te lossen.</p>
           </div>
-        </div>
+        </div> : null}
 
         {currentStop.id === 'sint-jan' ? <BellChallengeAudio /> : null}
 
@@ -225,7 +228,19 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           </div>
         ) : null}
 
-        {currentStop.challenge.kind === 'composite' ? (
+        {currentStop.challenge.kind === 'composite' && currentStop.id === 'bosch-wezen' ? (
+          <BoschMonsterPuzzle
+            unlocked={boschBookOpen}
+            onUnlock={() => { setBoschBookOpen(true); setMessage(''); }}
+            selection={composite}
+            onSelect={(slot, value) => {
+              setComposite((current) => ({ ...current, [slot]: value }));
+              setMessage('');
+            }}
+          />
+        ) : null}
+
+        {currentStop.challenge.kind === 'composite' && currentStop.id !== 'bosch-wezen' ? (
           <div className="stack">
             {Object.entries(currentStop.challenge.categories).map(([category, options]) => (
               <label key={category} className="field">
@@ -259,9 +274,11 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
         {message ? <p className="feedback" id="answer-feedback" role="alert">{message}</p> : null}
 
         <div className="stack">
-          <button className="button primary" disabled={busy || !canSubmit} onClick={() => void submit()}>
-            {busy ? 'Antwoord controleren…' : 'Controleer antwoord'}
-          </button>
+          {currentStop.id !== 'bosch-wezen' || boschBookOpen ? (
+            <button className="button primary" disabled={busy || !canSubmit} onClick={() => void submit()}>
+              {busy ? 'Antwoord controleren…' : currentStop.id === 'bosch-wezen' ? 'Wek het monster tot leven' : 'Controleer antwoord'}
+            </button>
+          ) : null}
           {activeHint ? (
             <button className="button secondary" type="button" onClick={() => setHintOpen(true)}>
               <GameIcon name="lightbulb" size={18} /> Hint gebruiken · −{penalty} punten
