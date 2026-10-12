@@ -114,6 +114,35 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).not.toContain('GPS-devsimulator');
   });
 
+  it('reveals the history of the Marktstroom only after Waterpoort is completed', async () => {
+    const unfinished = createProgress();
+    unfinished.currentStopId = 'binnendieze';
+    unfinished.stopProgress.binnendieze.state = 'available';
+    gameState = { ...gameState, progress: unfinished };
+    const page = (key: string) => (
+      <MemoryRouter key={key} initialEntries={['/stop/binnendieze']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    );
+
+    await act(async () => root.render(page('waterpoort-unfinished')));
+    expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')).toBeNull();
+    expect(container.textContent).not.toContain('Deze waterloop werd tussen 1962 en 1966 gedempt');
+
+    const completed = createProgress();
+    completed.stopProgress.binnendieze.state = 'completed';
+    completed.stopProgress.binnendieze.unlockMethod = 'gps';
+    gameState = { ...gameState, progress: completed };
+    await act(async () => root.render(page('waterpoort-completed')));
+
+    expect(container.textContent).toContain('Herinnering hersteld');
+    const explanation = container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]');
+    expect(explanation?.textContent).toContain('Het verhaal achter Waterpoort');
+    expect(explanation?.textContent).toContain('Marktstroom');
+    expect(explanation?.textContent).toContain('1962 en 1966');
+    expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Bekijk volgende routepunt op kaart');
+  });
+
   it('uses route mode for a completed middle stop', async () => {
     const progress = createProgress();
     progress.stopProgress['sint-jan'].state = 'completed';
