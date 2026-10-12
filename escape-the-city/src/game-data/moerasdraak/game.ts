@@ -80,25 +80,22 @@ export const gamePack: GamePack = {
       shortTitle: 'Waterpoort',
       locationName: 'Waterpoort, Herman Moerkerkpark',
       coordinates: { latitude: 51.689641, longitude: 5.305190, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      intro: { title: 'Sporen van de Waterpoort', text: 'Zoek oud metselwerk, een moderne stalen poort en de blauwe stenen in de straat.', audioSrc: audioAsset('03-binnendieze.mp3'), transcript: audioTranscripts.binnendieze },
-      navigation: { clue: 'Zoek de plek waar oude bakstenen resten en een moderne stalen poort samen laten zien waar vroeger de Waterpoort stond.', fallbackDirections: 'Zoek een toegangspunt tot de Binnendieze.', externalMapsQuery: 'Binnendieze Den Bosch' },
+      intro: { title: 'Het Spoor van het Verdwenen Water', text: 'De Moerasdraak heeft een waterloop uit het stadsbeeld laten verdwijnen. Maar een spoor in de bestrating is achtergebleven. Kunnen jullie ontdekken wat hier vroeger stroomde?', audioSrc: audioAsset('03-binnendieze.mp3'), transcript: audioTranscripts.binnendieze },
+      navigation: { clue: 'Zoek bij de oude Waterpoort naar sporen van verdwenen water.', fallbackDirections: 'Ga naar de Waterpoort in het Herman Moerkerkpark, vlak bij de Binnendieze.', externalMapsQuery: 'Waterpoort Herman Moerkerkpark Den Bosch' },
       challenge: {
-        kind: 'composite',
-        prompt: 'Welke drie dingen komen hier samen en verraden waar de oude Waterpoort stond?',
-        categories: {
-          Oud: ['Betonresten', 'Bakstenen resten', 'Houten balk'],
-          Modern: ['Glazen boog', 'Stalen poort', 'Kunststof hek'],
-          'Spoor in straat': ['Rode klinkers', 'Blauwe stenen', 'Witte tegels']
-        },
-        correctAnswer: {
-          Oud: 'Bakstenen resten',
-          Modern: 'Stalen poort',
-          'Spoor in straat': 'Blauwe stenen'
-        },
-        summaryTemplate: 'Oud: {Oud}, nieuw: {Modern}, spoor: {Spoor in straat}.',
-        wrongFeedback: 'Kijk naar oud, nieuw en sporen in de straat.'
+        kind: 'choice',
+        prompt: 'De Moerasdraak heeft een rivier uit het stadsbeeld laten verdwijnen. Maar één spoor kon hij niet uitwissen. Kijk goed naar de bestrating bij de oude Waterpoort. Wat vertellen de blauwe stenen over deze plek?',
+        options: [
+          { id: 'b', label: 'Hier stond vroeger de buitenste stadsmuur.', correct: false },
+          { id: 'c', label: 'Hier liep de oude handelsroute naar de Markt.', correct: false },
+          { id: 'a', label: 'Hier stroomde vroeger de Marktstroom, een tak van de Binnendieze.', correct: true },
+          { id: 'd', label: 'Hier lag een aanlegplaats voor handelsschepen.', correct: false }
+        ],
+        correctFeedback: 'Goed gezien! De blauwe stenen laten zien waar de verdwenen Marktstroom ooit liep. De herinnering aan het water is hersteld!',
+        wrongFeedback: 'Nog niet helemaal. Kijk niet alleen naar de oude muren: waarom zouden er juist blauwe stenen in de straat liggen?'
       },
-      hints: [{ id: 'h1', text: 'Let op contrast tussen oud metselwerk, een moderne constructie en de gekleurde stenen in de straat.' }],
+      hints: [{ id: 'h1', text: 'Vreemd hè? Een rivier zonder water! Soms laat het verleden zijn sporen gewoon op straat achter. Volg de kleur die bij water past!' }],
+      answerExplanation: 'De blauwe stenen in het Herman Moerkerkpark markeren de vroegere loop van de Marktstroom, een tak van de Binnendieze. Deze waterloop werd tussen 1962 en 1966 gedempt. Bij de herinrichting van het park is een deel van de Binnendieze opnieuw opengelegd en zijn resten van de oude Waterpoort zichtbaar gemaakt. Zo kun je hier het verdwenen waterverleden van Den Bosch terugvinden.',
       reward: { title: 'Water', text: 'De stroom is onthuld.', symbol: '💧' }
     },
     {

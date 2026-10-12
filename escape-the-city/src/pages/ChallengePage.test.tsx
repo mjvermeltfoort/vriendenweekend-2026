@@ -198,11 +198,12 @@ describe('ChallengePage', () => {
     });
   });
 
-  it('keeps existing Dutch composite labels intact', () => {
+  it('shows the Waterpoort Marktstroom answer choices instead of the old composite', () => {
     render('binnendieze');
-    expect(container.textContent).toContain('Oud');
-    expect(container.textContent).toContain('Modern');
-    expect(container.textContent).toContain('Spoor in straat');
+    expect(container.textContent).toContain('Kies één antwoord');
+    expect(container.textContent).toContain('Wat vertellen de blauwe stenen over deze plek?');
+    expect(container.textContent).toContain('Hier stroomde vroeger de Marktstroom');
+    expect(container.textContent).not.toContain('Spoor in straat');
   });
 
   it('allows wrong and correct lens attempts without revealing the solution in button state', async () => {

@@ -56,6 +56,37 @@ describe('Moerasdraak player copy', () => {
     expect(stop.reward.title).toBe('Legende');
   });
 
+  it('asks what the blue stones reveal about the Marktstroom at Waterpoort', () => {
+    const stop = gamePack.stops.find((item) => item.id === 'binnendieze')!;
+    expect(stop.challenge.kind).toBe('choice');
+    if (stop.challenge.kind !== 'choice') return;
+
+    expect(stop.challenge.prompt).toMatch(/blauwe stenen.*deze plek/);
+    expect(stop.challenge.options.map((option) => option.label)).toEqual([
+      'Hier stond vroeger de buitenste stadsmuur.',
+      'Hier liep de oude handelsroute naar de Markt.',
+      'Hier stroomde vroeger de Marktstroom, een tak van de Binnendieze.',
+      'Hier lag een aanlegplaats voor handelsschepen.'
+    ]);
+    // De nieuwe Supabase-migratie 037 gebruikt choice-id a, visueel het derde antwoord.
+    expect(stop.challenge.options.find((option) => option.correct)).toMatchObject({
+      id: 'a', label: 'Hier stroomde vroeger de Marktstroom, een tak van de Binnendieze.'
+    });
+    expect(challengeAnswerIsCorrect(stop.challenge, 'a')).toBe(true);
+    for (const answer of ['b', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(stop.challenge, answer)).toBe(false);
+    }
+    expect(stop.intro.text).not.toMatch(/blauwe stenen|Marktstroom/);
+    expect(stop.navigation.clue).not.toMatch(/blauwe stenen|Marktstroom/);
+    expect(stop.hints).toHaveLength(1);
+    expect(stop.hints[0].id).toBe('h1');
+    expect(stop.hints[0].text).toContain('Een rivier zonder water');
+    expect(stop.hints[0].text).not.toMatch(/Marktstroom/);
+    expect(stop.answerExplanation).toMatch(/Marktstroom.*Binnendieze.*1962 en 1966.*opengelegd/i);
+    expect(stop.reward.title).toBe('Water');
+    expect(stop.coordinates).toMatchObject({ latitude: 51.689641, longitude: 5.305190 });
+  });
+
   it('does not repeat manual verification questions as bonus challenge prompts', () => {
     for (const bonus of gamePack.bonusLocations ?? []) {
       expect(bonus.challenge.prompt).not.toBe(bonus.manualVerification.question);
