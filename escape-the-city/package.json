@@ -1,7 +1,7 @@
 {
   "name": "escape-the-city-den-bosch",
   "private": true,
-  "version": "0.1.35",
+  "version": "0.1.36",
   "type": "module",
   "engines": {
     "node": ">=26.5.0 <27"

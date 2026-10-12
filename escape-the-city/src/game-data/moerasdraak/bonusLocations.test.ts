@@ -12,25 +12,33 @@ describe('Verborgen Schubben game data', () => {
     expect(validateGamePack(gamePack)).toEqual({ valid: true, message: 'OK' });
   });
 
-  it('locates De Halve Peer on the Binnendieze instead of at the former inaccurate pin', () => {
+  it('uses the exact on-site Halve Peer GPS point instead of the earlier inaccurate map pins', () => {
     const halvePeer = gamePack.bonusLocations!.find((item) => item.id === 'bonus:halve-peer')!;
     const gerritje = gamePack.stops.find((item) => item.id === 'zoete-lieve-gerritje')!;
     expect(halvePeer.coordinates).toMatchObject({
-      latitude: 51.688846,
-      longitude: 5.300058,
+      latitude: 51.68961800908911,
+      longitude: 5.299956048272589,
       radiusMeters: 55,
       discoveryRadiusMeters: 120
     });
     expect(halvePeer.locationName).toMatch(/Binnendieze/);
     expect(halvePeer.navigation.fallbackDirections).toMatch(/gevel boven het water/);
+    // Zowel de vroegere oude pin als de in migratie 035 gebruikte kaartlocatie wijkt af.
     expect(haversineDistanceMeters(
       { latitude: 51.689444, longitude: 5.299722 },
       { latitude: halvePeer.coordinates.latitude!, longitude: halvePeer.coordinates.longitude! }
-    )).toBeGreaterThan(60);
+    )).toBeGreaterThan(20);
     expect(haversineDistanceMeters(
+      { latitude: 51.688846, longitude: 5.300058 },
+      { latitude: halvePeer.coordinates.latitude!, longitude: halvePeer.coordinates.longitude! }
+    )).toBeGreaterThan(80);
+    // Deze bonus ligt dicht bij Gerritje, dus automatische selectie vereist precisie.
+    const distanceToGerritje = haversineDistanceMeters(
       { latitude: gerritje.coordinates.latitude!, longitude: gerritje.coordinates.longitude! },
       { latitude: halvePeer.coordinates.latitude!, longitude: halvePeer.coordinates.longitude! }
-    )).toBeGreaterThan(90);
+    );
+    expect(distanceToGerritje).toBeGreaterThan(20);
+    expect(distanceToGerritje).toBeLessThan(25);
   });
 
   it('asks players to identify De Oetels and provides a hidden historical explanation', () => {
