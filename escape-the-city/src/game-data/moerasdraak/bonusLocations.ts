@@ -27,10 +27,23 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Zoek een belangrijk man die maar voor de helft aanwezig is.', revealedDescription: 'In Oeteldonk is een halve oplossing soms precies genoeg.', estimatedDetourMinutes: 5,
     recommendedBetween: { afterStopId: 'zoete-lieve-gerritje', beforeStopId: 'binnendieze' }, visibleAfterStopId: 'drakenfontein', maximumPoints: 200,
     manualVerification: { questionId: 'bonus-halve-peer-primary', question: 'Waar bevindt de afgebeelde helft zich?' },
-    intro: { title: 'De Ontbrekende Helft', text: 'Twee partijen begonnen hier iets; één partij liet een halve oplossing achter.' },
+    intro: { title: 'De Ontbrekende Helft', text: 'Twee verenigingen maakten afspraken over een eerbetoon. Maar waarom bleef er uiteindelijk maar een halve Peer over?' },
     navigation: { clue: 'Zoek een belangrijk man die maar voor de helft aanwezig is.', fallbackDirections: 'Zoek de gevel bij de Korenbrugstraat.', externalMapsQuery: 'De Halve Peer Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Wat vertelt de ontbrekende helft over de plek?', options: [{ id: 'a', label: 'Op een brugleuning', correct: false }, { id: 'b', label: 'Slechts een van de twee partijen betaalde mee', correct: true }, { id: 'c', label: 'Op een sokkel op straat', correct: false }, { id: 'd', label: 'Boven op een stadspoort', correct: false }], correctFeedback: 'De Narrenschub is gevonden.', wrongFeedback: 'Zoek hoger, bij de gevel.' },
-    hints: [{ id: 'h1', text: 'De helft kijkt niet vanaf straatniveau terug.' }], reward: { id: 'narrenschub', title: 'Narrenschub', text: 'Een halve oplossing was genoeg.', symbol: '◈', resultLabel: 'Narrenschub' }
+    challenge: {
+      kind: 'choice',
+      prompt: 'De Moerasdraak heeft een halve Peer gevonden! Kijk goed naar het beeld en het opschrift. Welke vereniging heeft deze halve Peer laten maken?',
+      options: [
+        { id: 'a', label: 'De Oeteldonksche Club van 1882', correct: false },
+        { id: 'b', label: 'Carnavalsvereniging De Oetels', correct: true },
+        { id: 'c', label: "De gemeente 's-Hertogenbosch", correct: false },
+        { id: 'd', label: 'Het Bossche Schuttersgilde', correct: false }
+      ],
+      correctFeedback: 'Goed gevonden! De Oetels lieten hun eigen halve Peer maken.',
+      wrongFeedback: 'Nog niet! De vereniging heeft haar naam achtergelaten bij het beeld.'
+    },
+    hints: [{ id: 'h1', text: 'Zelfs een halve Peer heeft een handtekening. Zoek de woorden bij het beeld, niet alleen het gezicht.' }],
+    answerExplanation: 'Frans Vennix, die jarenlang de rol van Peer vaan den Muggenheuvel vervulde, was lid van carnavalsvereniging De Oetels. Na een conflict over afspraken met de Oeteldonksche Club van 1882 zouden beide partijen bijdragen aan een gedenkteken. De Oetels lieten in 1988 alleen hun eigen aandeel maken: letterlijk een halve Peer! Zo werd een carnavalsconflict een Bossch monument met een flinke knipoog.',
+    reward: { id: 'narrenschub', title: 'Narrenschub', text: 'Een halve oplossing was genoeg.', symbol: '◈', resultLabel: 'Narrenschub' }
   },
   {
     id: 'bonus:de-moriaan', isBonus: true, order: 0, slug: 'de-moriaan', title: 'De Moriaan', shortTitle: 'Verborgen vondst', locationName: 'Markt 77',

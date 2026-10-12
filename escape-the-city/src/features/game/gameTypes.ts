@@ -67,6 +67,8 @@ export interface BonusLocation extends RouteStop {
     questionId: string;
     question: string;
   };
+  /** Historical context revealed only after successfully completing this bonus challenge. */
+  answerExplanation?: string;
   reward: RouteStop['reward'] & {
     id: string;
     resultLabel: string;

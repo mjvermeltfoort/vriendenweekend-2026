@@ -172,6 +172,37 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).not.toContain('Luister naar het verhaal');
   });
 
+  it('reveals the true story behind De Halve Peer only after a correct answer', async () => {
+    const unfinished = createProgress();
+    unfinished.stopProgress['bonus:halve-peer'].state = 'available';
+    gameState = { ...gameState, progress: unfinished };
+
+    const page = (key: string) => (
+      <MemoryRouter key={key} initialEntries={['/stop/bonus:halve-peer']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    );
+
+    await act(async () => root.render(page('halve-peer-unfinished')));
+    expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')).toBeNull();
+    expect(container.textContent).not.toContain('Frans Vennix, die jarenlang');
+
+    const completed = createProgress();
+    completed.stopProgress['bonus:halve-peer'].state = 'completed';
+    completed.stopProgress['bonus:halve-peer'].unlockMethod = 'gps';
+    gameState = { ...gameState, progress: completed };
+    await act(async () => root.render(page('halve-peer-completed')));
+
+    expect(container.textContent).toContain('Drakenschub gevonden');
+    expect(container.textContent).toContain('Narrenschub');
+    const explanation = container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]');
+    expect(explanation?.textContent).toContain('Het verhaal achter De Halve Peer');
+    expect(explanation?.textContent).toContain('Frans Vennix');
+    expect(explanation?.textContent).toContain('Oeteldonksche Club');
+    expect(explanation?.textContent).toContain('1988');
+    expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Terug naar hoofdroute');
+  });
+
   it('keeps bonus completion separate from main stop controls', async () => {
     gameState = { ...gameState, progress: createProgress() };
 

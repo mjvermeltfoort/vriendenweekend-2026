@@ -456,6 +456,12 @@ export function StopPage({ pack }: { pack: GamePack }) {
               <>
                 <h2>Drakenschub gevonden</h2>
                 <p><strong>{currentStop.reward.resultLabel}</strong><br />{currentStop.revealedDescription}</p>
+                {currentStop.answerExplanation ? (
+                  <section className="stack" aria-label="Uitleg bij het juiste antwoord">
+                    <h3>Het verhaal achter {currentStop.title}</h3>
+                    <p>{currentStop.answerExplanation}</p>
+                  </section>
+                ) : null}
                 <Link className="button secondary" to="/route">Terug naar hoofdroute</Link>
               </>
             ) : (
