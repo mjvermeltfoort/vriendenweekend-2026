@@ -203,6 +203,23 @@ describe('StopPage completion copy', () => {
     expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Terug naar hoofdroute');
   });
 
+  it('keeps the Koepoort history hidden until the Poortschub is completed', async () => {
+    const progress = createProgress();
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'available';
+    gameState = { ...gameState, progress };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bolwerk-unfinished" initialEntries={['/stop/bonus:bolwerk-sint-jan']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')).toBeNull();
+    expect(container.textContent).not.toContain('De Koepoort was een middeleeuwse toegang');
+    expect(container.textContent).not.toContain('lichte plaat in de bestrating');
+    expect(container.textContent).not.toContain('Kijk eens bij je voeten!');
+  });
+
   it('keeps bonus completion separate from main stop controls', async () => {
     gameState = { ...gameState, progress: createProgress() };
 
@@ -215,6 +232,9 @@ describe('StopPage completion copy', () => {
     const links = Array.from(container.querySelectorAll('a.button')).map((link) => ({ href: link.getAttribute('href'), text: link.textContent }));
 
     expect(container.textContent).toContain('Drakenschub gevonden');
+    expect(container.textContent).toContain('De Koepoort was een middeleeuwse toegang');
+    expect(container.textContent).toContain('In 1528 werd');
+    expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')).not.toBeNull();
     expect(links).toHaveLength(1);
     expect(links[0]).toMatchObject({ href: '/route', text: 'Terug naar hoofdroute' });
     expect(container.textContent).not.toContain('Opdracht 1 van 7');

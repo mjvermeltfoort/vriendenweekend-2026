@@ -16,10 +16,23 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Waar oud steenwerk een roestkleurig pantser draagt.', revealedDescription: 'De oude poort is verdwenen, maar haar verdediging leeft voort.', estimatedDetourMinutes: 3,
     recommendedBetween: { afterStopId: 'drakenfontein', beforeStopId: 'zoete-lieve-gerritje' }, visibleAfterStopId: 'drakenfontein', maximumPoints: 100,
     manualVerification: { questionId: 'bonus-bolwerk-primary', question: 'Welke twee materialen ontmoeten elkaar hier het duidelijkst?' },
-    intro: { title: 'De Verloren Poort', text: 'Tussen stadspoort en bolwerk bleef de verdediging zichtbaar.' },
-    navigation: { clue: 'Waar oud steenwerk een roestkleurig pantser draagt.', fallbackDirections: 'Volg de Sint-Janssingel naar de stadsentree.', externalMapsQuery: 'Bolwerk Sint-Jan Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Kijk naar de sporen van verdediging: wat herken je hier het best?', options: [{ id: 'b', label: 'Hout en natuursteen', correct: false }, { id: 'a', label: 'Stadsentree en verdedigingspoort', correct: true }, { id: 'c', label: 'Beton en koper', correct: false }, { id: 'd', label: 'Glas en marmer', correct: false }], correctFeedback: 'De Poortschub is gevonden.', wrongFeedback: 'Kijk nog eens naar het steenwerk.' },
-    hints: [{ id: 'h1', text: 'Let op de kleur en textuur van de bescherming.' }], reward: { id: 'poortschub', title: 'Poortschub', text: 'De verdediging leeft voort.', symbol: '◈', resultLabel: 'Poortschub' }
+    intro: { title: 'De Verloren Poort', text: 'Lang geleden bewaakte een stadspoort de toegang tot Den Bosch. Haar naam is uit de herinnering van de Moerasdraak verdwenen.' },
+    navigation: { clue: 'Waar oud steenwerk een roestkleurig pantser draagt.', fallbackDirections: 'Volg de Sint-Janssingel naar Bolwerk Sint-Jan bij de stadsentree.', externalMapsQuery: 'Bolwerk Sint-Jan Den Bosch' },
+    challenge: {
+      kind: 'choice',
+      prompt: 'De Moerasdraak bewaakt een toegang die al eeuwen verdwenen is. Maar niet alle sporen zijn uitgewist. Hoe heette de middeleeuwse stadspoort op deze plek?',
+      options: [
+        { id: 'b', label: 'De Vughterpoort', correct: false },
+        { id: 'a', label: 'De Koepoort', correct: true },
+        { id: 'c', label: 'De Orthenpoort', correct: false },
+        { id: 'd', label: 'De Hinthamerpoort', correct: false }
+      ],
+      correctFeedback: 'Goed gevonden! De Koepoort gaf hier vroeger toegang tot de stad. De Poortschub is gevonden!',
+      wrongFeedback: 'Nog niet. Kijk nog eens goed rond en denk na over de naam van de verdwenen stadspoort.'
+    },
+    hints: [{ id: 'h1', text: 'Niet alles wat verdwenen is, ligt onder de grond. Soms vertelt een steen je precies wat hier vroeger stond. Kijk eens bij je voeten!' }],
+    answerExplanation: 'De Koepoort was een middeleeuwse toegang tot Den Bosch in het verlengde van de Sint-Jansstraat, richting Vlijmen. In 1528 werd vóór deze kwetsbare toegang het Bolwerk Sint-Jan aangelegd, met verder naar buiten een nieuwe Sint-Janspoort. De oude poorten verdwenen, maar bij het huidige bolwerk zijn nog resten van de vroegere vestingwerken te ontdekken.',
+    reward: { id: 'poortschub', title: 'Poortschub', text: 'De verdediging leeft voort.', symbol: '◈', resultLabel: 'Poortschub' }
   },
   {
     id: 'bonus:halve-peer', isBonus: true, order: 0, slug: 'halve-peer', title: 'De Halve Peer', shortTitle: 'Verborgen vondst', locationName: 'Molenstraat, bij de Binnendieze (gevel Drie Kronen)',

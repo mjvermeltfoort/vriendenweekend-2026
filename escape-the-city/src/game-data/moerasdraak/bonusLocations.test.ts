@@ -12,6 +12,32 @@ describe('Verborgen Schubben game data', () => {
     expect(validateGamePack(gamePack)).toEqual({ valid: true, message: 'OK' });
   });
 
+  it('asks the Koepoort question without changing server answer id or the verification question', () => {
+    const bonus = gamePack.bonusLocations!.find((location) => location.id === 'bonus:bolwerk-sint-jan')!;
+    expect(bonus.challenge.kind).toBe('choice');
+    if (bonus.challenge.kind !== 'choice') return;
+    expect(bonus.challenge.prompt).toBe('De Moerasdraak bewaakt een toegang die al eeuwen verdwenen is. Maar niet alle sporen zijn uitgewist. Hoe heette de middeleeuwse stadspoort op deze plek?');
+    expect(bonus.challenge.prompt).not.toMatch(/plaat|bestrating/i);
+    expect(bonus.navigation.clue).not.toMatch(/plaat|steen.*voeten/i);
+    expect(bonus.challenge.options.map((option) => option.label)).toEqual([
+      'De Vughterpoort', 'De Koepoort', 'De Orthenpoort', 'De Hinthamerpoort'
+    ]);
+    // Supabase validates answer id 'a' for this bonus, even though it is visually second.
+    expect(bonus.challenge.options.find((option) => option.correct)).toMatchObject({ id: 'a', label: 'De Koepoort' });
+    expect(challengeAnswerIsCorrect(bonus.challenge, 'a')).toBe(true);
+    for (const wrong of ['b', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(bonus.challenge, wrong)).toBe(false);
+    }
+    expect(bonus.manualVerification.question).toBe('Welke twee materialen ontmoeten elkaar hier het duidelijkst?');
+    expect(bonus.hints).toHaveLength(1);
+    expect(bonus.hints[0].id).toBe('h1');
+    expect(bonus.hints[0].text).toBe('Niet alles wat verdwenen is, ligt onder de grond. Soms vertelt een steen je precies wat hier vroeger stond. Kijk eens bij je voeten!');
+    expect(bonus.hints[0].text).not.toMatch(/Koepoort/i);
+    expect(bonus.answerExplanation).toMatch(/De Koepoort.*Sint-Jansstraat.*1528.*Sint-Janspoort/);
+    expect(bonus.reward.title).toBe('Poortschub');
+    expect(bonus.maximumPoints).toBe(100);
+  });
+
   it('uses the exact on-site Halve Peer GPS point instead of the earlier inaccurate map pins', () => {
     const halvePeer = gamePack.bonusLocations!.find((item) => item.id === 'bonus:halve-peer')!;
     const gerritje = gamePack.stops.find((item) => item.id === 'zoete-lieve-gerritje')!;
