@@ -22,13 +22,14 @@ export const bonusLocations: BonusLocation[] = [
     hints: [{ id: 'h1', text: 'Let op de kleur en textuur van de bescherming.' }], reward: { id: 'poortschub', title: 'Poortschub', text: 'De verdediging leeft voort.', symbol: '◈', resultLabel: 'Poortschub' }
   },
   {
-    id: 'bonus:halve-peer', isBonus: true, order: 0, slug: 'halve-peer', title: 'De Halve Peer', shortTitle: 'Verborgen vondst', locationName: 'Hoek Molenstraat / Korenbrugstraat',
-    coordinates: coordinate(51.689444, 5.299722, 55, 120, 130),
+    id: 'bonus:halve-peer', isBonus: true, order: 0, slug: 'halve-peer', title: 'De Halve Peer', shortTitle: 'Verborgen vondst', locationName: 'Molenstraat, bij de Binnendieze (gevel Drie Kronen)',
+    // Kaartcoördinaat monument Bossche Encyclopedie, aan de gevel boven de Binnendieze.
+    coordinates: coordinate(51.688846, 5.300058, 55, 120, 130),
     hiddenClue: 'Zoek een belangrijk man die maar voor de helft aanwezig is.', revealedDescription: 'In Oeteldonk is een halve oplossing soms precies genoeg.', estimatedDetourMinutes: 5,
     recommendedBetween: { afterStopId: 'zoete-lieve-gerritje', beforeStopId: 'binnendieze' }, visibleAfterStopId: 'drakenfontein', maximumPoints: 200,
     manualVerification: { questionId: 'bonus-halve-peer-primary', question: 'Waar bevindt de afgebeelde helft zich?' },
     intro: { title: 'De Ontbrekende Helft', text: 'Twee verenigingen maakten afspraken over een eerbetoon. Maar waarom bleef er uiteindelijk maar een halve Peer over?' },
-    navigation: { clue: 'Zoek een belangrijk man die maar voor de helft aanwezig is.', fallbackDirections: 'Zoek de gevel bij de Korenbrugstraat.', externalMapsQuery: 'De Halve Peer Den Bosch' },
+    navigation: { clue: 'Zoek een belangrijk man die maar voor de helft aanwezig is, boven de Binnendieze.', fallbackDirections: 'Loop de Molenstraat in en kijk naar de gevel boven het water bij de Binnendieze.', externalMapsQuery: 'De Halve Peer Molenstraat Den Bosch' },
     challenge: {
       kind: 'choice',
       prompt: 'De Moerasdraak heeft een halve Peer gevonden! Kijk goed naar het beeld en het opschrift. Welke vereniging heeft deze halve Peer laten maken?',

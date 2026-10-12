@@ -222,7 +222,7 @@ describe('RouteMap', () => {
     expect(progress.currentStopId).toBe('bossche-brouwers');
   });
 
-  it('prefers Zoete Lieve Gerritje over the overlapping Halve Peer schub', async () => {
+  it('keeps Zoete Lieve Gerritje selected away from the corrected Halve Peer pin', async () => {
     const progress = progressAtGerritje();
     const stops = gamePack.stops.filter((stop) => !stop.isFinal);
     const gerritje = gamePack.stops.find((stop) => stop.id === 'zoete-lieve-gerritje')!;
@@ -231,11 +231,15 @@ describe('RouteMap', () => {
       latitude: gerritje.coordinates.latitude!, longitude: gerritje.coordinates.longitude!,
       accuracy: 12, capturedAt: new Date().toISOString()
     };
-    // Gerritje ligt slechts ~44 meter van de schub met een straal van 55 meter.
+    // De oude pin lag ~44 m van Gerritje; de gecorrigeerde pin ligt bij de Binnendieze.
     await render(stops, progress, atGerritje);
     expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('Zoete Lieve Gerritje');
     expect(container.querySelector('.route-bottom-sheet')?.textContent).not.toContain('De Halve Peer');
     expect(nearestUnfinishedBonus(atGerritje, [halvePeer], progress, null, gerritje)).toBeNull();
+
+    // Zelfs het vroegere (foutieve) kaartpunt mag de schub niet meer activeren.
+    const atFormerWrongPin = { ...atGerritje, latitude: 51.689444, longitude: 5.299722 };
+    expect(nearestUnfinishedBonus(atFormerWrongPin, [halvePeer], progress, null, gerritje)).toBeNull();
 
     const midpoint = {
       ...atGerritje,
