@@ -109,6 +109,14 @@ function locationProvider(): RouteMapProps['locationProvider'] {
   };
 }
 
+function progressAtGerritje() {
+  const progress = progressWithCurrentStop();
+  progress.stopProgress['drakenfontein'].state = 'completed';
+  progress.stopProgress['zoete-lieve-gerritje'].state = 'available';
+  progress.currentStopId = 'zoete-lieve-gerritje';
+  return progress;
+}
+
 function progressNearFinale() {
   const progress = progressWithCurrentStop();
   for (const stop of gamePack.stops.slice(0, -1)) progress.stopProgress[stop.id].state = 'completed';
@@ -214,6 +222,57 @@ describe('RouteMap', () => {
     expect(progress.currentStopId).toBe('bossche-brouwers');
   });
 
+  it('prefers Zoete Lieve Gerritje over the overlapping Halve Peer schub', async () => {
+    const progress = progressAtGerritje();
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    const gerritje = gamePack.stops.find((stop) => stop.id === 'zoete-lieve-gerritje')!;
+    const halvePeer = gamePack.bonusLocations!.find((bonus) => bonus.id === 'bonus:halve-peer')!;
+    const atGerritje = {
+      latitude: gerritje.coordinates.latitude!, longitude: gerritje.coordinates.longitude!,
+      accuracy: 12, capturedAt: new Date().toISOString()
+    };
+    // Gerritje ligt slechts ~44 meter van de schub met een straal van 55 meter.
+    await render(stops, progress, atGerritje);
+    expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('Zoete Lieve Gerritje');
+    expect(container.querySelector('.route-bottom-sheet')?.textContent).not.toContain('De Halve Peer');
+    expect(nearestUnfinishedBonus(atGerritje, [halvePeer], progress, null, gerritje)).toBeNull();
+
+    const midpoint = {
+      ...atGerritje,
+      latitude: (gerritje.coordinates.latitude! + halvePeer.coordinates.latitude!) / 2,
+      longitude: (gerritje.coordinates.longitude! + halvePeer.coordinates.longitude!) / 2,
+      accuracy: 25
+    };
+    await render(stops, progress, midpoint);
+    expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('Zoete Lieve Gerritje');
+  });
+
+  it('recognizes Halve Peer when GPS clearly favors it and keeps deliberate map choices', async () => {
+    const progress = progressAtGerritje();
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    const gerritje = gamePack.stops.find((stop) => stop.id === 'zoete-lieve-gerritje')!;
+    const halvePeer = gamePack.bonusLocations!.find((bonus) => bonus.id === 'bonus:halve-peer')!;
+    const atPeer = {
+      latitude: halvePeer.coordinates.latitude!, longitude: halvePeer.coordinates.longitude!,
+      accuracy: 12, capturedAt: new Date().toISOString()
+    };
+    await render(stops, progress, atPeer);
+    expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('De Halve Peer');
+    expect(nearestUnfinishedBonus(atPeer, [halvePeer], progress, null, gerritje)).toBe(halvePeer.id);
+
+    await act(async () => {
+      (container.querySelector('[data-testid="map-select-zoete-lieve-gerritje"]') as HTMLButtonElement).click();
+    });
+    expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('Zoete Lieve Gerritje');
+
+    // Ook na opnieuw herkennen van de schub blijft de bewuste selectie staan.
+    await render(stops, progress, {
+      ...atPeer, latitude: gerritje.coordinates.latitude!, longitude: gerritje.coordinates.longitude!
+    });
+    await render(stops, progress, { ...atPeer, longitude: atPeer.longitude + 0.00001 });
+    expect(container.querySelector('.route-bottom-sheet')?.textContent).toContain('Zoete Lieve Gerritje');
+  });
+
   it('opens an in-map popup for tapped route points and schubben, while respecting manual choices', async () => {
     const progress = progressNearFinale();
     const stops = [...gamePack.stops];
@@ -282,6 +341,14 @@ describe('nearestUnfinishedBonus', () => {
     progress.stopProgress[bonus.id].state = 'completed';
     expect(nearestUnfinishedBonus(position, [bonus], progress)).toBeNull();
   });
+  it('ignores imprecise GPS and gives stable hysteresis to a previously chosen schub', () => {
+    const progress = progressNearFinale();
+    expect(nearestUnfinishedBonus({ ...position, accuracy: 65 }, [bonus], progress)).toBeNull();
+    expect(nearestUnfinishedBonus({ ...position, accuracy: 65 }, [bonus], progress, bonus.id)).toBe(bonus.id);
+    const offCenter = { ...position, latitude: position.latitude + (bonus.coordinates.radiusMeters - 5) / 111_000 };
+    expect(nearestUnfinishedBonus(offCenter, [bonus], progress, null)).toBeNull();
+  });
+
   it('does not switch for small GPS jitter at the edge of the schub', () => {
     const progress = progressNearFinale();
     const outside = { ...position, latitude: position.latitude + (bonus.coordinates.radiusMeters + 20) / 111_000 };
