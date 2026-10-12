@@ -140,14 +140,14 @@ describe('ChallengePage', () => {
     expect(container.querySelector<HTMLInputElement>('input[value="a"]')!.checked).toBe(true);
 
     routeTo('bosch-wezen');
-    const labels = [...container.querySelectorAll('label span')].map((item) => item.textContent);
-    const firstSelect = container.querySelector<HTMLSelectElement>('select')!;
-    expect(labels).toEqual(expect.arrayContaining(['Hoofd', 'Lijf', 'Voorwerp']));
-    expect(container.textContent).toContain('Hoorn');
-    expect(firstSelect.getAttribute('aria-label')).toBe('Hoofd');
-    expect([...firstSelect.options].map((option) => option.textContent)).toContain('Hoorn');
-    act(() => setFormValue(firstSelect, 'Masker'));
-    expect(firstSelect.value).toBe('Masker');
+    expect(container.textContent).toContain('Wat houdt de schilder in zijn handen?');
+    expect(container.querySelector('.bosch-puzzle__stage')).toBeNull();
+    act(() => container.querySelector<HTMLInputElement>('input[name="bosch-tools"][value="penseelpalet"]')!.click());
+    act(() => container.querySelector<HTMLInputElement>('input[name="bosch-year"][value="1516"]')!.click());
+    act(() => button('Open het schetsboek').click());
+    expect(container.querySelector('.bosch-puzzle__stage')).not.toBeNull();
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Kies hoofd: Demon"]')!.click());
+    expect(container.querySelector('button[aria-label="Kies hoofd: Demon"]')?.getAttribute('aria-pressed')).toBe('true');
 
     routeTo('bonus:citadel');
     expect(button('Controleer antwoord').disabled).toBe(true);
@@ -159,7 +159,8 @@ describe('ChallengePage', () => {
     routeTo('drakenfontein');
     expect(container.querySelector<HTMLInputElement>('input[value="a"]')!.checked).toBe(false);
     routeTo('bosch-wezen');
-    expect(container.querySelector<HTMLSelectElement>('select')!.value).toBe('');
+    expect(container.textContent).toContain('Wat houdt de schilder in zijn handen?');
+    expect(container.querySelector('.bosch-puzzle__stage')).toBeNull();
     routeTo('bonus:citadel');
     expect(button('Controleer antwoord').disabled).toBe(true);
     routeTo('sint-jan');
@@ -176,25 +177,52 @@ describe('ChallengePage', () => {
     expect(container.textContent).not.toContain('Verouderd bericht');
   });
 
-  it('submits canonical composite values while showing Dutch labels', async () => {
-    attemptAnswer.mockResolvedValueOnce({ correct: false, message: 'Probeer opnieuw.' });
+  it('opens the Bosch sketchbook only after both statue observations without scoring attempts', () => {
     render('bosch-wezen');
+    expect(container.textContent).toContain('Wat houdt de schilder in zijn handen?');
+    expect(container.textContent).toContain('Welk jaartal staat als laatste op de sokkel?');
+    expect(container.querySelector('.bosch-puzzle__stage')).toBeNull();
+    expect(button('Open het schetsboek').disabled).toBe(true);
+    expect(container.textContent).not.toContain('snavel, een geschubd lijf');
+    act(() => container.querySelector<HTMLInputElement>('input[name="bosch-tools"][value="boek"]')!.click());
+    act(() => container.querySelector<HTMLInputElement>('input[name="bosch-year"][value="1930"]')!.click());
+    act(() => button('Open het schetsboek').click());
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('schetsboek blijft gesloten');
+    expect(attemptAnswer).not.toHaveBeenCalled();
+    act(() => container.querySelector<HTMLInputElement>('input[name="bosch-tools"][value="penseelpalet"]')!.click());
+    act(() => container.querySelector<HTMLInputElement>('input[name="bosch-year"][value="1516"]')!.click());
+    act(() => button('Open het schetsboek').click());
+    expect(container.querySelector('.bosch-puzzle__stage')).not.toBeNull();
+    expect(container.textContent).toContain('Het schetsboek is geopend');
+    expect(button('Wek het monster tot leven').disabled).toBe(true);
+    expect(attemptAnswer).not.toHaveBeenCalled();
+  });
 
-    const selects = container.querySelectorAll<HTMLSelectElement>('select');
-    expect(selects).toHaveLength(3);
-    expect([...selects].map((select) => select.getAttribute('aria-label'))).toEqual(['Hoofd', 'Lijf', 'Voorwerp']);
-    expect(container.textContent).toContain('Kies een hoofd');
-    expect(container.textContent).toContain('Hoorn');
+  it('renders animated monster parts and submits only the final assembled answer to Supabase', async () => {
+    render('bosch-wezen');
+    act(() => container.querySelector<HTMLInputElement>('input[name="bosch-tools"][value="penseelpalet"]')!.click());
+    act(() => container.querySelector<HTMLInputElement>('input[name="bosch-year"][value="1516"]')!.click());
+    act(() => button('Open het schetsboek').click());
+    expect(container.querySelector('[aria-label^="Monster met"]')).not.toBeNull();
 
-    act(() => setFormValue(selects[0], 'Horn'));
-    act(() => setFormValue(selects[1], 'Schubben'));
-    act(() => setFormValue(selects[2], 'Lantaarn'));
-    await act(async () => button('Controleer antwoord').click());
-
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Kies hoofd: Demon"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Kies lijf: Ton"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Kies onderkant: Wielen"]')!.click());
+    expect(container.querySelector('[aria-label^="Monster met"]')?.getAttribute('aria-label')).toContain('demon als hoofd');
+    await act(async () => button('Wek het monster tot leven').click());
     expect(attemptAnswer).toHaveBeenLastCalledWith('bosch-wezen', expect.anything(), {
-      head: 'Horn',
-      body: 'Schubben',
-      object: 'Lantaarn'
+      head: 'Demon', body: 'Ton', object: 'Wielen'
+    });
+    expect(container.textContent).toContain('Probeer opnieuw.');
+
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Kies hoofd: Vogel"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Kies lijf: Vis"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Kies onderkant: Mensenbenen"]')!.click());
+    expect(container.querySelector('[aria-label^="Monster met"]')?.getAttribute('aria-label')).toContain('vogel als hoofd');
+    expect(container.querySelector('#answer-feedback')).toBeNull();
+    await act(async () => button('Wek het monster tot leven').click());
+    expect(attemptAnswer).toHaveBeenLastCalledWith('bosch-wezen', expect.anything(), {
+      head: 'Vogel', body: 'Vis', object: 'Mens'
     });
   });
 
