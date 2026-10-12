@@ -87,6 +87,29 @@ describe('Moerasdraak player copy', () => {
     expect(stop.coordinates).toMatchObject({ latitude: 51.689641, longitude: 5.305190 });
   });
 
+  it('uses the Falise statue and a server-compatible composite answer for the Bosch monster', () => {
+    const stop = gamePack.stops.find((item) => item.id === 'bosch-wezen')!;
+    expect(stop.locationName).toContain('Standbeeld Jheronimus Bosch');
+    expect(stop.locationName).toContain('August Falise');
+    expect(stop.coordinates).toMatchObject({ latitude: 51.689089, longitude: 5.30375, radiusMeters: 35, maximumAccuracyMeters: 40 });
+    expect(stop.navigation.fallbackDirections).not.toContain('Markt 29,');
+    expect(stop.intro.text).not.toMatch(/penseel en palet|1516|snavel|schubben/);
+    expect(stop.challenge.kind).toBe('composite');
+    if (stop.challenge.kind !== 'composite') return;
+    expect(stop.challenge.categories).toEqual({
+      head: ['Demon','Kikker','Vogel'],
+      body: ['Ton','Boek','Vis'],
+      object: ['Wielen','Vogelpoten','Mens']
+    });
+    expect(stop.challenge.correctAnswer).toEqual({ head: 'Vogel', body: 'Vis', object: 'Mens' });
+    expect(challengeAnswerIsCorrect(stop.challenge, { head: 'Vogel', body: 'Vis', object: 'Mens' })).toBe(true);
+    expect(challengeAnswerIsCorrect(stop.challenge, { head: 'Demon', body: 'Vis', object: 'Mens' })).toBe(false);
+    expect(stop.hints).toHaveLength(1);
+    expect(stop.hints[0].id).toBe('h1');
+    expect(stop.answerExplanation).toMatch(/August Falise.*1930/);
+    expect(stop.reward.title).toBe('Verbeelding');
+  });
+
   it('does not repeat manual verification questions as bonus challenge prompts', () => {
     for (const bonus of gamePack.bonusLocations ?? []) {
       expect(bonus.challenge.prompt).not.toBe(bonus.manualVerification.question);
