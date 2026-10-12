@@ -43,16 +43,6 @@ export function HomePage({ pack }: { pack: GamePack }) {
               ) : (
                 <Link className="button primary" to="/team" onClick={unlockAudio}>Deelnemen met teamcode</Link>
               )}
-              <button
-                className="text-link"
-                type="button"
-                onClick={() => {
-                  document.getElementById('uitleg')?.scrollIntoView({ behavior: 'smooth' });
-                  document.getElementById('uitleg-title')?.focus({ preventScroll: true });
-                }}
-              >
-                Hoe werkt het?
-              </button>
             </div>
             <StartLocationCheck blockedByIntro={henkVisible} />
             {isHomeSyncStatusVisible(syncStatus) ? (
