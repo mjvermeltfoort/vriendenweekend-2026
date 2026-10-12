@@ -55,20 +55,21 @@ export const gamePack: GamePack = {
       shortTitle: 'Gerritje',
       locationName: 'Hoek Lepelstraat en Korenbrugstraat',
       coordinates: { latitude: 51.689817, longitude: 5.299926, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      intro: { title: 'Tegenstrijdige getuigen', text: 'Een detail in de straat ontmaskert één verklaring.', audioSrc: audioAsset('02-zoete-lieve-gerritje.mp3'), transcript: audioTranscripts.zoeteLieveGerritje },
+      intro: { title: 'Tegenstrijdige getuigen', text: 'Vier getuigen zingen ieder een ander stukje van hetzelfde lied. Welk spoor heeft Gerritje hier achtergelaten?', audioSrc: audioAsset('02-zoete-lieve-gerritje.mp3'), transcript: audioTranscripts.zoeteLieveGerritje },
       navigation: { clue: 'Let op gevels en details rond Gerritje.', fallbackDirections: 'Loop naar Zoete Lieve Gerritje.', externalMapsQuery: 'Zoete Lieve Gerritje Den Bosch' },
       challenge: {
         kind: 'choice',
-        prompt: 'Welke verklaring past bij deze plek?',
+        prompt: 'De Moerasdraak heeft vier regels uit een oud Bossch lied door elkaar gehaald. Kijk naar de muur achter Zoete Lieve Gerritje. Welke regel staat daar geschreven?',
         options: [
-          { id: 'a', label: 'De brug lag hier altijd al', correct: false },
-          { id: 'b', label: 'Er stroomt water onder de stad', correct: true },
-          { id: 'c', label: 'De stenen zijn oud', correct: false }
+          { id: 'a', label: 'Brandewijn met suiker', correct: false },
+          { id: 'b', label: 'Dat gaat naar Den Bosch toe', correct: true },
+          { id: 'c', label: 'Wie zal dat betalen?', correct: false },
+          { id: 'd', label: 'Den eerste boer den beste', correct: false }
         ],
-        correctFeedback: 'Juist: die verklaring past bij de plek.',
-        wrongFeedback: 'Niet juist. Eén verhaal wijkt af.'
+        correctFeedback: 'Goed gezien! De eerste regel van het Bossche lied staat achter Gerritje. De herinnering aan haar verhaal is gered!',
+        wrongFeedback: 'Nog niet. Alle vier de regels komen uit het lied, maar kijk welke er echt op de muur achter Gerritje staat.'
       },
-      hints: [{ id: 'h1', text: 'Kies het detail dat ook zonder fantasie logisch blijft.' }],
+      hints: [{ id: 'h1', text: 'Het beeld vertelt maar een deel van het verhaal. Zoek de woorden die achter Gerritje zijn achtergebleven.' }],
       reward: { title: 'Legende', text: 'Getuigenis bevestigd.', symbol: '📜' }
     },
     {
