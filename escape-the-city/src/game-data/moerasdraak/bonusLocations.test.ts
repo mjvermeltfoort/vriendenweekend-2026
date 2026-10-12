@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { gamePack } from './game';
 import { validateGamePack } from '../../features/game/dataValidation';
 import { challengeAnswerIsCorrect } from '../../features/game/gameState';
+import { haversineDistanceMeters } from '../../features/location/distance';
 
 describe('Verborgen Schubben game data', () => {
   it('contains six unique and on-site-verification-required bonuses', () => {
@@ -9,6 +10,27 @@ describe('Verborgen Schubben game data', () => {
     expect(new Set(gamePack.bonusLocations?.map((bonus) => bonus.id)).size).toBe(6);
     expect(gamePack.bonusLocations?.every((bonus) => bonus.coordinates.needsOnSiteVerification)).toBe(true);
     expect(validateGamePack(gamePack)).toEqual({ valid: true, message: 'OK' });
+  });
+
+  it('locates De Halve Peer on the Binnendieze instead of at the former inaccurate pin', () => {
+    const halvePeer = gamePack.bonusLocations!.find((item) => item.id === 'bonus:halve-peer')!;
+    const gerritje = gamePack.stops.find((item) => item.id === 'zoete-lieve-gerritje')!;
+    expect(halvePeer.coordinates).toMatchObject({
+      latitude: 51.688846,
+      longitude: 5.300058,
+      radiusMeters: 55,
+      discoveryRadiusMeters: 120
+    });
+    expect(halvePeer.locationName).toMatch(/Binnendieze/);
+    expect(halvePeer.navigation.fallbackDirections).toMatch(/gevel boven het water/);
+    expect(haversineDistanceMeters(
+      { latitude: 51.689444, longitude: 5.299722 },
+      { latitude: halvePeer.coordinates.latitude!, longitude: halvePeer.coordinates.longitude! }
+    )).toBeGreaterThan(60);
+    expect(haversineDistanceMeters(
+      { latitude: gerritje.coordinates.latitude!, longitude: gerritje.coordinates.longitude! },
+      { latitude: halvePeer.coordinates.latitude!, longitude: halvePeer.coordinates.longitude! }
+    )).toBeGreaterThan(90);
   });
 
   it('asks players to identify De Oetels and provides a hidden historical explanation', () => {
