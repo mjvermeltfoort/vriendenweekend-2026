@@ -8,6 +8,8 @@ on:
       - '.github/scripts/browser-smoke.py'
       - '.nvmrc'
   push:
+    branches:
+      - main
     paths:
       - 'escape-the-city/**'
       - '.github/workflows/escape-the-city-checks.yml'
