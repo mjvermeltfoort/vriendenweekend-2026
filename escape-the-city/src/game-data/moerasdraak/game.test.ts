@@ -64,7 +64,7 @@ describe('Moerasdraak player copy', () => {
 
   it('uses different facts for the first four manual checks and challenges', () => {
     const expectedAnswers = new Map([
-      ['bonus:bolwerk-sint-jan', ['a', 'Stadsentree en verdedigingspoort']],
+      ['bonus:bolwerk-sint-jan', ['a', 'De Koepoort']],
       ['bonus:halve-peer', ['b', 'Carnavalsvereniging De Oetels']],
       ['bonus:de-moriaan', ['a', 'Het is een van de oudste bakstenen woonhuizen']],
       ['bonus:zwanenbroedershuis', ['b', 'De Illustre Lieve Vrouwe Broederschap']]
