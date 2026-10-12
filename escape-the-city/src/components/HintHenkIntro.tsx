@@ -37,10 +37,14 @@ export function HenkFlame({ speaking = false }: { speaking?: boolean }) {
   );
 }
 
-export function HintHenkIntro() {
+export function HintHenkIntro({ onVisibilityChange }: { onVisibilityChange?: (visible: boolean) => void }) {
   const [open, setOpen] = useState(shouldShowIntro);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const { narration, stopNarration } = useAudio();
+
+  useEffect(() => {
+    onVisibilityChange?.(open);
+  }, [open, onVisibilityChange]);
 
   const dismiss = useCallback(() => {
     if (narration.source === narrationAudio.hintHenk) stopNarration();

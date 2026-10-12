@@ -8,7 +8,9 @@ vi.mock('../app/gameContext', () => ({
 
 import { StartLocationCheck } from './StartLocationCheck';
 
-describe('StartLocationCheck', () => {
+const VISITED_KEY = 'moerasdraak-gps-dialog-visited-v1';
+
+describe('StartLocationCheck modal', () => {
   let container: HTMLDivElement;
   let root: Root;
   const permissionDescriptor = Object.getOwnPropertyDescriptor(navigator, 'permissions');
@@ -17,6 +19,7 @@ describe('StartLocationCheck', () => {
 
   beforeEach(() => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    sessionStorage.removeItem(VISITED_KEY);
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -30,6 +33,7 @@ describe('StartLocationCheck', () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    sessionStorage.removeItem(VISITED_KEY);
     for (const [key, descriptor] of [
       ['permissions', permissionDescriptor],
       ['geolocation', geolocationDescriptor],
@@ -40,6 +44,10 @@ describe('StartLocationCheck', () => {
     }
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
+
+  function dialog(): HTMLElement | null {
+    return document.body.querySelector<HTMLElement>('.start-location-check[role="dialog"]');
+  }
 
   function setupPermission(state: PermissionState) {
     Object.defineProperty(navigator, 'permissions', {
@@ -62,38 +70,78 @@ describe('StartLocationCheck', () => {
     return getCurrentPosition;
   }
 
-  it('test automatisch met een bestaande toestemming en toont nauwkeurigheid', async () => {
+  it('toont automatisch de overlay en controleert GPS met reeds verleende toestemming', async () => {
     setupPermission('granted');
     const getCurrentPosition = setupGeolocation();
     await act(async () => root.render(<StartLocationCheck />));
     expect(getCurrentPosition).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain('GPS gereed');
-    expect(container.textContent).toContain('18 meter');
+    expect(dialog()?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog()?.textContent).toContain('GPS gereed');
+    expect(dialog()?.textContent).toContain('18 meter');
+    expect(container.querySelector('.start-location-check__guide')).toBeNull();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('GPS-controle sluiten');
   });
 
-  it('toont de juiste Android-uitleg als de browser toestemming heeft geweigerd', async () => {
+  it('geeft Android-hulp in een scrollbare overlay als locatie is geweigerd', async () => {
     setupPermission('denied');
-    const getCurrentPosition = setupGeolocation();
+    setupGeolocation();
     await act(async () => root.render(<StartLocationCheck />));
-    expect(getCurrentPosition).not.toHaveBeenCalled();
-    expect(container.textContent).toContain('geblokkeerd');
-    expect(container.textContent).toContain('Android · Chrome');
-    expect(container.querySelectorAll('.start-location-check__guide li')).toHaveLength(4);
-    expect(container.querySelector('a[href*="support.google.com"]')).not.toBeNull();
+    expect(dialog()?.textContent).toContain('geblokkeerd');
+    expect(dialog()?.textContent).toContain('Android · Chrome');
+    expect(dialog()?.querySelectorAll('.start-location-check__guide li')).toHaveLength(4);
+    expect(dialog()?.querySelector('a[href*="support.google.com"]')).not.toBeNull();
+    expect(container.querySelector('.start-location-check__guide')).toBeNull();
   });
 
-  it('vraagt na een expliciete klik locatietoegang en controleert de positie', async () => {
+  it('vraagt na expliciete klik om locatie en toont onnauwkeurige GPS', async () => {
     setupPermission('prompt');
     const getCurrentPosition = setupGeolocation(65);
     await act(async () => root.render(<StartLocationCheck />));
     expect(getCurrentPosition).not.toHaveBeenCalled();
-    expect(container.textContent).toContain('toestemming');
+    expect(dialog()?.textContent).toContain('toestemming');
     await act(async () => {
-      const button = [...container.querySelectorAll('button')].find((item) => item.textContent?.includes('Locatie toestaan'));
+      const button = [...(dialog()?.querySelectorAll('button') ?? [])].find((item) => item.textContent?.includes('Locatie toestaan'));
       button?.click();
     });
     expect(getCurrentPosition).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain('onnauwkeurig');
-    expect(container.textContent).toContain('40 m');
+    expect(dialog()?.textContent).toContain('onnauwkeurig');
+    expect(dialog()?.textContent).toContain('40 m');
+  });
+
+  it('wacht met het automatisch openen tot Hint Henk gesloten is', async () => {
+    setupPermission('prompt');
+    setupGeolocation();
+    await act(async () => root.render(<StartLocationCheck blockedByIntro />));
+    expect(dialog()).toBeNull();
+    await act(async () => root.render(<StartLocationCheck blockedByIntro={false} />));
+    expect(dialog()).not.toBeNull();
+  });
+
+  it('laat een speler de overlay sluiten en later handmatig opnieuw openen', async () => {
+    setupPermission('denied');
+    setupGeolocation();
+    await act(async () => root.render(<StartLocationCheck />));
+    await act(async () => {
+      dialog()?.querySelector<HTMLButtonElement>('.start-location-check__close')?.click();
+    });
+    expect(dialog()).toBeNull();
+    expect(sessionStorage.getItem(VISITED_KEY)).toBe('1');
+    const trigger = container.querySelector<HTMLButtonElement>('.start-location-check__trigger');
+    expect(document.activeElement).toBe(trigger);
+    await act(async () => trigger?.click());
+    expect(dialog()).not.toBeNull();
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(dialog()).toBeNull();
+  });
+
+  it('opent niet opnieuw automatisch bij terugkomst in dezelfde browsersessie', async () => {
+    setupPermission('granted');
+    setupGeolocation();
+    sessionStorage.setItem(VISITED_KEY, '1');
+    await act(async () => root.render(<StartLocationCheck />));
+    expect(dialog()).toBeNull();
+    expect(container.querySelector('.start-location-check__trigger')).not.toBeNull();
   });
 });
