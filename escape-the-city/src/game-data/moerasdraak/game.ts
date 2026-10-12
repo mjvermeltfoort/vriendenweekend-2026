@@ -42,9 +42,9 @@ export const gamePack: GamePack = {
           { id: 'd', label: '6 draken', correct: false }
         ],
         correctFeedback: 'Vijf draken, vijf wachters! De Moerasdraak herkent jullie scherpe blik. Jullie eerste spoor is gevonden.',
-        wrongFeedback: 'Nog niet. Kijk zowel naar de draken onderaan als naar de gouden draak bovenop.'
+        wrongFeedback: 'Nog niet raak. Kijk of je bij het rondlopen een draak hebt gemist of dubbel hebt geteld.'
       },
-      hints: [{ id: 'h1', text: 'Tel de donkere draken onderaan én de gouden draak bovenop.' }],
+      hints: [{ id: 'h1', text: 'De gouden draak trekt alle aandacht. Loop eens om de fontein heen en kijk ook lager dan de top. Zie je vanaf iedere kant hetzelfde?' }],
       reward: { title: 'Vuur', text: 'Eerste herinnering veiliggesteld.', symbol: '🔥' }
     },
     {

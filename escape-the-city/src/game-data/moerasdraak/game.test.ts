@@ -20,7 +20,12 @@ describe('Moerasdraak player copy', () => {
       expect(challengeAnswerIsCorrect(stop.challenge, wrongAnswer)).toBe(false);
     }
     expect(stop.challenge.correctFeedback).toMatch(/vijf draken.*vijf wachters/i);
+    expect(stop.hints).toHaveLength(1);
+    expect(stop.hints[0].id).toBe('h1'); // Supabase allows only the existing paid hint.
     expect(stop.hints[0].text).toContain('gouden draak');
+    expect(stop.hints[0].text).toMatch(/om de fontein heen/i);
+    expect(stop.hints[0].text).not.toMatch(/vijf|vier|5|4|tel de donkere draken/i);
+    expect(stop.challenge.wrongFeedback).toMatch(/gemist of dubbel hebt geteld/i);
     expect(stop.reward.title).toBe('Vuur');
   });
 
