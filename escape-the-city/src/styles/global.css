@@ -585,6 +585,48 @@ summary:focus-visible {
   stroke: rgba(196, 151, 77, 0.14);
   stroke-width: 1;
 }
+
+/* Startpagina: GPS-check met apparaatspecifieke herstelstappen. */
+.start-location-check {
+  margin: var(--space-4) auto 0;
+  padding: var(--space-3);
+  max-width: 31rem;
+  border: 1px solid var(--color-border-decorative);
+  border-radius: var(--radius-medium);
+  background: rgba(4, 18, 12, 0.92);
+  text-align: left;
+}
+.start-location-check--ready { border-color: rgba(116, 173, 136, 0.65); }
+.start-location-check--denied,
+.start-location-check--timeout,
+.start-location-check--unavailable,
+.start-location-check--insecure,
+.start-location-check--imprecise { border-color: var(--color-gold); }
+.start-location-check__heading { display: flex; align-items: center; gap: var(--space-2); color: var(--color-gold-light); }
+.start-location-check--ready .start-location-check__heading { color: var(--color-success); }
+.start-location-check__heading h2 { margin: 0; font-size: 1rem; }
+.start-location-check__message { margin: var(--space-2) 0 0; color: var(--color-text-strong); font-size: 0.93rem; line-height: 1.5; }
+.start-location-check__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: var(--space-3); }
+.start-location-check__actions .button { min-height: 44px; }
+.start-location-check__retest {
+  margin-top: var(--space-2);
+  padding: 0.35rem 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--color-gold-light);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.start-location-check__guide { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border-decorative); }
+.start-location-check__guide h3 { margin: 0; font-size: 1rem; }
+.start-location-check__guide ol { display: grid; gap: var(--space-2); margin: var(--space-3) 0; padding-left: 1.5rem; color: var(--color-text); font-size: 0.9rem; line-height: 1.55; }
+.start-location-check__guide li { padding-left: 0.2rem; }
+.start-location-check__links { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.start-location-check__links a { display: inline-block; padding: 0.5rem 0; color: var(--color-gold-light); font-size: 0.9rem; text-decoration: underline; }
+.start-location-check__links a:focus-visible { outline: 3px solid var(--color-gold-light); outline-offset: 3px; }
+.start-location-check__guide .muted { margin: var(--space-2) 0 0; line-height: 1.5; }
+
 .home-details { padding: var(--space-4); }
 .fact-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
 .fact {
