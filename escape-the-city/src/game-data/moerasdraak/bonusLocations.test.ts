@@ -16,8 +16,9 @@ describe('Verborgen Schubben game data', () => {
     const bonus = gamePack.bonusLocations!.find((location) => location.id === 'bonus:bolwerk-sint-jan')!;
     expect(bonus.challenge.kind).toBe('choice');
     if (bonus.challenge.kind !== 'choice') return;
-    expect(bonus.challenge.prompt).toMatch(/lichte plaat.*bestrating/);
-    expect(bonus.challenge.prompt).toMatch(/middeleeuwse stadspoort/);
+    expect(bonus.challenge.prompt).toBe('De Moerasdraak bewaakt een toegang die al eeuwen verdwenen is. Maar niet alle sporen zijn uitgewist. Hoe heette de middeleeuwse stadspoort op deze plek?');
+    expect(bonus.challenge.prompt).not.toMatch(/plaat|bestrating/i);
+    expect(bonus.navigation.clue).not.toMatch(/plaat|steen.*voeten/i);
     expect(bonus.challenge.options.map((option) => option.label)).toEqual([
       'De Vughterpoort', 'De Koepoort', 'De Orthenpoort', 'De Hinthamerpoort'
     ]);
@@ -30,6 +31,7 @@ describe('Verborgen Schubben game data', () => {
     expect(bonus.manualVerification.question).toBe('Welke twee materialen ontmoeten elkaar hier het duidelijkst?');
     expect(bonus.hints).toHaveLength(1);
     expect(bonus.hints[0].id).toBe('h1');
+    expect(bonus.hints[0].text).toBe('Niet alles wat verdwenen is, ligt onder de grond. Soms vertelt een steen je precies wat hier vroeger stond. Kijk eens bij je voeten!');
     expect(bonus.hints[0].text).not.toMatch(/Koepoort/i);
     expect(bonus.answerExplanation).toMatch(/De Koepoort.*Sint-Jansstraat.*1528.*Sint-Janspoort/);
     expect(bonus.reward.title).toBe('Poortschub');

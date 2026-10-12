@@ -216,7 +216,8 @@ describe('StopPage completion copy', () => {
 
     expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')).toBeNull();
     expect(container.textContent).not.toContain('De Koepoort was een middeleeuwse toegang');
-    expect(container.textContent).toContain('lichte plaat in de bestrating');
+    expect(container.textContent).not.toContain('lichte plaat in de bestrating');
+    expect(container.textContent).not.toContain('Kijk eens bij je voeten!');
   });
 
   it('keeps bonus completion separate from main stop controls', async () => {
