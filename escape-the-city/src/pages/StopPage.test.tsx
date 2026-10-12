@@ -234,6 +234,8 @@ describe('StopPage completion copy', () => {
 
   it('reveals De Moriaan history only once the Steenschub has been found', async () => {
     const unfinished = createProgress();
+    // De Moriaan is pas zichtbaar zodra spelers bij Gerritje zijn aangekomen.
+    unfinished.stopProgress['zoete-lieve-gerritje'].state = 'arrived';
     unfinished.stopProgress['bonus:de-moriaan'].state = 'available';
     gameState = { ...gameState, progress: unfinished };
     const page = (key: string) => (
@@ -247,6 +249,7 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).not.toContain('Het opvallende hoektorentje hoort bij De Moriaan');
 
     const completed = createProgress();
+    completed.stopProgress['zoete-lieve-gerritje'].state = 'arrived';
     completed.stopProgress['bonus:de-moriaan'].state = 'completed';
     completed.stopProgress['bonus:de-moriaan'].unlockMethod = 'gps';
     gameState = { ...gameState, progress: completed };
