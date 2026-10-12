@@ -1,5 +1,5 @@
 /* Het Verloren Schetsboek: embedded, touch-friendly illustrated monster puzzle. */
-.bosch-puzzle { color: var(--color-text); }
+.bosch-puzzle { color: #2d2115; }
 .bosch-puzzle__story { line-height: 1.6; }
 .bosch-puzzle__fieldset { border: 1px solid var(--color-border-decorative); border-radius: 12px; padding: .8rem; display: grid; gap: .55rem; min-width: 0; }
 .bosch-puzzle__fieldset legend { font-size: 1rem; font-weight: 700; color: var(--color-text-strong); padding: 0 .4rem; }
@@ -32,3 +32,71 @@
 @keyframes bosch-shimmer { to { opacity: .27; transform: translateY(-4px); } }
 @media (max-width: 360px) { .bosch-puzzle__options { gap: .25rem; } .bosch-puzzle__part { min-height: 76px; } }
 @media (prefers-reduced-motion: reduce) { .bosch-art--alive .bosch-art__head, .bosch-art--alive .bosch-art__magic { animation: none; } }
+
+
+/* A parchment sheet has dark ink. The interactive controls are dark green,
+   so their text must explicitly switch to light ink. The global rule
+   '.parchment-card label' otherwise wins over '.bosch-puzzle__radio' and
+   gives dark-brown text on an almost black background (both screens). */
+.parchment-card .bosch-puzzle__radio,
+.parchment-card .bosch-puzzle__year span,
+.parchment-card .bosch-puzzle__part {
+  color: #fff1cf;
+  background: #10271f;
+  border-color: #a98c57;
+}
+.parchment-card .bosch-puzzle__radio span,
+.parchment-card .bosch-puzzle__year span,
+.parchment-card .bosch-puzzle__part > span {
+  color: #fff1cf;
+}
+.parchment-card .bosch-puzzle__radio {
+  color-scheme: dark;
+}
+.parchment-card .bosch-puzzle__radio:has(input:checked),
+.parchment-card .bosch-puzzle__part--selected,
+.parchment-card .bosch-puzzle__year input:checked + span {
+  color: #fff5dc;
+  background: #235240;
+  border: 2px solid #f1cc78;
+}
+.parchment-card .bosch-puzzle__radio:has(input:checked) span,
+.parchment-card .bosch-puzzle__part--selected > span,
+.parchment-card .bosch-puzzle__year input:checked + span {
+  color: #fff5dc;
+}
+.parchment-card .bosch-puzzle__part-icon,
+.parchment-card .bosch-puzzle__part--selected .bosch-puzzle__part-icon {
+  color: #ffdf95;
+}
+.parchment-card .bosch-puzzle__unlocked {
+  color: #fff1cf;
+  background: #173b2d;
+  border-color: #e8c376;
+}
+.parchment-card .bosch-puzzle__fieldset legend {
+  color: #302315;
+}
+.parchment-card .bosch-puzzle__story {
+  color: #302315;
+}
+/* Disabled is still legible but obviously inactive (no dim opacity). */
+.parchment-card .bosch-puzzle > .button.primary:disabled {
+  color: #f0ddbd;
+  background: #334d40;
+  border-color: #806a44;
+  opacity: 1;
+  filter: none;
+}
+.parchment-card .bosch-puzzle > .button.primary:not(:disabled) {
+  color: #fff1cf;
+  background: #15583c;
+}
+/* Strong focus indicators on the controls themselves, not only the label. */
+.parchment-card .bosch-puzzle__radio:focus-within,
+.parchment-card .bosch-puzzle__part:focus-visible,
+.parchment-card .bosch-puzzle__year input:focus-visible + span,
+.parchment-card .bosch-puzzle > .button.primary:focus-visible {
+  outline: 3px solid #f9d279;
+  outline-offset: 3px;
+}
