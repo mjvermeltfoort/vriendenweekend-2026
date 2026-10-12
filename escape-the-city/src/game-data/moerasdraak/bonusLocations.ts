@@ -17,7 +17,7 @@ export const bonusLocations: BonusLocation[] = [
     recommendedBetween: { afterStopId: 'drakenfontein', beforeStopId: 'zoete-lieve-gerritje' }, visibleAfterStopId: 'drakenfontein', maximumPoints: 100,
     manualVerification: { questionId: 'bonus-bolwerk-primary', question: 'Welke twee materialen ontmoeten elkaar hier het duidelijkst?' },
     intro: { title: 'De Verloren Poort', text: 'Een stadspoort is verdwenen, maar bij het bolwerk is nog een spoor te vinden. Zoek niet alleen naar oude muren: kijk ook op de grond.' },
-    navigation: { clue: 'Waar oud steenwerk een roestkleurig pantser draagt.', fallbackDirections: 'Volg de Sint-Janssingel naar het bolwerk en zoek naar een lichte plaat in de bestrating.', externalMapsQuery: 'Bolwerk Sint-Jan Den Bosch' },
+    navigation: { clue: 'Waar oud steenwerk een roestkleurig pantser draagt. Zoek ook naar een lichte plaat in de bestrating.', fallbackDirections: 'Volg de Sint-Janssingel naar het bolwerk en zoek naar een lichte plaat in de bestrating.', externalMapsQuery: 'Bolwerk Sint-Jan Den Bosch' },
     challenge: {
       kind: 'choice',
       prompt: 'De Moerasdraak heeft een oude stadspoort uit de herinneringen gewist. Zoek de lichte plaat in de bestrating bij Bolwerk Sint-Jan. Hoe heette de middeleeuwse stadspoort op deze plek?',
