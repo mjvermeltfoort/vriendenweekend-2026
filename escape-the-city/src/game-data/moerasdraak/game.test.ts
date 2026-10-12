@@ -1,14 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { gamePack } from './game';
+import { challengeAnswerIsCorrect } from '../../features/game/gameState';
 
 describe('Moerasdraak player copy', () => {
-  it('keeps the Drakenfontein water clue connected to the fire memory', () => {
+  it('asks players to count all five dragons, including the golden dragon', () => {
     const stop = gamePack.stops.find((item) => item.id === 'drakenfontein')!;
     expect(stop.challenge.kind).toBe('choice');
     if (stop.challenge.kind !== 'choice') return;
 
-    expect(stop.challenge.options.find((option) => option.correct)?.label).toBe('Water');
-    expect(stop.challenge.correctFeedback).toMatch(/water.*vuur/i);
+    expect(stop.challenge.prompt).toContain('inclusief de gouden draak');
+    expect(stop.challenge.options.map((option) => option.label)).toEqual([
+      '3 draken', '4 draken', '5 draken', '6 draken'
+    ]);
+    expect(stop.challenge.options.map((option) => option.correct)).toEqual([false, false, true, false]);
+    // Supabase validates choice id 'a'; keep it while moving the answer to the third visual option.
+    expect(stop.challenge.options.find((option) => option.correct)?.id).toBe('a');
+    expect(challengeAnswerIsCorrect(stop.challenge, 'a')).toBe(true);
+    for (const wrongAnswer of ['b', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(stop.challenge, wrongAnswer)).toBe(false);
+    }
+    expect(stop.challenge.correctFeedback).toMatch(/vijf draken.*vijf wachters/i);
+    expect(stop.hints[0].text).toContain('gouden draak');
     expect(stop.reward.title).toBe('Vuur');
   });
 
