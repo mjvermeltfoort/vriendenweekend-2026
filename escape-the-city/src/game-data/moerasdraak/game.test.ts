@@ -82,7 +82,7 @@ describe('Moerasdraak player copy', () => {
 
   it('grounds historical bonus answers in the story shown before each challenge', () => {
     const expectedContext = new Map<string, RegExp>([
-      ['bonus:bolwerk-sint-jan', /stadspoort.*bolwerk/i],
+      ['bonus:bolwerk-sint-jan', /stadspoort.*Moerasdraak/i],
       ['bonus:halve-peer', /twee verenigingen.*halve Peer/i],
       ['bonus:de-moriaan', /woonhuis.*oudste bakstenen/i],
       ['bonus:zwanenbroedershuis', /Illustre Lieve Vrouwe Broederschap/i]
