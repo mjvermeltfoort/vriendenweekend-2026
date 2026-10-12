@@ -29,14 +29,31 @@ describe('Moerasdraak player copy', () => {
     expect(stop.reward.title).toBe('Vuur');
   });
 
-  it('asks a statement that agrees with the Gerritje answer key', () => {
+  it('asks which song line is inscribed behind Zoete Lieve Gerritje', () => {
     const stop = gamePack.stops.find((item) => item.id === 'zoete-lieve-gerritje')!;
     expect(stop.challenge.kind).toBe('choice');
     if (stop.challenge.kind !== 'choice') return;
 
-    expect(stop.challenge.prompt).toBe('Welke verklaring past bij deze plek?');
-    expect(stop.challenge.options.find((option) => option.correct)?.label).toBe('Er stroomt water onder de stad');
-    expect(stop.challenge.correctFeedback).toContain('past bij de plek');
+    expect(stop.challenge.prompt).toMatch(/muur achter Zoete Lieve Gerritje/);
+    expect(stop.challenge.options.map((option) => option.label)).toEqual([
+      'Brandewijn met suiker',
+      'Dat gaat naar Den Bosch toe',
+      'Wie zal dat betalen?',
+      'Den eerste boer den beste'
+    ]);
+    // De Supabase-antwoordsleutel voor deze stop is 'b'; de antwoordcode blijft gelijk.
+    expect(stop.challenge.options.find((option) => option.correct)).toMatchObject({
+      id: 'b', label: 'Dat gaat naar Den Bosch toe'
+    });
+    expect(challengeAnswerIsCorrect(stop.challenge, 'b')).toBe(true);
+    for (const wrong of ['a', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(stop.challenge, wrong)).toBe(false);
+    }
+    expect(stop.hints).toHaveLength(1);
+    expect(stop.hints[0].id).toBe('h1');
+    expect(stop.hints[0].text).toMatch(/woorden.*achter Gerritje/i);
+    expect(stop.hints[0].text).not.toMatch(/Dat gaat naar Den Bosch toe/i);
+    expect(stop.reward.title).toBe('Legende');
   });
 
   it('does not repeat manual verification questions as bonus challenge prompts', () => {
