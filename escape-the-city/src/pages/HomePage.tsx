@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
@@ -13,6 +14,7 @@ export function isHomeSyncStatusVisible(status: 'saved' | 'local' | 'syncing' | 
 export function HomePage({ pack }: { pack: GamePack }) {
   const { teams, activeTeam, progress, syncStatus, syncMessage } = useGame();
   const { unlockAudio } = useAudio();
+  const [henkVisible, setHenkVisible] = useState(true);
   const current = activeTeam && progress ? { team: activeTeam, progress } : null;
   const lastTeam = current ?? (teams[0] ? { team: teams[0], progress: null } : null);
   const baseUrl = import.meta.env.BASE_URL ?? '/';
@@ -34,7 +36,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
           </div>
           <div className="home-hero__content">
             <p className="home-subtitle">Een escape the city-avontuur vol raadsels, geheimen en Bossche legendes.</p>
-            <HintHenkIntro />
+            <HintHenkIntro onVisibilityChange={setHenkVisible} />
             <div className="home-actions">
               {lastTeam ? (
                 <Link className="button primary" to="/voorbereiden" onClick={unlockAudio}>Verder met team {lastTeam.team.name}</Link>
@@ -52,7 +54,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
                 Hoe werkt het?
               </button>
             </div>
-            <StartLocationCheck />
+            <StartLocationCheck blockedByIntro={henkVisible} />
             {isHomeSyncStatusVisible(syncStatus) ? (
               <div className="home-sync-status" aria-live="polite">
                 <SyncStatus status={syncStatus} message={syncMessage} />
