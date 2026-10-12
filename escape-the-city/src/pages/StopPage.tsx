@@ -7,6 +7,7 @@ import { isBonusLocation } from '../features/game/gameTypes';
 import { createSimulatorProvider, defaultSimulatorState, type SimulatorState } from '../features/location/simulator';
 import { GameIcon, PageShell } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
+import { BoschMonsterArt } from '../components/BoschMonsterArt';
 import { ActiveStopIndicator } from '../features/location/ActiveStopIndicator';
 import {
   observationFallbackAvailable,
@@ -468,6 +469,11 @@ export function StopPage({ pack }: { pack: GamePack }) {
               <>
                 <h2>Herinnering hersteld</h2>
                 <p><strong>{currentStop.reward.title}</strong><br />{currentStop.reward.text}</p>
+                {currentStop.id === 'bosch-wezen' ? (
+                  <div className="bosch-monster-completed" aria-label="Jullie tot leven gewekte monster">
+                    <BoschMonsterArt selection={{ head: 'Vogel', body: 'Vis', object: 'Mens' }} animated />
+                  </div>
+                ) : null}
                 {currentStop.challenge.kind === 'choice' ? (
                   <p className="muted small">{currentStop.challenge.correctFeedback}</p>
                 ) : null}
