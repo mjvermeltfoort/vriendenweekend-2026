@@ -34,16 +34,17 @@ export const gamePack: GamePack = {
       navigation: { clue: 'Zoek het water en de stenen koppen. De eerste herinnering sluimert bij de draak.', fallbackDirections: 'Ga naar de fontein bij station Den Bosch.', externalMapsQuery: 'Drakenfontein Den Bosch' },
       challenge: {
         kind: 'choice',
-        prompt: 'Welke aanwijzing past bij start?',
+        prompt: 'De gouden draak waakt hoog boven de stad, maar hij staat er niet alleen voor. Hoeveel draken bewaken de fontein in totaal, inclusief de gouden draak?',
         options: [
-          { id: 'b', label: 'Vuur', correct: false },
-          { id: 'a', label: 'Water', correct: true },
-          { id: 'c', label: 'Zand', correct: false }
+          { id: 'b', label: '3 draken', correct: false },
+          { id: 'c', label: '4 draken', correct: false },
+          { id: 'a', label: '5 draken', correct: true },
+          { id: 'd', label: '6 draken', correct: false }
         ],
-        correctFeedback: 'Goed: bij het water vinden jullie de herinnering aan vuur.',
-        wrongFeedback: 'Nog niet. Kijk opnieuw naar de fontein.'
+        correctFeedback: 'Vijf draken, vijf wachters! De Moerasdraak herkent jullie scherpe blik. Jullie eerste spoor is gevonden.',
+        wrongFeedback: 'Nog niet. Kijk zowel naar de draken onderaan als naar de gouden draak bovenop.'
       },
-      hints: [{ id: 'h1', text: 'De fontein staat niet bij een winkelstraat.' }],
+      hints: [{ id: 'h1', text: 'Tel de donkere draken onderaan én de gouden draak bovenop.' }],
       reward: { title: 'Vuur', text: 'Eerste herinnering veiliggesteld.', symbol: '🔥' }
     },
     {
