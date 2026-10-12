@@ -95,15 +95,24 @@ export function nearestUnfinishedBonus(
   location: LocationResult | null,
   bonuses: BonusLocation[],
   progress: RouteMapProps['progress'],
-  previousId: string | null = null
+  previousId: string | null = null,
+  mainStop: RouteStop | null = null
 ): string | null {
   if (!location || !progress || !Number.isFinite(location.latitude)
-    || !Number.isFinite(location.longitude) || !Number.isFinite(location.accuracy)) return null;
+    || !Number.isFinite(location.longitude) || !Number.isFinite(location.accuracy)
+    || location.accuracy < 0) return null;
 
-  const matches = bonuses
-    .filter((bonus) => progress.stopProgress[bonus.id]?.state !== 'completed'
-      && progress.stopProgress[bonus.id]?.state !== 'locked'
-      && location.accuracy <= bonus.coordinates.maximumAccuracyMeters)
+  const availableBonuses = bonuses.filter((bonus) => progress.stopProgress[bonus.id]?.state !== 'completed'
+    && progress.stopProgress[bonus.id]?.state !== 'locked');
+
+  // Slechte GPS kan een bestaande selectie niet betrouwbaar ontkrachten.
+  // Gebruik zulke metingen ook nooit om een nieuwe schub actief te maken.
+  if (location.accuracy > 40) {
+    return availableBonuses.some((bonus) => bonus.id === previousId) ? previousId : null;
+  }
+
+  const matches = availableBonuses
+    .filter((bonus) => location.accuracy <= bonus.coordinates.maximumAccuracyMeters)
     .map((bonus) => ({
       bonus,
       distance: haversineDistanceMeters(location, {
@@ -111,10 +120,31 @@ export function nearestUnfinishedBonus(
         longitude: bonus.coordinates.longitude!
       })
     }))
-    .filter(({ bonus, distance }) => distance <= bonus.coordinates.radiusMeters + (bonus.id === previousId ? 30 : 0))
+    .filter(({ bonus, distance }) => bonus.id === previousId
+      ? distance <= bonus.coordinates.radiusMeters + 30
+      : distance + Math.max(10, location.accuracy) <= bonus.coordinates.radiusMeters)
     .sort((a, b) => a.distance - b.distance);
 
-  return matches[0]?.bonus.id ?? null;
+  const candidate = matches[0];
+  if (!candidate) return null;
+
+  // Routepunten en schubben kunnen binnen elkaars GPS-cirkel vallen.
+  // Blijf op de hoofdopdracht wanneer de GPS niet duidelijk onderscheid maakt.
+  // Bij een al gekozen schub geeft hysterese rust bij kleine GPS-schommelingen.
+  const mainState = mainStop ? progress.stopProgress[mainStop.id]?.state : null;
+  if (mainStop && mainState && mainState !== 'locked' && mainState !== 'completed') {
+    const mainDistance = haversineDistanceMeters(location, {
+      latitude: mainStop.coordinates.latitude!,
+      longitude: mainStop.coordinates.longitude!
+    });
+    const mainCouldBeHere = mainDistance <= mainStop.coordinates.radiusMeters + location.accuracy;
+    const neededDifference = candidate.bonus.id === previousId
+      ? -Math.max(10, location.accuracy)
+      : Math.max(20, location.accuracy * 2);
+    if (mainCouldBeHere && mainDistance - candidate.distance <= neededDifference) return null;
+  }
+
+  return candidate.bonus.id;
 }
 
 export function mapFocusStops(currentStopId: string | undefined, visibleStops: RouteStop[]) {
@@ -160,7 +190,10 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   );
   const selectedStop = mapLocations.find((stop) => stop.id === selectedStopId) ?? null;
   const selectedState = selectedStop ? progress?.stopProgress?.[selectedStop.id]?.state ?? 'locked' : 'locked';
-  const nearbyBonusId = nearestUnfinishedBonus(location, visibleBonusLocationsMemo, progress, nearbyBonusRef.current);
+  const currentMainStop = visibleStops.find((stop) => stop.id === progress?.currentStopId) ?? null;
+  const nearbyBonusId = nearestUnfinishedBonus(
+    location, visibleBonusLocationsMemo, progress, nearbyBonusRef.current, currentMainStop
+  );
   const selectedNearbyBonus = selectedStopId !== null && selectedStopId === nearbyBonusId;
 
   useEffect(() => {
@@ -176,6 +209,8 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
     if (nearbyBonusId === nearbyBonusRef.current) return;
     nearbyBonusRef.current = nearbyBonusId;
     if (nearbyBonusId) {
+      // Een bewuste keuze van de speler wint altijd van automatische GPS-herkenning.
+      if (selectionOriginRef.current === 'manual') return;
       selectionOriginRef.current = 'gps';
       sheetDismissedRef.current = false;
       // Automatische GPS-selectie mag niet zelf de pagina laten verspringen.
