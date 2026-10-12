@@ -1,0 +1,34 @@
+/* Het Verloren Schetsboek: embedded, touch-friendly illustrated monster puzzle. */
+.bosch-puzzle { color: var(--color-text); }
+.bosch-puzzle__story { line-height: 1.6; }
+.bosch-puzzle__fieldset { border: 1px solid var(--color-border-decorative); border-radius: 12px; padding: .8rem; display: grid; gap: .55rem; min-width: 0; }
+.bosch-puzzle__fieldset legend { font-size: 1rem; font-weight: 700; color: var(--color-text-strong); padding: 0 .4rem; }
+.bosch-puzzle__radio { display: flex; align-items: center; gap: .8rem; padding: .65rem; border: 1px solid var(--color-border-control); border-radius: 10px; cursor: pointer; background: var(--color-surface-raised); }
+.bosch-puzzle__radio input { flex: none; width: 20px; height: 20px; accent-color: var(--color-gold); }
+.bosch-puzzle__radio:has(input:checked) { border-color: var(--color-border-selected); background: rgba(179,137,65,.16); }
+.bosch-puzzle__years, .bosch-puzzle__options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.bosch-puzzle__year { cursor: pointer; text-align: center; min-width: 0; }
+.bosch-puzzle__year input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.bosch-puzzle__year span { display: block; padding: .75rem .35rem; border: 1px solid var(--color-border-control); border-radius: 10px; background: var(--color-surface-raised); }
+.bosch-puzzle__year input:checked + span { border: 2px solid var(--color-border-selected); font-weight: 800; color: var(--color-gold-light); }
+.bosch-puzzle__year input:focus-visible + span { outline: 3px solid var(--color-border-selected); outline-offset: 3px; }
+.bosch-puzzle__unlocked { border: 1px solid var(--color-border-selected); background: rgba(169,116,44,.13); padding: .75rem 1rem; border-radius: 12px; text-align: center; font-weight: 700; color: var(--color-gold-light); }
+.bosch-puzzle__stage { position: relative; background: radial-gradient(ellipse at center, #f5e0b4 0%, #e8cb91 65%, #b38c61 100%); border: 8px solid #61442d; outline: 2px solid #be9a65; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: .25rem; box-shadow: inset 0 0 32px rgba(82,48,20,.22); }
+.bosch-puzzle__stage::before { content: ''; position: absolute; inset: 12px; border: 1px solid rgba(97,66,39,.45); border-radius: 8px; pointer-events: none; }
+.bosch-puzzle__stage .bosch-art { display: block; width: min(100%, 285px); height: auto; z-index: 1; filter: drop-shadow(2px 4px 2px rgba(45,31,19,.2)); }
+.bosch-puzzle__seal { position: absolute; left: .75rem; top: .1rem; color: #8e6330; font-size: 2rem; }
+.bosch-puzzle__caption { z-index: 1; font-family: Georgia, serif; color: #62492b; font-style: italic; font-size: .9rem; margin: -.15rem 0 .65rem; }
+.bosch-puzzle__part { min-width: 0; min-height: 82px; padding: .45rem .2rem; display: grid; place-content: center; justify-items: center; gap: .25rem; border: 1px solid var(--color-border-control); border-radius: 12px; color: var(--color-text-strong); background: var(--color-surface-raised); cursor: pointer; font: inherit; font-size: clamp(.7rem, 2.7vw, .93rem); overflow-wrap: anywhere; }
+.bosch-puzzle__part--selected { border: 2px solid var(--color-border-selected); box-shadow: inset 0 0 0 1px rgba(245,194,108,.26); background: rgba(198,152,66,.18); }
+.bosch-puzzle__part:focus-visible { outline: 3px solid var(--color-gold-light); outline-offset: 3px; }
+.bosch-puzzle__part-icon { font-family: Georgia, serif; font-size: 1.75rem; line-height: 1.2; color: var(--color-gold-light); }
+.bosch-art__head { transform-origin: 140px 148px; }
+.bosch-art--alive .bosch-art__head { animation: bosch-bob 1.4s ease-in-out infinite alternate; }
+.bosch-art--alive .bosch-art__magic { animation: bosch-shimmer 1.2s ease-in-out infinite alternate; }
+.bosch-art--alive { max-width: 290px; }
+.bosch-monster-completed { max-width: 330px; margin: .5rem auto; border: 1px solid var(--color-border-decorative); border-radius: 16px; background: radial-gradient(ellipse, #edd9a7, #b99061); }
+.bosch-monster-completed .bosch-art { display: block; width: 100%; height: auto; }
+@keyframes bosch-bob { to { transform: translateY(-5px) rotate(2deg); } }
+@keyframes bosch-shimmer { to { opacity: .27; transform: translateY(-4px); } }
+@media (max-width: 360px) { .bosch-puzzle__options { gap: .25rem; } .bosch-puzzle__part { min-height: 76px; } }
+@media (prefers-reduced-motion: reduce) { .bosch-art--alive .bosch-art__head, .bosch-art--alive .bosch-art__magic { animation: none; } }
