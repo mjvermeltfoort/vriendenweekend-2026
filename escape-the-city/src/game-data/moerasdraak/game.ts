@@ -104,28 +104,31 @@ export const gamePack: GamePack = {
       slug: 'bosch-wezen',
       title: 'Het Monster van Bosch',
       shortTitle: 'Wezen',
-      locationName: 'Huis van Bosch, Markt 29',
-      coordinates: { latitude: 51.688968, longitude: 5.304617, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      intro: { title: 'Gevels worden lichaam', text: 'Stel een fantasiewezen samen uit drie delen.', audioSrc: audioAsset('04-jheronimus-bosch.mp3'), transcript: audioTranscripts.jheronimusBosch },
-      navigation: { clue: 'Combineer wat je op gevels herkent.', fallbackDirections: 'Ga naar de Markt en kijk rond.', externalMapsQuery: 'Markt Den Bosch' },
+      locationName: 'Standbeeld Jheronimus Bosch (August Falise), Markt tegenover De Kleine Winst',
+      // Standbeeldcoördinaten: Wikimedia Commons (51°41′20.72″N, 5°18′13.5″E).
+      // Nog ter plaatse te bevestigen voor de laatste meters.
+      coordinates: { latitude: 51.689089, longitude: 5.303750, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
+      intro: { title: 'Het Verloren Schetsboek', text: 'Bij het standbeeld van Jheronimus Bosch heeft de Moerasdraak een schets verscheurd. Zoek de schilder met zijn penseel en palet. Alleen wie het standbeeld goed bekijkt, kan het schetsboek openen en het monster herstellen.', audioSrc: audioAsset('04-jheronimus-bosch.mp3'), transcript: audioTranscripts.jheronimusBosch },
+      navigation: { clue: 'Zoek het bronzen standbeeld van Jheronimus Bosch op de Markt, met penseel en palet.', fallbackDirections: 'Ga op de Markt naar het standbeeld tegenover De Kleine Winst. Niet naar het Huis van Bosch op Markt 29.', externalMapsQuery: 'Standbeeld Jeroen Bosch Markt Den Bosch August Falise' },
       challenge: {
         kind: 'composite',
-        prompt: 'Kies een hoofd, een lijf en een voorwerp.',
+        prompt: 'Het schetsboek van Bosch is beschadigd. Bekijk eerst het standbeeld om het te openen. Stel daarna een fantasiewezen samen met een snavel, een geschubd lijf en mensenvoeten.',
         categories: {
-          head: ['Masker', 'Horn', 'Kroon'],
-          body: ['Mantel', 'Steen', 'Schubben'],
-          object: ['Vork', 'Lantaarn', 'Sleutel']
+          head: ['Demon', 'Kikker', 'Vogel'],
+          body: ['Ton', 'Boek', 'Vis'],
+          object: ['Wielen', 'Vogelpoten', 'Mens']
         },
         correctAnswer: {
-          head: 'Horn',
-          body: 'Schubben',
-          object: 'Lantaarn'
+          head: 'Vogel',
+          body: 'Vis',
+          object: 'Mens'
         },
-        summaryTemplate: 'Hoofd: {head}, lijf: {body}, object: {object}.',
-        wrongFeedback: 'Nog niet de juiste combinatie.'
+        summaryTemplate: 'Hoofd: {head}, lijf: {body}, benen: {object}.',
+        wrongFeedback: 'Het monster krijgt nog geen leven. Bekijk de aanwijzingen in het schetsboek en probeer een andere combinatie.'
       },
-      hints: [{ id: 'h1', text: 'Zoek naar het meest drakige hoofd.' }],
-      reward: { title: 'Verbeelding', text: 'Het wezen krijgt vorm.', symbol: '✨' }
+      hints: [{ id: 'h1', text: 'Het standbeeld geeft je het begin: wat draagt een schilder en welk laatste jaartal staat op de sokkel? Voor het monster: denk aan een snavel, schubben en voeten waarmee je zelf kunt lopen.' }],
+      answerExplanation: 'Jheronimus Bosch (ca. 1450–1516) schilderde wonderlijke fantasiewezens, vaak opgebouwd uit mensen, dieren en voorwerpen. Dit monster is een nieuw, door jullie samengesteld wezen in die traditie, geen bestaand dier op een gevel. Het standbeeld op de Markt is gemaakt door August Falise en werd in 1930 onthuld. Let op het penseel, het palet en de levensjaren op de sokkel: 1450–1516.',
+      reward: { title: 'Verbeelding', text: 'Jullie fantasiewezen is tot leven gewekt!', symbol: '✨' }
     },
     {
       id: 'sint-jan',
