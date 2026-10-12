@@ -3,6 +3,7 @@ import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { AudioControl, GameIcon, SyncStatus } from '../components/GameUi';
 import { HintHenkIntro } from '../components/HintHenkIntro';
+import { StartLocationCheck } from '../components/StartLocationCheck';
 import { useAudio } from '../features/audio/audioContext';
 
 export function isHomeSyncStatusVisible(status: 'saved' | 'local' | 'syncing' | 'failed' | 'offline') {
@@ -51,6 +52,7 @@ export function HomePage({ pack }: { pack: GamePack }) {
                 Hoe werkt het?
               </button>
             </div>
+            <StartLocationCheck />
             {isHomeSyncStatusVisible(syncStatus) ? (
               <div className="home-sync-status" aria-live="polite">
                 <SyncStatus status={syncStatus} message={syncMessage} />
