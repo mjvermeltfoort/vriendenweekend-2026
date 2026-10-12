@@ -65,10 +65,23 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Vind het stenen huis dat aan de slopershamer ontsnapte.', revealedDescription: 'Steen onthoudt wat mensen bijna verloren lieten gaan.', estimatedDetourMinutes: 5,
     recommendedBetween: { afterStopId: 'binnendieze', beforeStopId: 'bosch-wezen' }, visibleAfterStopId: 'zoete-lieve-gerritje', maximumPoints: 150,
     manualVerification: { questionId: 'bonus-moriaan-primary', question: 'Welke combinatie herken je aan dit gebouw?' },
-    intro: { title: 'Het Huis dat Bleef Staan', text: 'Een woonhuis dat geldt als een van de oudste bakstenen in de stad bleef hier behouden.' },
+    intro: { title: 'Het Huis dat Bleef Staan', text: 'Midden op de Markt staat De Moriaan, een eeuwenoud woonhuis dat ternauwernood aan de slopershamer ontsnapte. De Moerasdraak vermoedt dat er hoog aan het gebouw een bijzondere wachter schuilt.' },
     navigation: { clue: 'Vind het stenen huis dat aan de slopershamer ontsnapte.', fallbackDirections: 'Ga naar Markt 77.', externalMapsQuery: 'De Moriaan Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Wat maakt dit gebouw historisch bijzonder?', options: [{ id: 'b', label: 'Glazen gevel, plat dak en metalen balkon', correct: false }, { id: 'a', label: 'Het is een van de oudste bakstenen woonhuizen', correct: true }, { id: 'c', label: 'Houten topgevel, klokkentoren en zuilen', correct: false }, { id: 'd', label: 'Witte lijstgevel, koepel en arcade', correct: false }], correctFeedback: 'De Steenschub is gevonden.', wrongFeedback: 'Kijk naar de gevelvormen.' },
-    hints: [{ id: 'h1', text: 'Zoek vormen die ouder zijn dan de winkelstraat.' }], reward: { id: 'steenschub', title: 'Steenschub', text: 'Steen bewaart de herinnering.', symbol: '◈', resultLabel: 'Steenschub' }
+    challenge: {
+      kind: 'choice',
+      prompt: 'Midden op de Markt staat De Moriaan, een eeuwenoud huis dat ooit bijna werd gesloopt. De Moerasdraak beweert dat er hoog op het gebouw nog altijd een bijzondere wachter staat. Welk opvallend bouwelement zie je boven aan de hoek van De Moriaan?',
+      options: [
+        { id: 'b', label: 'Een stenen leeuw', correct: false },
+        { id: 'c', label: 'Een grote klok', correct: false },
+        { id: 'a', label: 'Een klein rond torentje', correct: true },
+        { id: 'd', label: 'Een houten balkon', correct: false }
+      ],
+      correctFeedback: 'Goed gevonden! Het opvallende hoektorentje van De Moriaan is teruggevonden. De Steenschub is van jullie!',
+      wrongFeedback: 'Nog niet! Bekijk de bovenkant van De Moriaan, vooral waar de twee gevels bij elkaar komen.'
+    },
+    hints: [{ id: 'h1', text: 'Als ik een middeleeuws huis moest bewaken, zou ik een plekje zoeken met goed uitzicht. Kijk eens omhoog, helemaal naar de hoek!' }],
+    answerExplanation: 'Het opvallende hoektorentje hoort bij De Moriaan, een van de oudste bakstenen huizen van Nederland. Het huis dateert uit het begin van de 13e eeuw. In de jaren vijftig dreigde het te worden gesloopt, maar acties van Bosschenaren voorkwamen dat. Tijdens de ingrijpende restauratie en reconstructie in de jaren zestig werd ook de historische gevel hersteld. Zo bleef dit bijzondere stukje middeleeuws Den Bosch bewaard.',
+    reward: { id: 'steenschub', title: 'Steenschub', text: 'Steen bewaart de herinnering.', symbol: '◈', resultLabel: 'Steenschub' }
   },
   {
     id: 'bonus:zwanenbroedershuis', isBonus: true, order: 0, slug: 'zwanenbroedershuis', title: 'Zwanenbroedershuis', shortTitle: 'Verborgen vondst', locationName: 'Hinthamerstraat 94',

@@ -232,6 +232,39 @@ describe('StopPage completion copy', () => {
     expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Terug naar hoofdroute');
   });
 
+  it('reveals De Moriaan history only once the Steenschub has been found', async () => {
+    const unfinished = createProgress();
+    // De Moriaan is pas zichtbaar zodra spelers bij Gerritje zijn aangekomen.
+    unfinished.stopProgress['zoete-lieve-gerritje'].state = 'arrived';
+    unfinished.stopProgress['bonus:de-moriaan'].state = 'available';
+    gameState = { ...gameState, progress: unfinished };
+    const page = (key: string) => (
+      <MemoryRouter key={key} initialEntries={['/stop/bonus:de-moriaan']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    );
+
+    await act(async () => root.render(page('moriaan-unfinished')));
+    expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')).toBeNull();
+    expect(container.textContent).not.toContain('Het opvallende hoektorentje hoort bij De Moriaan');
+
+    const completed = createProgress();
+    completed.stopProgress['zoete-lieve-gerritje'].state = 'arrived';
+    completed.stopProgress['bonus:de-moriaan'].state = 'completed';
+    completed.stopProgress['bonus:de-moriaan'].unlockMethod = 'gps';
+    gameState = { ...gameState, progress: completed };
+    await act(async () => root.render(page('moriaan-completed')));
+
+    expect(container.textContent).toContain('Drakenschub gevonden');
+    expect(container.textContent).toContain('Steenschub');
+    const explanation = container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]');
+    expect(explanation?.textContent).toContain('Het verhaal achter De Moriaan');
+    expect(explanation?.textContent).toContain('hoektorentje');
+    expect(explanation?.textContent).toContain('13e eeuw');
+    expect(explanation?.textContent).toContain('jaren vijftig');
+    expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Terug naar hoofdroute');
+  });
+
   it('keeps the Koepoort history hidden until the Poortschub is completed', async () => {
     const progress = createProgress();
     progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'available';

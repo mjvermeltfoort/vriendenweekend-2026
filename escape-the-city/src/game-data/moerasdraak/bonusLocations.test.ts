@@ -38,6 +38,34 @@ describe('Verborgen Schubben game data', () => {
     expect(bonus.maximumPoints).toBe(100);
   });
 
+  it('asks an on-site observation about De Moriaan corner turret, keeping answer id a', () => {
+    const bonus = gamePack.bonusLocations!.find((location) => location.id === 'bonus:de-moriaan')!;
+    expect(bonus.challenge.kind).toBe('choice');
+    if (bonus.challenge.kind !== 'choice') return;
+    expect(bonus.intro.text).toContain('De Moriaan');
+    expect(bonus.intro.text).not.toMatch(/torentje|hoek/i);
+    expect(bonus.challenge.prompt).toMatch(/boven aan de hoek van De Moriaan/);
+    expect(bonus.challenge.options.map((option) => option.label)).toEqual([
+      'Een stenen leeuw', 'Een grote klok', 'Een klein rond torentje', 'Een houten balkon'
+    ]);
+    // Supabase validates answer id 'a'; retain it even though the correct option is third.
+    expect(bonus.challenge.options.find((option) => option.correct)).toMatchObject({
+      id: 'a', label: 'Een klein rond torentje'
+    });
+    expect(challengeAnswerIsCorrect(bonus.challenge, 'a')).toBe(true);
+    for (const wrong of ['b', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(bonus.challenge, wrong)).toBe(false);
+    }
+    expect(bonus.hints).toHaveLength(1);
+    expect(bonus.hints[0].id).toBe('h1');
+    expect(bonus.hints[0].text).toMatch(/omhoog.*hoek/);
+    expect(bonus.hints[0].text).not.toMatch(/torentje/i);
+    expect(bonus.answerExplanation).toMatch(/hoektorentje.*13e eeuw.*jaren vijftig.*jaren zestig/);
+    expect(bonus.reward.title).toBe('Steenschub');
+    expect(bonus.maximumPoints).toBe(150);
+    expect(bonus.coordinates).toMatchObject({ latitude: 51.689615, longitude: 5.303141 });
+  });
+
   it('uses the exact on-site Halve Peer GPS point instead of the earlier inaccurate map pins', () => {
     const halvePeer = gamePack.bonusLocations!.find((item) => item.id === 'bonus:halve-peer')!;
     const gerritje = gamePack.stops.find((item) => item.id === 'zoete-lieve-gerritje')!;
