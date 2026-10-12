@@ -471,6 +471,12 @@ export function StopPage({ pack }: { pack: GamePack }) {
                 {currentStop.challenge.kind === 'choice' ? (
                   <p className="muted small">{currentStop.challenge.correctFeedback}</p>
                 ) : null}
+                {currentStop.answerExplanation ? (
+                  <section className="stack" aria-label="Uitleg bij het juiste antwoord">
+                    <h3>Het verhaal achter {currentStop.shortTitle}</h3>
+                    <p>{currentStop.answerExplanation}</p>
+                  </section>
+                ) : null}
                 <Link className="button secondary" to={completedRouteHref}>{completedRouteLabel}</Link>
               </>
             )}
