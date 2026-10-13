@@ -66,6 +66,35 @@ describe('Verborgen Schubben game data', () => {
     expect(bonus.coordinates).toMatchObject({ latitude: 51.689615, longitude: 5.303141 });
   });
 
+  it('asks players to count four human statues on the Zwanenbroedershuis façade, keeping server answer id b', () => {
+    const bonus = gamePack.bonusLocations!.find((item) => item.id === 'bonus:zwanenbroedershuis')!;
+    expect(bonus.challenge.kind).toBe('choice');
+    if (bonus.challenge.kind !== 'choice') return;
+
+    expect(bonus.intro.text).toContain('De Moerasdraak');
+    expect(bonus.intro.text).not.toMatch(/vier|4|vierde/);
+    expect(bonus.challenge.prompt).toBe('Hoeveel menselijke beelden staan er aan de voorgevel van het Zwanenbroedershuis?');
+    expect(bonus.challenge.options.map((item) => item.label)).toEqual(['Twee', 'Drie', 'Vier', 'Vijf']);
+    // Supabase valideert choice-id b; deze is bewust de derde visuele keuze.
+    expect(bonus.challenge.options.find((item) => item.correct)).toMatchObject({ id: 'b', label: 'Vier' });
+    expect(challengeAnswerIsCorrect(bonus.challenge, 'b')).toBe(true);
+    for (const wrong of ['a', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(bonus.challenge, wrong)).toBe(false);
+    }
+    expect(bonus.manualVerification.question).toBe('Welk dier staat helemaal boven op de gevel?');
+    expect(bonus.hints).toHaveLength(1);
+    expect(bonus.hints[0].id).toBe('h1');
+    expect(bonus.hints[0].text).toContain('Kijk eens een stukje lager');
+    expect(bonus.hints[0].text).not.toMatch(/vier|4/);
+    expect(bonus.answerExplanation).toMatch(/1962.*Marius van Beek/);
+    expect(bonus.answerExplanation).toMatch(/Willem van Oranje.*Gerardus van Uden.*Gijsbertus van der Poorten.*Floris van Egmond/);
+    expect(bonus.answerExplanation).toContain('1846–1847');
+    expect(bonus.answerExplanation).toContain('Jheronimus Bosch');
+    expect(bonus.reward.title).toBe('Veerschub');
+    expect(bonus.maximumPoints).toBe(150);
+    expect(bonus.coordinates).toMatchObject({ latitude: 51.688710, longitude: 5.309535, radiusMeters: 60 });
+  });
+
   it('uses the exact on-site Halve Peer GPS point instead of the earlier inaccurate map pins', () => {
     const halvePeer = gamePack.bonusLocations!.find((item) => item.id === 'bonus:halve-peer')!;
     const gerritje = gamePack.stops.find((item) => item.id === 'zoete-lieve-gerritje')!;
