@@ -7,7 +7,8 @@ import { isBonusLocation } from '../features/game/gameTypes';
 import { createSimulatorProvider, defaultSimulatorState, type SimulatorState } from '../features/location/simulator';
 import { GameIcon, PageShell } from '../components/GameUi';
 import { AudioPlayer } from '../components/AudioPlayer';
-import { BoschMonsterArt } from '../components/BoschMonsterArt';
+import originalBosch from '../assets/bosch/original.jpg';
+import { BoschMonsterArt, correctMonster } from '../components/BoschMonsterArt';
 import { ActiveStopIndicator } from '../features/location/ActiveStopIndicator';
 import {
   observationFallbackAvailable,
@@ -471,7 +472,11 @@ export function StopPage({ pack }: { pack: GamePack }) {
                 <p><strong>{currentStop.reward.title}</strong><br />{currentStop.reward.text}</p>
                 {currentStop.id === 'bosch-wezen' ? (
                   <div className="bosch-monster-completed" aria-label="Jullie tot leven gewekte monster">
-                    <BoschMonsterArt selection={{ head: 'Vogel', body: 'Vis', object: 'Mens' }} animated />
+                    <BoschMonsterArt selection={correctMonster} animated />
+                    <figure className="bosch-original">
+                      <img src={originalBosch} alt="De Boomman op het rechterpaneel van De tuin der lusten van Jheronimus Bosch" width="917" height="1059" />
+                      <figcaption>Het originele schilderijfragment · Jheronimus Bosch, De tuin der lusten. <a href="https://commons.wikimedia.org/wiki/File:Bosch_Jardin_des_delices_detail.jpg" target="_blank" rel="noreferrer">Bron: Wikimedia Commons (publiek domein)</a>.</figcaption>
+                    </figure>
                   </div>
                 ) : null}
                 {currentStop.challenge.kind === 'choice' ? (

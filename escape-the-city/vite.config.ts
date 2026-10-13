@@ -22,7 +22,7 @@ export default defineConfig({
       workbox: {
         cacheId: `escape-the-city-v${appVersion}`,
         cleanupOutdatedCaches: true,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,geojson,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,svg,webp,geojson,woff2}'],
         globIgnores: ['dashboard.html', 'assets/dashboard-*.{js,css}'],
         navigateFallbackDenylist: [/\/dashboard\.html$/],
         runtimeCaching: [

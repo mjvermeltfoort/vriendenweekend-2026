@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from threading import Thread
 from urllib.parse import urlparse
 import json
+import runpy
 
 from playwright.sync_api import sync_playwright
 
@@ -58,6 +59,9 @@ with TemporaryDirectory() as site:
                 if errors or local_failures:
                     raise RuntimeError("Browser startup failed: " + "; ".join(errors + local_failures))
                 print("Production app rendered with no uncaught JavaScript errors.")
+                runpy.run_path(str(Path(__file__).with_name("bosch-browser-check.py")))["check_bosch"](page, origin, diagnostics)
+                if errors or local_failures:
+                    raise RuntimeError("Bosch browser check failed: " + "; ".join(errors + local_failures))
             finally:
                 (diagnostics / "errors.json").write_text(
                     json.dumps({"pageErrors": errors, "localAssetFailures": local_failures}, indent=2),

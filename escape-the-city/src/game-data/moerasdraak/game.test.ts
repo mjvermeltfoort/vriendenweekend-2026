@@ -97,13 +97,13 @@ describe('Moerasdraak player copy', () => {
     expect(stop.challenge.kind).toBe('composite');
     if (stop.challenge.kind !== 'composite') return;
     expect(stop.challenge.categories).toEqual({
-      head: ['Demon','Kikker','Vogel'],
-      body: ['Ton','Boek','Vis'],
-      object: ['Wielen','Vogelpoten','Mens']
+      head: ['bird','human','fish'],
+      body: ['barrel','egg','tower'],
+      object: ['human','trees','bird']
     });
-    expect(stop.challenge.correctAnswer).toEqual({ head: 'Vogel', body: 'Vis', object: 'Mens' });
-    expect(challengeAnswerIsCorrect(stop.challenge, { head: 'Vogel', body: 'Vis', object: 'Mens' })).toBe(true);
-    expect(challengeAnswerIsCorrect(stop.challenge, { head: 'Demon', body: 'Vis', object: 'Mens' })).toBe(false);
+    expect(stop.challenge.correctAnswer).toEqual({ head: 'human', body: 'egg', object: 'trees' });
+    expect(challengeAnswerIsCorrect(stop.challenge, { head: 'human', body: 'egg', object: 'trees' })).toBe(true);
+    expect(challengeAnswerIsCorrect(stop.challenge, { head: 'bird', body: 'egg', object: 'trees' })).toBe(false);
     expect(stop.hints).toHaveLength(1);
     expect(stop.hints[0].id).toBe('h1');
     expect(stop.answerExplanation).toMatch(/August Falise.*1930/);

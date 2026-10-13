@@ -112,23 +112,23 @@ export const gamePack: GamePack = {
       navigation: { clue: 'Zoek het bronzen standbeeld van Jheronimus Bosch op de Markt, tegenover De Kleine Winst.', fallbackDirections: 'Ga op de Markt naar het standbeeld tegenover De Kleine Winst. Niet naar het Huis van Bosch op Markt 29.', externalMapsQuery: 'Standbeeld Jeroen Bosch Markt Den Bosch August Falise' },
       challenge: {
         kind: 'composite',
-        prompt: 'Het schetsboek van Bosch is beschadigd. Bekijk eerst het standbeeld en de sokkel om het te openen. Stel daarna de verloren fantasiefiguur samen.',
+        prompt: 'Het schetsboek van Bosch is beschadigd. Bekijk eerst het standbeeld en de sokkel om het te openen. Herstel daarna de Boomman uit De tuin der lusten.',
         categories: {
-          head: ['Demon', 'Kikker', 'Vogel'],
-          body: ['Ton', 'Boek', 'Vis'],
-          object: ['Wielen', 'Vogelpoten', 'Mens']
+          head: ['bird', 'human', 'fish'],
+          body: ['barrel', 'egg', 'tower'],
+          object: ['human', 'trees', 'bird']
         },
         correctAnswer: {
-          head: 'Vogel',
-          body: 'Vis',
-          object: 'Mens'
+          head: 'human',
+          body: 'egg',
+          object: 'trees'
         },
         summaryTemplate: 'Hoofd: {head}, lijf: {body}, benen: {object}.',
         wrongFeedback: 'Het monster krijgt nog geen leven. Bekijk de aanwijzingen in het schetsboek en probeer een andere combinatie.'
       },
-      hints: [{ id: 'h1', text: 'Het standbeeld geeft je het begin: wat draagt een schilder en welk laatste jaartal staat op de sokkel? Voor het monster: denk aan een snavel, schubben en voeten waarmee je zelf kunt lopen.' }],
-      answerExplanation: 'Jheronimus Bosch (ca. 1450–1516) schilderde wonderlijke fantasiewezens, vaak opgebouwd uit mensen, dieren en voorwerpen. Dit monster is een nieuw, door jullie samengesteld wezen in die traditie, geen bestaand dier op een gevel. Het standbeeld op de Markt is gemaakt door August Falise en werd in 1930 onthuld. Let op het penseel, het palet en de levensjaren op de sokkel: 1450–1516.',
-      reward: { title: 'Verbeelding', text: 'Jullie fantasiewezen is tot leven gewekt!', symbol: '✨' }
+      hints: [{ id: 'h1', text: 'Het standbeeld geeft je het begin: wat draagt een schilder en welk laatste jaartal staat op de sokkel? Voor het monster: zoek een mensengezicht, een hol ei met een herberg en boomstammen die in bootjes staan.' }],
+      answerExplanation: 'Jheronimus Bosch (ca. 1450–1516) schilderde wonderlijke fantasiewezens, vaak opgebouwd uit mensen, dieren en voorwerpen. De Boomman staat op het rechterpaneel van De tuin der lusten: een mensengezicht onder een schijf, een hol ei-achtig lichaam met een herberg en boomstam-benen in bootjes. Onze illustratie is een vrije reconstructie van dat schilderijmotief. Het standbeeld op de Markt is gemaakt door August Falise en werd in 1930 onthuld. Let op het penseel, het palet en de levensjaren op de sokkel: 1450–1516.',
+      reward: { title: 'Verbeelding', text: 'Jullie Boomman is tot leven gewekt!', symbol: '✨' }
     },
     {
       id: 'sint-jan',

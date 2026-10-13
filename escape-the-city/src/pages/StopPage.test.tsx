@@ -183,7 +183,7 @@ describe('StopPage completion copy', () => {
     completed.stopProgress['bosch-wezen'].unlockMethod = 'gps';
     gameState = { ...gameState, progress: completed };
     await act(async () => root.render(page('bosch-completed')));
-    expect(container.textContent).toContain('Jullie fantasiewezen is tot leven gewekt!');
+    expect(container.textContent).toContain('Jullie Boomman is tot leven gewekt!');
     expect(container.querySelector('.bosch-monster-completed .bosch-art--alive')).not.toBeNull();
     expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')?.textContent).toContain('August Falise');
     expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Bekijk volgende routepunt op kaart');
