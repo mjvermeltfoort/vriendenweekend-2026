@@ -84,7 +84,7 @@ describe('Verborgen Schubben game data', () => {
     expect(bonus.manualVerification.question).toBe('Welk dier staat helemaal boven op de gevel?');
     expect(bonus.hints).toHaveLength(1);
     expect(bonus.hints[0].id).toBe('h1');
-    expect(bonus.hints[0].text).toContain('Kijk eens een stukje lager');
+    expect(bonus.hints[0].text).toBe('Die zwaan bovenop trekt natuurlijk alle aandacht. Maar kijk eens een stukje lager. Daar staan een paar heren al eeuwen op wacht. Hoeveel zijn het er?');
     expect(bonus.hints[0].text).not.toMatch(/vier|4/);
     expect(bonus.answerExplanation).toMatch(/1962.*Marius van Beek/);
     expect(bonus.answerExplanation).toMatch(/Willem van Oranje.*Gerardus van Uden.*Gijsbertus van der Poorten.*Floris van Egmond/);
