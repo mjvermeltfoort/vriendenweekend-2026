@@ -51,7 +51,7 @@ describe('Bosch sketchbook contrast on parchment', () => {
 
   it('keeps the standbeeld controls readable on parchment', () => {
     expect(css).toContain('.parchment-card .bosch-puzzle__radio span,');
-    expect(css).toContain('.parchment-card .bosch-puzzle__year span,');
+    expect(css).toContain('.parchment-card .bosch-puzzle__year span {');
     expect(css).toContain('.parchment-card .bosch-puzzle__year input:focus-visible + span');
     expect(css).toContain('.bosch-puzzle__zone:focus-visible');
     expect(css).toContain('touch-action: pan-y');
