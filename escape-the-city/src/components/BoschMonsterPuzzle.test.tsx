@@ -32,12 +32,14 @@ describe('Bosch interactions', () => {
     root = createRoot(container); act(() => root.render(<Harness />));
   });
   afterEach(() => { act(() => root.unmount()); container.remove(); });
-  it('cycles taps and arrows, wraps around and announces the preview', () => {
+  it('cycles taps on image and preserves live announcements', () => {
     expect(description()).toContain('vogelkop');
     act(() => button('Wissel hoofd').click()); expect(description()).toContain('vissenkop');
-    act(() => button('Volgende hoofd').click()); expect(description()).toContain('mensenkop');
-    act(() => button('Vorige hoofd').click()); expect(description()).toContain('vissenkop');
+    act(() => button('Wissel hoofd').click()); expect(description()).toContain('mensenkop');
+    act(() => button('Wissel hoofd').click()); expect(description()).toContain('vissenkop');
     expect(container.querySelector('[aria-live="polite"]')?.textContent).toContain('Vissenkop');
+    expect(container.querySelector('.bosch-puzzle__selectors')).toBeNull();
+    expect(container.querySelectorAll('.bosch-puzzle__stage button')).toHaveLength(3);
     expect(container.querySelectorAll('.bosch-art img')).toHaveLength(3);
     expect(container.querySelector('svg')).toBeNull();
   });
@@ -56,10 +58,10 @@ describe('Bosch interactions', () => {
     act(() => button('Wissel hoofd').dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })));
     expect(description()).toContain('vissenkop');
   });
-  it('provides focusable semantic keyboard buttons for parts and arrows', () => {
+  it('provides focusable semantic keyboard buttons directly on the artwork', () => {
     for (const part of ['hoofd', 'lijf', 'benen']) {
       expect(button(`Wissel ${part}`).tagName).toBe('BUTTON');
-      expect(button(`Vorige ${part}`).type).toBe('button');
+      expect(button(`Wissel ${part}`).type).toBe('button');
       act(() => button(`Wissel ${part}`).focus()); expect(document.activeElement).toBe(button(`Wissel ${part}`));
     }
   });
