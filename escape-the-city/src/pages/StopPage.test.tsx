@@ -181,13 +181,19 @@ describe('StopPage completion copy', () => {
       </MemoryRouter>
     ));
 
-    expect(container.textContent).toContain('Het Verloren Schetsboek');
-    expect(container.textContent).toContain('Bij het standbeeld van Jheronimus Bosch');
+    expect(container.textContent).toContain('Het Monster van Bosch');
+    expect(container.querySelector('.parchment-card h1')?.textContent).toBe('Het Monster van Bosch');
+    expect(container.textContent).toContain('In de wereld van Jheronimus Bosch is niets wat het lijkt.');
+    const teaser = container.querySelector('.parchment-card > p:not(.eyebrow):not(.parchment-instruction)')?.textContent ?? '';
+    expect(teaser).not.toMatch(/schetsboek|sokkel|twee aanwijzingen|penseel|palet|1516|boomman/i);
     const player = container.querySelector('[data-testid="stop-audio-player"]');
     expect(player).not.toBeNull();
     expect(player?.getAttribute('aria-label')).toBe('Luister naar het verhaal');
     expect(player?.getAttribute('data-audio-source')).toContain('/audio/04-jheronimus-bosch.mp3');
-    expect(player?.textContent).toContain('Voor jullie staat Jheronimus Bosch');
+    expect(player?.textContent).toContain('Hier groeide een jongen op die de wereld anders zag dan ieder ander.');
+    expect(player?.textContent).toContain('Waar anderen een gevel, regenpijp of toren zagen');
+    expect(player?.textContent).toContain('Bouw het wezen dat alleen jullie kunnen zien.');
+    expect(player?.textContent).not.toContain('Voor jullie staat Jheronimus Bosch');
   });
 
   it('reveals the animated Bosch monster and history only after completing the statue puzzle', async () => {

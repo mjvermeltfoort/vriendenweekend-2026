@@ -93,7 +93,12 @@ describe('Moerasdraak player copy', () => {
     expect(stop.locationName).toContain('August Falise');
     expect(stop.coordinates).toMatchObject({ latitude: 51.689089, longitude: 5.30375, radiusMeters: 35, maximumAccuracyMeters: 40 });
     expect(stop.navigation.fallbackDirections).not.toContain('Markt 29,');
-    expect(stop.intro.text).not.toMatch(/penseel en palet|1516|snavel|schubben/);
+    expect(stop.intro.title).toBe('Het Monster van Bosch');
+    expect(stop.intro.audioSrc).toMatch(/\/audio\/04-jheronimus-bosch\.mp3$/);
+    expect(stop.intro.text).not.toMatch(/schetsboek|sokkel|aanwijzing|penseel|palet|1516|boomman|snavel|schubben/i);
+    expect(stop.intro.transcript?.split('\n\n')).toHaveLength(5);
+    expect(stop.intro.transcript).toContain('Hier groeide een jongen op die de wereld anders zag dan ieder ander.');
+    expect(stop.intro.transcript).toContain('Bouw het wezen dat alleen jullie kunnen zien.');
     expect(stop.challenge.kind).toBe('composite');
     if (stop.challenge.kind !== 'composite') return;
     expect(stop.challenge.categories).toEqual({
