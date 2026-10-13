@@ -1,4 +1,5 @@
 """Exercise the real Bosch page with isolated local IndexedDB fixtures."""
+import re
 from playwright.sync_api import expect
 
 
@@ -28,8 +29,7 @@ def check_bosch(page, origin, diagnostics):
     page.reload(wait_until='load')
     page.wait_for_function("document.body.textContent.includes('Bosch browsercheck')")
     page.evaluate("""() => {
-      history.pushState(null, '', '/escape-the-city/challenge/bosch-wezen');
-      dispatchEvent(new PopStateEvent('popstate'));
+      location.hash = '/challenge/bosch-wezen';
     }""")
     page.locator('input[value="penseelpalet"]').check()
     page.locator('input[value="1516"]').check()
@@ -51,7 +51,7 @@ def check_bosch(page, origin, diagnostics):
         page.screenshot(path=str(diagnostics / f'bosch-{width}.png'), full_page=True)
         print('Bosch mobile layout:', metrics)
     page.get_by_role('button', name='Wissel hoofd', exact=True).click()
-    expect(page.get_by_role('img', name='Monster met', exact=False)).to_have_attribute('aria-label', __import__('re').compile('vissenkop'))
+    expect(page.get_by_role('img', name='Monster met', exact=False)).to_have_attribute('aria-label', re.compile('vissenkop'))
     page.get_by_role('button', name='Wissel lijf', exact=True).focus()
     page.keyboard.press('Enter')
     page.get_by_role('button', name='Wissel benen', exact=True).click()
@@ -63,12 +63,12 @@ def check_bosch(page, origin, diagnostics):
     page.mouse.down()
     page.mouse.move(x - 60, y, steps=5)
     page.mouse.up()
-    expect(page.locator('.bosch-art')).to_have_attribute('aria-label', __import__('re').compile('mensenkop'))
+    expect(page.locator('.bosch-art')).to_have_attribute('aria-label', re.compile('mensenkop'))
     page.mouse.move(x, y)
     page.mouse.down()
     page.mouse.move(x + 60, y, steps=5)
     page.mouse.up()
-    expect(page.locator('.bosch-art')).to_have_attribute('aria-label', __import__('re').compile('vissenkop'))
+    expect(page.locator('.bosch-art')).to_have_attribute('aria-label', re.compile('vissenkop'))
     page.emulate_media(reduced_motion='reduce')
     assert page.locator('.bosch-art img').first.evaluate('(e) => getComputedStyle(e).animationName') == 'none'
     print('Bosch browser interactions and reduced motion passed.')
