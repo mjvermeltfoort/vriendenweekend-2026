@@ -146,7 +146,7 @@ describe('ChallengePage', () => {
     act(() => container.querySelector<HTMLInputElement>('input[name="bosch-year"][value="1516"]')!.click());
     act(() => button('Open het schetsboek').click());
     expect(container.querySelector('.bosch-puzzle__stage')).not.toBeNull();
-    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Volgende hoofd"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Wissel hoofd"]')!.click());
     expect(container.querySelector('[aria-label^="Monster met"]')?.getAttribute('aria-label')).toContain('vissenkop');
 
     routeTo('bonus:citadel');
@@ -207,9 +207,9 @@ describe('ChallengePage', () => {
     act(() => button('Open het schetsboek').click());
     expect(container.querySelector('[aria-label^="Monster met"]')).not.toBeNull();
 
-    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Volgende hoofd"]')!.click());
-    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Volgende lijf"]')!.click());
-    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Volgende benen"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Wissel hoofd"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Wissel lijf"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Wissel benen"]')!.click());
     expect(container.querySelector('[aria-label^="Monster met"]')?.getAttribute('aria-label')).toContain('vissenkop als hoofd');
     await act(async () => button('Wek het monster tot leven').click());
     expect(attemptAnswer).toHaveBeenLastCalledWith('bosch-wezen', expect.anything(), {
@@ -217,9 +217,9 @@ describe('ChallengePage', () => {
     });
     expect(container.textContent).toContain('Probeer opnieuw.');
 
-    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Volgende hoofd"]')!.click());
-    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Volgende lijf"]')!.click());
-    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Volgende benen"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Wissel hoofd"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Wissel lijf"]')!.click());
+    act(() => container.querySelector<HTMLButtonElement>('button[aria-label="Wissel benen"]')!.click());
     expect(container.querySelector('[aria-label^="Monster met"]')?.getAttribute('aria-label')).toContain('mensenkop als hoofd');
     expect(container.querySelector('#answer-feedback')).toBeNull();
     await act(async () => button('Wek het monster tot leven').click());
