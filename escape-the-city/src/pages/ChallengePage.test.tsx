@@ -83,6 +83,18 @@ describe('ChallengePage', () => {
     actEnvironment.IS_REACT_ACT_ENVIRONMENT = false;
   });
 
+  it('keeps long Zwanenbroedershuis headings responsive without modifying the floating radio', () => {
+    render('bonus:zwanenbroedershuis');
+    const heading = container.querySelector('section.challenge-card h1');
+    expect(heading?.textContent).toBe('Zwanenbroedershuis');
+    expect(heading?.classList.contains('challenge-card__title--long')).toBe(true);
+    expect(container.querySelector('section.challenge-card > .audio-panel')).not.toBeNull();
+    expect(container.querySelectorAll('fieldset .choice-option')).toHaveLength(4);
+    expect(container.textContent).toContain('Hoeveel menselijke beelden');
+    routeTo('drakenfontein');
+    expect(container.querySelector('section.challenge-card h1')?.classList.contains('challenge-card__title--long')).toBe(false);
+  });
+
   it('sanitizes and truncates numeric codes and requires exactly four digits', () => {
     render('sint-jan');
     const input = container.querySelector<HTMLInputElement>('.code-input')!;

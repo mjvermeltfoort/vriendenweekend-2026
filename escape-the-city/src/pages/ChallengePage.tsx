@@ -161,7 +161,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           />
         ) : null}
         <div>
-          <h1>{currentStop.title}</h1>
+          <h1 className={currentStop.title.length >= 18 ? 'challenge-card__title--long' : undefined}>{currentStop.title}</h1>
           <p>{currentStop.challenge.prompt}</p>
         </div>
 
