@@ -162,7 +162,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
         ) : null}
         <div>
           <h1>{currentStop.title}</h1>
-          {currentStop.id !== 'bosch-wezen' || !boschBookOpen ? <p>{currentStop.challenge.prompt}</p> : null}
+          <p>{currentStop.challenge.prompt}</p>
         </div>
 
         {currentStop.id !== 'bosch-wezen' ? <div className="audio-panel" aria-label="Opdrachtillustratie niet beschikbaar">
