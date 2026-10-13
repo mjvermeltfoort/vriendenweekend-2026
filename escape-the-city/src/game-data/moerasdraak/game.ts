@@ -108,7 +108,7 @@ export const gamePack: GamePack = {
       // Standbeeldcoördinaten: Wikimedia Commons (51°41′20.72″N, 5°18′13.5″E).
       // Nog ter plaatse te bevestigen voor de laatste meters.
       coordinates: { latitude: 51.689089, longitude: 5.303750, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      intro: { title: 'Het Verloren Schetsboek', text: 'Bij het standbeeld van Jheronimus Bosch heeft de Moerasdraak een schets verscheurd. Bekijk de schilder en de sokkel aandachtig. Alleen wie de aanwijzingen ontdekt, kan het schetsboek openen en het monster herstellen.', audioSrc: audioAsset('04-jheronimus-bosch.mp3'), transcript: audioTranscripts.jheronimusBosch },
+      intro: { title: 'Het Monster van Bosch', text: 'In de wereld van Jheronimus Bosch is niets wat het lijkt. De Moerasdraak heeft hier een geheim verborgen. Luister naar het verhaal en laat je verbeelding spreken.', audioSrc: audioAsset('04-jheronimus-bosch.mp3'), transcript: audioTranscripts.jheronimusBosch },
       navigation: { clue: 'Zoek het bronzen standbeeld van Jheronimus Bosch op de Markt, tegenover De Kleine Winst.', fallbackDirections: 'Ga op de Markt naar het standbeeld tegenover De Kleine Winst. Niet naar het Huis van Bosch op Markt 29.', externalMapsQuery: 'Standbeeld Jeroen Bosch Markt Den Bosch August Falise' },
       challenge: {
         kind: 'composite',
