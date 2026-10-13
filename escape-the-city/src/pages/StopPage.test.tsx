@@ -54,7 +54,11 @@ vi.mock('../components/GameUi', () => ({
   PageShell: ({ children, title }: { children: React.ReactNode; title: string }) => <main><header>{title}</header>{children}</main>,
   GameIcon: () => <span aria-hidden="true" />
 }));
-vi.mock('../components/AudioPlayer', () => ({ AudioPlayer: ({ transcript }: { transcript: string }) => <p>{transcript}</p> }));
+vi.mock('../components/AudioPlayer', () => ({
+  AudioPlayer: ({ source, title, transcript }: { source: string; title: string; transcript: string }) => (
+    <section aria-label={title} data-testid="stop-audio-player" data-audio-source={source}><p>{transcript}</p></section>
+  )
+}));
 vi.mock('../features/location/ActiveStopIndicator', () => ({
   ActiveStopIndicator: ({ location }: { location: LocationResult | null }) => (
     <div data-testid="active-stop-gps">{location ? `${location.latitude},${location.longitude}` : 'Locatie zoeken…'}</div>
@@ -162,6 +166,27 @@ describe('StopPage completion copy', () => {
     expect(links[0]).toMatchObject({ href: '/route', text: 'Bekijk volgende routepunt op kaart' });
     expect(container.textContent).not.toContain('Volgende routepunt');
     expect(container.textContent).not.toContain('Vind de locatie');
+  });
+
+  it('restores the Bosch story narration and its full transcript on the stop page', async () => {
+    const progress = createProgress();
+    progress.currentStopId = 'bosch-wezen';
+    progress.stopProgress['bosch-wezen'].state = 'available';
+    gameState = { ...gameState, progress };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bosch-story-audio" initialEntries={['/stop/bosch-wezen']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+
+    expect(container.textContent).toContain('Het Verloren Schetsboek');
+    expect(container.textContent).toContain('Bij het standbeeld van Jheronimus Bosch');
+    const player = container.querySelector('[data-testid="stop-audio-player"]');
+    expect(player).not.toBeNull();
+    expect(player?.getAttribute('aria-label')).toBe('Luister naar het verhaal');
+    expect(player?.getAttribute('data-audio-source')).toMatch(/\\/audio\\/04-jheronimus-bosch\\.mp3$/);
+    expect(player?.textContent).toContain('Voor jullie staat Jheronimus Bosch');
   });
 
   it('reveals the animated Bosch monster and history only after completing the statue puzzle', async () => {
