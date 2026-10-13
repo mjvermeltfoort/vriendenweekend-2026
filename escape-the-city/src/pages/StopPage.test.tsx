@@ -171,7 +171,7 @@ describe('StopPage completion copy', () => {
   it('restores the Bosch story narration and its full transcript on the stop page', async () => {
     const progress = createProgress();
     progress.currentStopId = 'bosch-wezen';
-    progress.stopProgress['bosch-wezen'].state = 'available';
+    progress.stopProgress['bosch-wezen'].state = 'arrived';
     progress.stopProgress['bosch-wezen'].unlockMethod = 'gps';
     gameState = { ...gameState, progress };
 
