@@ -30,10 +30,14 @@ describe('Bosch asset and release contract', () => {
     expect(migration).not.toMatch(/latitude\s*=|longitude\s*=|grant |create |delete /i);
     expect(read('../supabase/migrations/038_bosch_statue_monster_challenge.sql')).toContain("'head', 'Vogel'");
   });
-  it('keeps compact 44px controls, shared canvases, vertical touch scrolling and reduced motion', () => {
+  it('keeps three 44px artwork touch zones, shared canvases and reduced motion', () => {
     const css = read('src/components/BoschMonsterPuzzle.css');
     expect(css).toContain('touch-action: pan-y');
-    expect(css).toContain('min-height: 44px');
+    expect(css).toMatch(/\.bosch-puzzle__zone \{[^}]*min-height: 44px/);
+    expect(css).toContain('.bosch-puzzle__zone--head');
+    expect(css).toContain('.bosch-puzzle__zone--body');
+    expect(css).toContain('.bosch-puzzle__zone--object');
+    expect(css).not.toContain('.bosch-puzzle__selector');
     expect(css).toContain('width: min(100%, 240px)');
     expect(css).toContain('aspect-ratio: 4 / 5');
     expect(css).toContain('.bosch-art--alive, .bosch-art img { animation: none; }');

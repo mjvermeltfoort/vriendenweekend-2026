@@ -39,10 +39,8 @@ describe('Bosch sketchbook contrast on parchment', () => {
   it.each([
     ['standbeeldobservatie: antwoordrij', '.parchment-card .bosch-puzzle__radio'],
     ['standbeeldobservatie: jaartal', '.parchment-card .bosch-puzzle__year span'],
-    ['monsterpuzzel: onderdeel', '.parchment-card .bosch-puzzle__part'],
     ['geselecteerd antwoord', '.parchment-card .bosch-puzzle__radio:has(input:checked)'],
     ['geselecteerd jaartal', '.parchment-card .bosch-puzzle__year input:checked + span'],
-    ['geselecteerd monsterdeel', '.parchment-card .bosch-puzzle__part--selected'],
     ['geopend schetsboek', '.parchment-card .bosch-puzzle__unlocked'],
     ['uitgeschakelde open-knop', '.parchment-card .bosch-puzzle > .button.primary:disabled'],
     ['actieve open-knop', '.parchment-card .bosch-puzzle > .button.primary:not(:disabled)']
@@ -51,12 +49,12 @@ describe('Bosch sketchbook contrast on parchment', () => {
     expect(contrastRatio(text, surface)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('explicitly resets the global dark parchment-label inheritance for both screens', () => {
+  it('keeps the standbeeld controls readable on parchment', () => {
     expect(css).toContain('.parchment-card .bosch-puzzle__radio span,');
-    expect(css).toContain('.parchment-card .bosch-puzzle__year span,');
-    expect(css).toContain('.parchment-card .bosch-puzzle__part > span');
-    expect(css).toContain('.parchment-card .bosch-puzzle__part--selected > span');
-    expect(css).toContain('.parchment-card .bosch-puzzle__part:focus-visible');
+    expect(css).toContain('.parchment-card .bosch-puzzle__year span {');
     expect(css).toContain('.parchment-card .bosch-puzzle__year input:focus-visible + span');
+    expect(css).toContain('.bosch-puzzle__zone:focus-visible');
+    expect(css).toContain('touch-action: pan-y');
+    expect(css).not.toContain('.bosch-puzzle__selector');
   });
 });

@@ -18,10 +18,6 @@
 .bosch-puzzle__stage .bosch-art { display: block; width: min(100%, 285px); height: auto; z-index: 1; filter: drop-shadow(2px 4px 2px rgba(45,31,19,.2)); }
 .bosch-puzzle__seal { position: absolute; left: .75rem; top: .1rem; color: #8e6330; font-size: 2rem; }
 .bosch-puzzle__caption { z-index: 1; font-family: Georgia, serif; color: #62492b; font-style: italic; font-size: .9rem; margin: -.15rem 0 .65rem; }
-.bosch-puzzle__part { min-width: 0; min-height: 82px; padding: .45rem .2rem; display: grid; place-content: center; justify-items: center; gap: .25rem; border: 1px solid var(--color-border-control); border-radius: 12px; color: var(--color-text-strong); background: var(--color-surface-raised); cursor: pointer; font: inherit; font-size: clamp(.7rem, 2.7vw, .93rem); overflow-wrap: anywhere; }
-.bosch-puzzle__part--selected { border: 2px solid var(--color-border-selected); box-shadow: inset 0 0 0 1px rgba(245,194,108,.26); background: rgba(198,152,66,.18); }
-.bosch-puzzle__part:focus-visible { outline: 3px solid var(--color-gold-light); outline-offset: 3px; }
-.bosch-puzzle__part-icon { font-family: Georgia, serif; font-size: 1.75rem; line-height: 1.2; color: var(--color-gold-light); }
 .bosch-art__head { transform-origin: 140px 148px; }
 .bosch-art--alive .bosch-art__head { animation: bosch-bob 1.4s ease-in-out infinite alternate; }
 .bosch-art--alive .bosch-art__magic { animation: bosch-shimmer 1.2s ease-in-out infinite alternate; }
@@ -30,44 +26,33 @@
 .bosch-monster-completed .bosch-art { display: block; width: 100%; height: auto; }
 @keyframes bosch-bob { to { transform: translateY(-5px) rotate(2deg); } }
 @keyframes bosch-shimmer { to { opacity: .27; transform: translateY(-4px); } }
-@media (max-width: 360px) { .bosch-puzzle__options { gap: .25rem; } .bosch-puzzle__part { min-height: 76px; } }
 @media (prefers-reduced-motion: reduce) { .bosch-art--alive .bosch-art__head, .bosch-art--alive .bosch-art__magic { animation: none; } }
 
 
-/* A parchment sheet has dark ink. The interactive controls are dark green,
-   so their text must explicitly switch to light ink. The global rule
-   '.parchment-card label' otherwise wins over '.bosch-puzzle__radio' and
-   gives dark-brown text on an almost black background (both screens). */
+/* The standbeeld-observation inputs sit on light parchment, but have dark-green
+   surfaces. Override inherited label colors to preserve readable contrast. */
 .parchment-card .bosch-puzzle__radio,
-.parchment-card .bosch-puzzle__year span,
-.parchment-card .bosch-puzzle__part {
+.parchment-card .bosch-puzzle__year span {
   color: #fff1cf;
   background: #10271f;
   border-color: #a98c57;
 }
 .parchment-card .bosch-puzzle__radio span,
-.parchment-card .bosch-puzzle__year span,
-.parchment-card .bosch-puzzle__part > span {
+.parchment-card .bosch-puzzle__year span {
   color: #fff1cf;
 }
 .parchment-card .bosch-puzzle__radio {
   color-scheme: dark;
 }
 .parchment-card .bosch-puzzle__radio:has(input:checked),
-.parchment-card .bosch-puzzle__part--selected,
 .parchment-card .bosch-puzzle__year input:checked + span {
   color: #fff5dc;
   background: #235240;
   border: 2px solid #f1cc78;
 }
 .parchment-card .bosch-puzzle__radio:has(input:checked) span,
-.parchment-card .bosch-puzzle__part--selected > span,
 .parchment-card .bosch-puzzle__year input:checked + span {
   color: #fff5dc;
-}
-.parchment-card .bosch-puzzle__part-icon,
-.parchment-card .bosch-puzzle__part--selected .bosch-puzzle__part-icon {
-  color: #ffdf95;
 }
 .parchment-card .bosch-puzzle__unlocked {
   color: #fff1cf;
@@ -94,7 +79,6 @@
 }
 /* Strong focus indicators on the controls themselves, not only the label. */
 .parchment-card .bosch-puzzle__radio:focus-within,
-.parchment-card .bosch-puzzle__part:focus-visible,
 .parchment-card .bosch-puzzle__year input:focus-visible + span,
 .parchment-card .bosch-puzzle > .button.primary:focus-visible {
   outline: 3px solid #f9d279;
@@ -109,16 +93,11 @@
 .bosch-art, .bosch-puzzle__stage .bosch-art { position: relative; width: min(100%, 240px); height: auto; aspect-ratio: 4 / 5; margin: auto; }
 .bosch-art img { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; animation: bosch-appear .18s ease-out; }
 .bosch-puzzle__zones { position: absolute; inset: 0; z-index: 2; width: min(100%, 240px); margin: auto; }
-.bosch-puzzle__zone { position: absolute; left: 0; width: 100%; border: 0; background: transparent; cursor: pointer; touch-action: pan-y; }
+.bosch-puzzle__zone { position: absolute; left: 0; width: 100%; min-height: 44px; border: 0; background: transparent; cursor: pointer; touch-action: pan-y; }
 .bosch-puzzle__zone--head { top: 0; height: 30%; }
 .bosch-puzzle__zone--body { top: 30%; height: 37%; }
 .bosch-puzzle__zone--object { top: 67%; height: 33%; }
 .bosch-puzzle__zone:focus-visible { outline: 3px solid #15583c; outline-offset: -3px; border-radius: 8px; }
-.bosch-puzzle__selectors { display: grid; gap: 4px; }
-.bosch-puzzle__selector { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; }
-.bosch-puzzle__selector .bosch-puzzle__part { min-height: 44px; padding: 4px; font-size: .9rem; border-radius: 8px; }
-.bosch-puzzle__current { display: flex; justify-content: space-between; text-align: left; }
-.bosch-puzzle__current small { flex: none; }
 .bosch-art--alive { animation: bosch-awaken .7s ease-out; }
 @keyframes bosch-appear { from { opacity: .6; } to { opacity: 1; } }
 @keyframes bosch-awaken { 50% { transform: translateY(-4px) scale(1.02); } }
