@@ -172,6 +172,7 @@ describe('StopPage completion copy', () => {
     const progress = createProgress();
     progress.currentStopId = 'bosch-wezen';
     progress.stopProgress['bosch-wezen'].state = 'available';
+    progress.stopProgress['bosch-wezen'].unlockMethod = 'gps';
     gameState = { ...gameState, progress };
 
     await act(async () => root.render(
