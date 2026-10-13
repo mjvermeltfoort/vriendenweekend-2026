@@ -99,18 +99,6 @@ export function BoschMonsterPuzzle({
             }} />)}
         </div>
       </div>
-      <div className="bosch-puzzle__selectors">
-        {monsterPieces.map(({ slot, title, choices }) => {
-          const choice = monsterChoice(selection, slot);
-          return <div className="bosch-puzzle__selector" role="group" aria-label={title} key={slot}>
-            <button type="button" className="bosch-puzzle__part" aria-label={`Vorige ${title.toLowerCase()}`} onClick={() => cycle(slot, -1)}>‹</button>
-            <button type="button" className="bosch-puzzle__part bosch-puzzle__current" onClick={() => cycle(slot, 1)} aria-label={`Kies ${title.toLowerCase()}: ${choice.label}`}>
-              <span>{title}: {choice.label}</span><small>{choices.indexOf(choice) + 1}/3</small>
-            </button>
-            <button type="button" className="bosch-puzzle__part" aria-label={`Volgende ${title.toLowerCase()}`} onClick={() => cycle(slot, 1)}>›</button>
-          </div>;
-        })}
-      </div>
       <p className="sr-only" role="status" aria-live="polite">{monsterPieces.map(({ slot, title }) => `${title}: ${monsterChoice(selection, slot).label}`).join(', ')}</p>
     </section>
   );
