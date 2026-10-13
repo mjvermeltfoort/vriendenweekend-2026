@@ -126,7 +126,7 @@ describe('Moerasdraak player copy', () => {
       ['bonus:bolwerk-sint-jan', ['a', 'De Koepoort']],
       ['bonus:halve-peer', ['b', 'Carnavalsvereniging De Oetels']],
       ['bonus:de-moriaan', ['a', 'Een klein rond torentje']],
-      ['bonus:zwanenbroedershuis', ['b', 'De Illustre Lieve Vrouwe Broederschap']]
+      ['bonus:zwanenbroedershuis', ['b', 'Vier']]
     ]);
 
     for (const [id, [answerId, label]] of expectedAnswers) {
@@ -144,7 +144,7 @@ describe('Moerasdraak player copy', () => {
       ['bonus:bolwerk-sint-jan', /stadspoort.*Moerasdraak/i],
       ['bonus:halve-peer', /twee verenigingen.*halve Peer/i],
       ['bonus:de-moriaan', /De Moriaan.*woonhuis.*slopershamer/i],
-      ['bonus:zwanenbroedershuis', /Illustre Lieve Vrouwe Broederschap/i]
+      ['bonus:zwanenbroedershuis', /Hinthamerstraat.*zwaan.*Moerasdraak/i]
     ]);
 
     for (const [id, context] of expectedContext) {

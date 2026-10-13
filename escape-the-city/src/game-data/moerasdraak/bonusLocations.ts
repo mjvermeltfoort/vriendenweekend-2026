@@ -89,10 +89,23 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Een vogel bewaakt een huis dat ouder is dan zijn gevel.', revealedDescription: 'De zwaan ziet wat beneden vaak onopgemerkt blijft.', estimatedDetourMinutes: 4,
     recommendedBetween: { afterStopId: 'sint-jan', beforeStopId: 'kruithuis' }, visibleAfterStopId: 'binnendieze', maximumPoints: 150,
     manualVerification: { questionId: 'bonus-zwanenbroedershuis-primary', question: 'Welk dier staat helemaal boven op de gevel?' },
-    intro: { title: 'De Wachter op de Gevel', text: 'De Illustre Lieve Vrouwe Broederschap liet hier een zwaan achter.' },
+    intro: { title: 'De Wachters van de Zwaan', text: 'Hoog boven de Hinthamerstraat bewaakt een zwaan een eeuwenoud geheim. Maar de vogel staat niet alleen. De Moerasdraak heeft nog meer wachters op de gevel ontdekt.' },
     navigation: { clue: 'Een vogel bewaakt een huis dat ouder is dan zijn gevel.', fallbackDirections: 'Ga naar Hinthamerstraat 94.', externalMapsQuery: 'Zwanenbroedershuis Den Bosch' },
-    challenge: { kind: 'choice', prompt: 'Welke organisatie is met dit huis verbonden?', options: [{ id: 'a', label: 'Schuttersgilde', correct: false }, { id: 'b', label: 'De Illustre Lieve Vrouwe Broederschap', correct: true }, { id: 'c', label: 'Gilde van Sint-Jan', correct: false }, { id: 'd', label: 'VOC', correct: false }], correctFeedback: 'De Veerschub is gevonden.', wrongFeedback: 'Lees de naam boven de deur.' },
-    hints: [{ id: 'h1', text: 'De naam van het huis helpt.' }], reward: { id: 'veerschub', title: 'Veerschub', text: 'De gevelwachter ziet alles.', symbol: '◈', resultLabel: 'Veerschub' }
+    challenge: {
+      kind: 'choice',
+      prompt: 'Hoeveel menselijke beelden staan er aan de voorgevel van het Zwanenbroedershuis?',
+      options: [
+        { id: 'a', label: 'Twee', correct: false },
+        { id: 'c', label: 'Drie', correct: false },
+        { id: 'b', label: 'Vier', correct: true },
+        { id: 'd', label: 'Vijf', correct: false }
+      ],
+      correctFeedback: 'Goed geteld! Vier stenen wachters houden de gevel in de gaten. De Veerschub is gevonden!',
+      wrongFeedback: 'Nog niet. Tel de menselijke figuren tegen de voorgevel, maar tel de zwaan bovenop niet mee.'
+    },
+    hints: [{ id: 'h1', text: 'Die zwaan bovenop trekt natuurlijk alle aandacht. Maar kijk eens een stukje lager. Daar staan een paar heren al eeuwen op wacht. Hoeveel zijn het er?' }],
+    answerExplanation: 'De vier stenen gevelbeelden werden in 1962 gemaakt door beeldhouwer Marius van Beek. Ze stellen Willem van Oranje, Gerardus van Uden, Gijsbertus van der Poorten en Floris van Egmond voor: bekende personen uit de geschiedenis van de Illustre Lieve Vrouwe Broederschap. De broederschap is sinds 1483 op deze plek gevestigd. Het huidige Zwanenbroedershuis dateert uit 1846–1847. Ook schilder Jheronimus Bosch was lid van de broederschap.',
+    reward: { id: 'veerschub', title: 'Veerschub', text: 'De gevelwachter ziet alles.', symbol: '◈', resultLabel: 'Veerschub' }
   },
   {
     id: 'bonus:citadel', isBonus: true, order: 0, slug: 'citadel', title: 'De Citadel', shortTitle: 'Verborgen vondst', locationName: 'Citadellaan / Zuid-Willemsvaart',

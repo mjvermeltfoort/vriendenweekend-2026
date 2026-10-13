@@ -322,6 +322,37 @@ describe('StopPage completion copy', () => {
     expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Terug naar hoofdroute');
   });
 
+  it('reveals the story behind the Zwanenbroedershuis statues only after the Veerschub is completed', async () => {
+    const unfinished = createProgress();
+    unfinished.stopProgress.binnendieze.state = 'completed';
+    unfinished.stopProgress['bonus:zwanenbroedershuis'].state = 'available';
+    gameState = { ...gameState, progress: unfinished };
+    const page = (key: string) => (
+      <MemoryRouter key={key} initialEntries={['/stop/bonus:zwanenbroedershuis']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    );
+
+    await act(async () => root.render(page('zwanenbroedershuis-unfinished')));
+    expect(container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]')).toBeNull();
+    expect(container.textContent).not.toContain('De vier stenen gevelbeelden werden in 1962');
+
+    const completed = createProgress();
+    completed.stopProgress.binnendieze.state = 'completed';
+    completed.stopProgress['bonus:zwanenbroedershuis'].state = 'completed';
+    completed.stopProgress['bonus:zwanenbroedershuis'].unlockMethod = 'gps';
+    gameState = { ...gameState, progress: completed };
+    await act(async () => root.render(page('zwanenbroedershuis-completed')));
+
+    expect(container.textContent).toContain('Drakenschub gevonden');
+    expect(container.textContent).toContain('Veerschub');
+    const explanation = container.querySelector('[aria-label="Uitleg bij het juiste antwoord"]');
+    expect(explanation?.textContent).toContain('Het verhaal achter Zwanenbroedershuis');
+    expect(explanation?.textContent).toContain('Marius van Beek');
+    expect(explanation?.textContent).toContain('1962');
+    expect(container.querySelector('a[href="/route"]')?.textContent).toContain('Terug naar hoofdroute');
+  });
+
   it('keeps the Koepoort history hidden until the Poortschub is completed', async () => {
     const progress = createProgress();
     progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'available';
