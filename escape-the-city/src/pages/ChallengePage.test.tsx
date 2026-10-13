@@ -179,6 +179,7 @@ describe('ChallengePage', () => {
 
   it('opens the Bosch sketchbook only after both statue observations without scoring attempts', () => {
     render('bosch-wezen');
+    expect(container.textContent).toContain('Het schetsboek van Bosch is beschadigd.');
     expect(container.textContent).toContain('Wat houdt de schilder in zijn handen?');
     expect(container.textContent).toContain('Welk jaartal staat als laatste op de sokkel?');
     expect(container.querySelector('.bosch-puzzle__stage')).toBeNull();
@@ -194,6 +195,7 @@ describe('ChallengePage', () => {
     act(() => button('Open het schetsboek').click());
     expect(container.querySelector('.bosch-puzzle__stage')).not.toBeNull();
     expect(container.textContent).toContain('Het schetsboek is geopend');
+    expect(container.textContent).toContain('Het schetsboek van Bosch is beschadigd.');
     expect(button('Wek het monster tot leven').disabled).toBe(true);
     expect(attemptAnswer).not.toHaveBeenCalled();
   });
