@@ -1979,8 +1979,23 @@ input[type="checkbox"] {
 .challenge-card > .bell-challenge {
   margin-inline: var(--space-2);
 }
+/* Align the location panel with the question and answer choices.
+   The shared inset on the audio panel made it narrower than the choices. */
 .challenge-card > .audio-panel {
+  margin-inline: 0;
+  min-width: 0;
+  grid-template-columns: 46px minmax(0, 1fr);
   color: var(--color-text);
+}
+/* Long one-word names such as Zwanenbroedershuis must fit a phone screen.
+   Only long titles shrink; regular mission headings keep their typography. */
+.challenge-card h1.challenge-card__title--long {
+  max-width: 100%;
+  min-width: 0;
+  font-size: clamp(1.3rem, 5.85vw, 1.7rem);
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 .challenge-card > .audio-panel strong {
   color: var(--color-text-strong);
