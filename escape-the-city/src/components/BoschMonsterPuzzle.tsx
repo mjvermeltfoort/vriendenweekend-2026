@@ -1,20 +1,6 @@
-import { useState } from 'react';
-import { BoschMonsterArt, type MonsterSelection } from './BoschMonsterArt';
+import { useRef, useState } from 'react';
+import { BoschMonsterArt, monsterChoice, monsterPieces, type MonsterSlot, type MonsterSelection } from './BoschMonsterArt';
 import './BoschMonsterPuzzle.css';
-
-type Slot = 'head' | 'body' | 'object';
-
-const pieces: { slot: Slot; title: string; choices: { value: string; label: string }[] }[] = [
-  { slot: 'head', title: 'Hoofd', choices: [
-    { value: 'Demon', label: 'Demon' }, { value: 'Kikker', label: 'Kikker' }, { value: 'Vogel', label: 'Vogel' }
-  ] },
-  { slot: 'body', title: 'Lijf', choices: [
-    { value: 'Ton', label: 'Ton' }, { value: 'Boek', label: 'Boek' }, { value: 'Vis', label: 'Vis' }
-  ] },
-  { slot: 'object', title: 'Onderkant', choices: [
-    { value: 'Wielen', label: 'Wielen' }, { value: 'Vogelpoten', label: 'Vogelpoten' }, { value: 'Mens', label: 'Mensenbenen' }
-  ] }
-];
 
 const tools = [
   { value: 'boek', label: 'Een boek en een ganzenveer' },
@@ -31,11 +17,19 @@ export function BoschMonsterPuzzle({
   unlocked: boolean;
   onUnlock: () => void;
   selection: MonsterSelection;
-  onSelect: (slot: Slot, value: string) => void;
+  onSelect: (slot: MonsterSlot, value: string) => void;
 }) {
   const [tool, setTool] = useState('');
   const [year, setYear] = useState('');
   const [wrongObservation, setWrongObservation] = useState(false);
+
+  const gesture = useRef<{ slot: MonsterSlot; x: number; y: number; id: number } | null>(null);
+  const suppressClick = useRef(false);
+  function cycle(slot: MonsterSlot, direction: number) {
+    const choices = monsterPieces.find(piece => piece.slot === slot)!.choices;
+    const index = choices.findIndex(choice => choice.value === monsterChoice(selection, slot).value);
+    onSelect(slot, choices[(index + direction + choices.length) % choices.length].value);
+  }
 
   if (!unlocked) {
     return (
@@ -77,34 +71,47 @@ export function BoschMonsterPuzzle({
   return (
     <section className="bosch-puzzle stack" aria-label="Monsterpuzzel">
       <div className="bosch-puzzle__unlocked" role="status">✦ Het schetsboek is geopend! · Deel 2 van 2</div>
-      <p className="bosch-puzzle__story">Drie gescheurde onderdelen vormen een vreemd wezen. Herstel Boschs fantasie: <strong>een snavel, een geschubd lijf en mensenvoeten.</strong> Tik op de stukken om jouw monster samen te stellen.</p>
+      <p className="bosch-puzzle__story">Herstel de Boomman uit <em>De tuin der lusten</em>. Tik of swipe op hoofd, lijf en benen.</p>
       <div className="bosch-puzzle__stage">
-        <span className="bosch-puzzle__seal" aria-hidden="true">✧</span>
         <BoschMonsterArt selection={selection} />
-        <span className="bosch-puzzle__caption">Het schetsboek van de Moerasdraak</span>
+        <div className="bosch-puzzle__zones">
+          {monsterPieces.map(({ slot, title }) => <button key={slot} type="button"
+            className={`bosch-puzzle__zone bosch-puzzle__zone--${slot}`}
+            aria-label={`Wissel ${title.toLowerCase()}`}
+            onPointerDown={event => {
+              if (!event.isPrimary || event.button !== 0) return;
+              suppressClick.current = false;
+              gesture.current = { slot, x: event.clientX, y: event.clientY, id: event.pointerId };
+              event.currentTarget.setPointerCapture?.(event.pointerId);
+            }}
+            onPointerCancel={() => { gesture.current = null; suppressClick.current = true; }}
+            onPointerUp={event => {
+              const start = gesture.current;
+              gesture.current = null;
+              if (!start || start.id !== event.pointerId || start.slot !== slot) return;
+              const dx = event.clientX - start.x, dy = event.clientY - start.y;
+              suppressClick.current = Math.abs(dx) > 10 || Math.abs(dy) > 10;
+              if (Math.abs(dx) >= 40 && Math.abs(dx) > 1.3 * Math.abs(dy)) cycle(slot, dx < 0 ? 1 : -1);
+            }}
+            onClick={event => {
+              if (!suppressClick.current || event.detail === 0) cycle(slot, 1);
+              suppressClick.current = false;
+            }} />)}
+        </div>
       </div>
-      {pieces.map(({ slot, title, choices }) => (
-        <fieldset className="bosch-puzzle__fieldset" key={slot}>
-          <legend>{title}</legend>
-          <div className="bosch-puzzle__options">
-            {choices.map(({ value, label }) => (
-              <button type="button" key={value}
-                className={`bosch-puzzle__part ${selection[slot] === value ? 'bosch-puzzle__part--selected' : ''}`}
-                aria-label={`Kies ${title.toLowerCase()}: ${label}`}
-                aria-pressed={selection[slot] === value}
-                onClick={() => onSelect(slot, value)}>
-                <span className="bosch-puzzle__part-icon" aria-hidden="true">
-                  {slot === 'head' ? (value === 'Vogel' ? '♧' : value === 'Kikker' ? '◉' : '♜')
-                    : slot === 'body' ? (value === 'Vis' ? '≋' : value === 'Ton' ? '▤' : '▣')
-                    : value === 'Mens' ? '♙' : value === 'Wielen' ? '⚙' : '♢'}
-                </span>
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      ))}
-      <p className="muted small center">Kies een hoofd, een lijf en een onderkant. De illustratie verandert direct.</p>
+      <div className="bosch-puzzle__selectors">
+        {monsterPieces.map(({ slot, title, choices }) => {
+          const choice = monsterChoice(selection, slot);
+          return <div className="bosch-puzzle__selector" role="group" aria-label={title} key={slot}>
+            <button type="button" className="bosch-puzzle__part" aria-label={`Vorige ${title.toLowerCase()}`} onClick={() => cycle(slot, -1)}>‹</button>
+            <button type="button" className="bosch-puzzle__part bosch-puzzle__current" onClick={() => cycle(slot, 1)} aria-label={`Kies ${title.toLowerCase()}: ${choice.label}`}>
+              <span>{title}: {choice.label}</span><small>{choices.indexOf(choice) + 1}/3</small>
+            </button>
+            <button type="button" className="bosch-puzzle__part" aria-label={`Volgende ${title.toLowerCase()}`} onClick={() => cycle(slot, 1)}>›</button>
+          </div>;
+        })}
+      </div>
+      <p className="sr-only" role="status" aria-live="polite">{monsterPieces.map(({ slot, title }) => `${title}: ${monsterChoice(selection, slot).label}`).join(', ')}</p>
     </section>
   );
 }

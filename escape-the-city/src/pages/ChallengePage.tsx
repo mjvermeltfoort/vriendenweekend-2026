@@ -152,7 +152,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
       <p className="eyebrow center">{isBonusLocation(currentStop) ? 'Verborgen Schub' : `${currentStop.order} / ${pack.stops.length}`}</p>
       <p className="center muted small">Nog {openStops} opdrachten open · hints kosten {penalty} punten</p>
       {showParchment ? (
-        <section className="parchment-card challenge-card stack stack--large">
+        <section className={`parchment-card challenge-card stack stack--large${currentStop.id === 'bosch-wezen' && boschBookOpen ? ' bosch-challenge' : ''}`}>
         {isFinal ? (
           <AudioPlayer
             source={narrationAudio.finale}
@@ -162,7 +162,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
         ) : null}
         <div>
           <h1>{currentStop.title}</h1>
-          <p>{currentStop.challenge.prompt}</p>
+          {currentStop.id !== 'bosch-wezen' || !boschBookOpen ? <p>{currentStop.challenge.prompt}</p> : null}
         </div>
 
         {currentStop.id !== 'bosch-wezen' ? <div className="audio-panel" aria-label="Opdrachtillustratie niet beschikbaar">

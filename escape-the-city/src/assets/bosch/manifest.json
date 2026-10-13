@@ -1,0 +1,104 @@
+{
+  "schema": "bosch-layered-sprites/v1",
+  "canvas": {
+    "width": 512,
+    "height": 640,
+    "ratio": "4:5"
+  },
+  "renderOrder": [
+    "legs",
+    "head",
+    "body"
+  ],
+  "files": {
+    "head/human": {
+      "png": "head/human.png",
+      "webp": "head/human.webp"
+    },
+    "head/bird": {
+      "png": "head/bird.png",
+      "webp": "head/bird.webp"
+    },
+    "head/fish": {
+      "png": "head/fish.png",
+      "webp": "head/fish.webp"
+    },
+    "body/egg": {
+      "png": "body/egg.png",
+      "webp": "body/egg.webp"
+    },
+    "body/barrel": {
+      "png": "body/barrel.png",
+      "webp": "body/barrel.webp"
+    },
+    "body/tower": {
+      "png": "body/tower.png",
+      "webp": "body/tower.webp"
+    },
+    "legs/trees": {
+      "png": "legs/trees.png",
+      "webp": "legs/trees.webp"
+    },
+    "legs/human": {
+      "png": "legs/human.png",
+      "webp": "legs/human.webp"
+    },
+    "legs/bird": {
+      "png": "legs/bird.png",
+      "webp": "legs/bird.webp"
+    }
+  },
+  "choices": {
+    "head": [
+      {
+        "id": "human",
+        "label": "Mensenkop"
+      },
+      {
+        "id": "bird",
+        "label": "Vogelkop"
+      },
+      {
+        "id": "fish",
+        "label": "Vissenkop"
+      }
+    ],
+    "body": [
+      {
+        "id": "egg",
+        "label": "Ei-lijf"
+      },
+      {
+        "id": "barrel",
+        "label": "Tonlijf"
+      },
+      {
+        "id": "tower",
+        "label": "Torenlijf"
+      }
+    ],
+    "object": [
+      {
+        "id": "trees",
+        "assetGroup": "legs",
+        "label": "Boomstammen in bootjes"
+      },
+      {
+        "id": "human",
+        "assetGroup": "legs",
+        "label": "Mensenbenen"
+      },
+      {
+        "id": "bird",
+        "assetGroup": "legs",
+        "label": "Vogelpoten"
+      }
+    ]
+  },
+  "correctAnswer": {
+    "head": "human",
+    "body": "egg",
+    "object": "trees"
+  },
+  "notes": "All 9 assets are 512x640 with transparent background and pre-aligned to identical canvas coordinates; render in order legs, head, body. Illustration is AI-generated after Bosch motif, NOT an exact tracing of the historic painting."
+}

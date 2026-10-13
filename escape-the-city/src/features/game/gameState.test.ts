@@ -81,14 +81,14 @@ describe('gameState', () => {
   it('checks every category of a composite answer', () => {
     const composite = gamePack.stops.find((stop) => stop.id === 'bosch-wezen')!.challenge;
     expect(challengeAnswerIsCorrect(composite, {
-      head: 'Vogel',
-      body: 'Vis',
-      object: 'Mens'
+      head: 'human',
+      body: 'egg',
+      object: 'trees'
     })).toBe(true);
     expect(challengeAnswerIsCorrect(composite, {
-      head: 'Demon',
-      body: 'Vis',
-      object: 'Mens'
+      head: 'bird',
+      body: 'egg',
+      object: 'trees'
     })).toBe(false);
   });
 
