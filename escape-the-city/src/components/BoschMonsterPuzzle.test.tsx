@@ -36,8 +36,8 @@ describe('Bosch interactions', () => {
     expect(description()).toContain('vogelkop');
     act(() => button('Wissel hoofd').click()); expect(description()).toContain('vissenkop');
     act(() => button('Wissel hoofd').click()); expect(description()).toContain('mensenkop');
-    act(() => button('Wissel hoofd').click()); expect(description()).toContain('vissenkop');
-    expect(container.querySelector('[aria-live="polite"]')?.textContent).toContain('Vissenkop');
+    act(() => button('Wissel hoofd').click()); expect(description()).toContain('vogelkop');
+    expect(container.querySelector('[aria-live="polite"]')?.textContent).toContain('Vogelkop');
     expect(container.querySelector('.bosch-puzzle__selectors')).toBeNull();
     expect(container.querySelectorAll('.bosch-puzzle__stage button')).toHaveLength(3);
     expect(container.querySelectorAll('.bosch-art img')).toHaveLength(3);
