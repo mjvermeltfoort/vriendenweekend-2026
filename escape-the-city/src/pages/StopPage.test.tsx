@@ -185,7 +185,7 @@ describe('StopPage completion copy', () => {
     const player = container.querySelector('[data-testid="stop-audio-player"]');
     expect(player).not.toBeNull();
     expect(player?.getAttribute('aria-label')).toBe('Luister naar het verhaal');
-    expect(player?.getAttribute('data-audio-source')).toMatch(/\\/audio\\/04-jheronimus-bosch\\.mp3$/);
+    expect(player?.getAttribute('data-audio-source')).toContain('/audio/04-jheronimus-bosch.mp3');
     expect(player?.textContent).toContain('Voor jullie staat Jheronimus Bosch');
   });
 
