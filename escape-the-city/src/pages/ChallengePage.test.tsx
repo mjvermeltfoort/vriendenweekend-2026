@@ -33,6 +33,10 @@ vi.mock('../components/GameUi', () => ({
   HintDialog: ({ open }: { open: boolean }) => open ? <div data-testid="hint-dialog">Hintdialoog</div> : null
 }));
 
+vi.mock('../components/HintHenkHint', () => ({
+  HintHenkHint: ({ open }: { open: boolean }) => open ? <div data-testid="hint-dialog">Hintdialoog</div> : null
+}));
+
 vi.mock('../components/AudioPlayer', () => ({ AudioPlayer: () => null }));
 vi.mock('../components/BellChallengeAudio', () => ({ BellChallengeAudio: () => null }));
 

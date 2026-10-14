@@ -1,6 +1,8 @@
 import type { GamePack } from '../game/gameTypes';
 import { allBellChallengeImages, allEffectAudio, allScenicAudio, allStandaloneNarration } from '../audio/audioConfig';
 
+import { allHenkAudio } from '../audio/hintHenkAudio';
+
 const MEDIA_CACHE = 'moerasdraak-audio-v3';
 export const ROUTE_OFFLINE_ASSETS = [
   './routes/moerasdraak-den-bosch.geojson',
@@ -15,6 +17,7 @@ export function buildAssetManifest(pack: GamePack) {
   for (const bonus of pack.bonusLocations ?? []) {
     if (bonus.intro.audioSrc) assets.add(bonus.intro.audioSrc);
   }
+  for (const asset of allHenkAudio()) assets.add(asset);
   for (const asset of allStandaloneNarration()) assets.add(asset);
   for (const asset of allScenicAudio()) assets.add(asset);
   for (const asset of allEffectAudio()) assets.add(asset);
