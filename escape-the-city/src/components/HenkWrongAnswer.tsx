@@ -7,11 +7,12 @@ import { HenkFlame } from './HintHenkIntro';
 
 export const wrongAnswerAudio = audioAsset(`hint-henk/${clip.file}`);
 
-export function HenkWrongAnswer({ teamId, stopId, deadline, seconds, penalty }: {
-  teamId: string; stopId: string; deadline?: string; seconds: number; penalty?: number;
+export function HenkWrongAnswer({ teamId, stopId, deadline, seconds, penalty, reopenRequest = 0 }: {
+  teamId: string; stopId: string; deadline?: string; seconds: number; penalty?: number; reopenRequest?: number;
 }) {
   const [open, setOpen] = useState(false);
   const seen = useRef('');
+  const lastReopenRequest = useRef(reopenRequest);
   const key = `moerasdraak-henk-wrong-answer:${teamId}:${stopId}`;
   useEffect(() => {
     if (!seconds) { setOpen(false); return; }
@@ -22,15 +23,20 @@ export function HenkWrongAnswer({ teamId, stopId, deadline, seconds, penalty }: 
     if (!dismissed) setOpen(true);
   }, [deadline, seconds, key]);
 
+  // The countdown button can explicitly replay the same dialog without another
+  // answer attempt or a new points penalty.
+  useEffect(() => {
+    if (reopenRequest === lastReopenRequest.current) return;
+    lastReopenRequest.current = reopenRequest;
+    if (seconds > 0) setOpen(true);
+  }, [reopenRequest, seconds]);
+
   function close() {
     if (deadline) try { sessionStorage.setItem(key, deadline); } catch { /* Optional UI storage. */ }
     setOpen(false);
   }
   if (!seconds) return null;
-  return <>
-    <button className="text-link henk-wrong-reopen" type="button" onClick={() => setOpen(true)}>Bekijk Henks foutmelding</button>
-    {open ? <WrongAnswerDialog seconds={seconds} penalty={penalty} onClose={close} /> : null}
-  </>;
+  return open ? <WrongAnswerDialog seconds={seconds} penalty={penalty} onClose={close} /> : null;
 }
 
 function WrongAnswerDialog({ seconds, penalty, onClose }: { seconds: number; penalty?: number; onClose: () => void }) {

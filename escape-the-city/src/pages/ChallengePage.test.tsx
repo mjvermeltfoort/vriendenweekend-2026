@@ -37,7 +37,7 @@ vi.mock('../components/HintHenkHint', () => ({
   HintHenkHint: ({ open }: { open: boolean }) => open ? <div data-testid="hint-dialog">Hintdialoog</div> : null
 }));
 
-vi.mock('../components/HenkWrongAnswer', () => ({ HenkWrongAnswer: ({ seconds, penalty }: { seconds: number; penalty?: number }) => seconds > 0 ? <div data-testid="wrong-answer-henk">Henk: {penalty} / {seconds}</div> : null }));
+vi.mock('../components/HenkWrongAnswer', () => ({ HenkWrongAnswer: ({ seconds, penalty, reopenRequest }: { seconds: number; penalty?: number; reopenRequest?: number }) => seconds > 0 ? <div data-testid="wrong-answer-henk" data-reopen-request={reopenRequest}>Henk: {penalty} / {seconds}</div> : null }));
 
 vi.mock('../components/AudioPlayer', () => ({ AudioPlayer: () => null }));
 vi.mock('../components/BellChallengeAudio', () => ({ BellChallengeAudio: () => null }));
@@ -97,22 +97,31 @@ describe('ChallengePage', () => {
     attemptAnswer.mockResolvedValue({correct:false, message:'Nog niet juist.', retryAvailableAt:new Date(Date.now()+60000).toISOString(), penaltyPoints:25});
     render('drakenfontein'); act(() => container.querySelector<HTMLInputElement>('input[value="a"]')!.click());
     await act(async () => button('Controleer antwoord').click());
-    expect(button('Nieuwe poging over').disabled).toBe(true);
+    expect(button('Nieuwe poging over').disabled).toBe(false);
     expect(button('Hint gebruiken').disabled).toBe(false);
+    expect(container.textContent).not.toContain('Bekijk Henks foutmelding');
     expect(container.querySelector('[data-testid="wrong-answer-henk"]')?.textContent).toContain('25 / 60');
     act(() => vi.advanceTimersByTime(59000));
     expect(button('Nieuwe poging over').textContent).toContain('00:01');
-    act(() => button('Nieuwe poging over').click()); expect(attemptAnswer).toHaveBeenCalledTimes(1);
-    act(() => vi.advanceTimersByTime(1000)); expect(button('Controleer antwoord').disabled).toBe(false);
+    act(() => button('Nieuwe poging over').click());
+    expect(attemptAnswer).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('[data-testid="wrong-answer-henk"]')?.getAttribute('data-reopen-request')).toBe('1');
+    act(() => vi.advanceTimersByTime(1000));
+    expect(button('Opnieuw proberen').disabled).toBe(false);
+    await act(async () => button('Opnieuw proberen').click());
+    expect(attemptAnswer).toHaveBeenCalledTimes(2);
   });
 
   it('restores a shared cooldown from progress after remounting', () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-14T18:00:00Z'));
     progress.stopProgress.drakenfontein.retryAvailableAt = new Date(Date.now()+60000).toISOString();
     progress.stopProgress.drakenfontein.lastWrongAnswerPenalty = 25;
-    render('drakenfontein'); expect(button('Nieuwe poging over').disabled).toBe(true);
+    render('drakenfontein'); expect(button('Nieuwe poging over').disabled).toBe(false);
     act(() => root.render(null)); render('drakenfontein');
-    expect(button('Nieuwe poging over').disabled).toBe(true); expect(attemptAnswer).not.toHaveBeenCalled();
+    expect(button('Nieuwe poging over').disabled).toBe(false);
+    act(() => button('Nieuwe poging over').click());
+    expect(attemptAnswer).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="wrong-answer-henk"]')?.getAttribute('data-reopen-request')).toBe('1');
     routeTo('sint-jan'); expect(container.textContent).not.toContain('Nieuwe poging over');
   });
 
