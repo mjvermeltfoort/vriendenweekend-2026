@@ -153,7 +153,7 @@ describe('Moerasdraak player copy', () => {
     expect(bonus.challenge.kind).toBe('choice');
     if (bonus.challenge.kind !== 'choice') return;
 
-    expect(bonus.challenge.prompt).toMatch(/18\\.000 onderdelen/);
+    expect(bonus.challenge.prompt).toContain('18.000 onderdelen');
     expect(bonus.challenge.options.map((option) => option.label)).toEqual([
       'De oude gele vloertegels',
       'De metalen bakvormen van de koekjes',
@@ -171,7 +171,7 @@ describe('Moerasdraak player copy', () => {
     expect(bonus.hints).toHaveLength(1);
     expect(bonus.hints[0].id).toBe('h1');
     expect(bonus.hints[0].text).toMatch(/onder je schoenen/i);
-    expect(bonus.answerExplanation).toMatch(/1993.*18\\.000.*gele vloertegels.*sheddaken.*2004/i);
+    expect(bonus.answerExplanation).toMatch(/1993.*18[.]000.*gele vloertegels.*sheddaken.*2004/i);
     expect(bonus.reward.title).toBe('Machineschub');
   });
 
