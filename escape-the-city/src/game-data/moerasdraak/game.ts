@@ -185,16 +185,16 @@ export const gamePack: GamePack = {
       shortTitle: 'Finish',
       locationName: 'Bossche Brouwers, Tramkade 29',
       coordinates: { latitude: 51.696900, longitude: 5.299290, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      intro: { title: 'De finale', text: 'Zet het brouwproces in juiste volgorde.', audioSrc: audioAsset('07-tramkade.mp3'), transcript: audioTranscripts.tramkade },
+      intro: { title: 'De finale', text: 'Bij de brouwers wacht de laatste herinnering van de Moerasdraak. Maar er is iets misgegaan: de zes stappen van het geheime brouwrecept liggen door elkaar. Alleen als jullie het recept herstellen, kan de ketel weer tot leven komen!', audioSrc: audioAsset('07-tramkade.mp3'), transcript: audioTranscripts.tramkade },
       navigation: { clue: 'De laatste herinnering eindigt bij de brouwers.', fallbackDirections: 'Ga naar Bossche Brouwers.', externalMapsQuery: 'Bossche Brouwers Den Bosch' },
       challenge: {
         kind: 'reorder',
-        prompt: 'Zet brouwstappen in volgorde.',
+        prompt: 'Een goed bier brouwen is geen kwestie van zomaar wat ingrediënten bij elkaar gooien. Iedere stap moet op het juiste moment gebeuren. Zet de zes brouwstappen in de juiste volgorde, van het begin van het brouwproces tot het moment waarop het bier ontstaat.',
         items: ['Gisten', 'Schroten', 'Koelen', 'Maischen', 'Koken', 'Filteren'],
         correctOrder: ['Schroten', 'Maischen', 'Filteren', 'Koken', 'Koelen', 'Gisten'],
-        wrongFeedback: 'Het brouwproces loopt anders.'
+        wrongFeedback: 'Oei! De ketel begint te pruttelen, maar er klopt nog iets niet. Denk goed na welke stap eerst moet gebeuren voordat je aan de volgende kunt beginnen.'
       },
-      hints: [{ id: 'h1', text: 'Denk in processtappen, van korrel naar gist.' }],
+      hints: [{ id: 'h1', text: 'Pff, zes stappen en jullie komen er niet uit? Zelfs mijn computer kan dit! Nou vooruit: graankorrels moet je eerst bewerken voordat je er iets mee kunt brouwen. En gist? Die houdt absoluut niet van een kokend heet bad! De rest mogen jullie zelf uitvogelen.' }],
       reward: { title: 'Rust', text: 'De draak kan slapen.', symbol: '🍺' },
       isFinal: true
     }
