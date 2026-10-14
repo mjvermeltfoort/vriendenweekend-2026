@@ -49,6 +49,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [attemptFeedback, setAttemptFeedback] = useState<AnswerAttemptResult | null>(null);
+  const [wrongAnswerReplayRequest, setWrongAnswerReplayRequest] = useState(0);
   const submitting = useRef(false);
   const submissionId = useRef(0);
   const stopProgress = stop ? progress?.stopProgress[stop.id] : undefined;
@@ -56,6 +57,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const retryAvailableAt = serverDeadlineIsLatest ? stopProgress?.retryAvailableAt : attemptFeedback?.retryAvailableAt;
   const wrongPenalty = serverDeadlineIsLatest ? stopProgress?.lastWrongAnswerPenalty : attemptFeedback?.penaltyPoints;
   const waitSeconds = useAnswerCooldown(retryAvailableAt, progress?.serverTimeOffsetMs ?? attemptFeedback?.serverTimeOffsetMs);
+  const retryAfterWrongAnswer = Boolean(retryAvailableAt);
   const [hintOpen, setHintOpen] = useState(false);
   const [replayHint, setReplayHint] = useState(false);
   const activeStopId = useRef(stopId);
@@ -76,6 +78,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     submitting.current = false;
     submissionId.current += 1;
     setAttemptFeedback(null);
+    setWrongAnswerReplayRequest(0);
     setHintOpen(false);
     setReplayHint(false);
   }, [stopId, stop]);
@@ -297,13 +300,26 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           <button type="button" className="text-link" onClick={() => { setReplayHint(true); setHintOpen(true); }}>Hint Henk opnieuw bekijken</button>
         </div> : null}
         {waitSeconds > 0 ? <p className="answer-cooldown" role="status">Nieuwe poging over <strong>{formatAnswerWait(waitSeconds)}</strong> · Dit geldt voor het hele team.</p> : null}
-        <HenkWrongAnswer key={currentStop.id} teamId={activeTeam?.id ?? progress.teamId} stopId={currentStop.id} deadline={retryAvailableAt} seconds={waitSeconds} penalty={wrongPenalty} />
+        <HenkWrongAnswer key={currentStop.id} teamId={activeTeam?.id ?? progress.teamId} stopId={currentStop.id} deadline={retryAvailableAt} seconds={waitSeconds} penalty={wrongPenalty} reopenRequest={wrongAnswerReplayRequest} />
         {message ? <p className="feedback" id="answer-feedback" role="alert">{message}</p> : null}
 
         <div className="stack">
           {currentStop.id !== 'bosch-wezen' || boschBookOpen ? (
-            <button className="button primary" disabled={busy || waitSeconds > 0 || !canSubmit} onClick={() => void submit()}>
-              {waitSeconds > 0 ? `Nieuwe poging over ${formatAnswerWait(waitSeconds)}` : busy ? 'Antwoord controleren…' : currentStop.id === 'bosch-wezen' ? 'Wek het monster tot leven' : 'Controleer antwoord'}
+            <button
+              className="button primary"
+              type="button"
+              disabled={busy || (waitSeconds === 0 && !canSubmit)}
+              title={waitSeconds > 0 ? 'Bekijk Henks foutmelding' : undefined}
+              aria-label={waitSeconds > 0 ? `Nieuwe poging over ${formatAnswerWait(waitSeconds)}. Bekijk Henks foutmelding.` : undefined}
+              onClick={() => {
+                if (waitSeconds > 0) {
+                  setWrongAnswerReplayRequest((value) => value + 1);
+                } else {
+                  void submit();
+                }
+              }}
+            >
+              {waitSeconds > 0 ? `Nieuwe poging over ${formatAnswerWait(waitSeconds)}` : busy ? 'Antwoord controleren…' : retryAfterWrongAnswer ? 'Opnieuw proberen' : currentStop.id === 'bosch-wezen' ? 'Wek het monster tot leven' : 'Controleer antwoord'}
             </button>
           ) : null}
           {activeHint ? (
