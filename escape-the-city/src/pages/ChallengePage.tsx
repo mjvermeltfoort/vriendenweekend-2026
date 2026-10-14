@@ -165,7 +165,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           <p>{currentStop.challenge.prompt}</p>
         </div>
 
-        {currentStop.id !== 'bosch-wezen' ? <div className="audio-panel" aria-label="Opdrachtillustratie niet beschikbaar">
+        {currentStop.id !== 'bosch-wezen' && currentStop.id !== 'bonus:citadel' ? <div className="audio-panel" aria-label="Opdrachtillustratie niet beschikbaar">
           <span className="audio-icon"><GameIcon name="scroll" /></span>
           <div>
             <strong>Bekijk de plek</strong>
