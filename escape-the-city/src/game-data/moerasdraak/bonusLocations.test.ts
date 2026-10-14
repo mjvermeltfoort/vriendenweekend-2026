@@ -95,6 +95,35 @@ describe('Verborgen Schubben game data', () => {
     expect(bonus.coordinates).toMatchObject({ latitude: 51.688710, longitude: 5.309535, radiusMeters: 60 });
   });
 
+  it('explains why the Papenbril guarded the city as well as its borders', () => {
+    const bonus = gamePack.bonusLocations!.find((item) => item.id === 'bonus:citadel')!;
+    expect(bonus.title).toBe('De Citadel');
+    expect(bonus.intro.title).toBe('De Papenbril');
+    expect(bonus.intro.text).not.toMatch(/katholieke|opstand|Spanje/i);
+    expect(bonus.challenge.kind).toBe('choice');
+    if (bonus.challenge.kind !== 'choice') return;
+
+    expect(bonus.challenge.prompt).toMatch(/kanonnen.*op Den Bosch gericht/);
+    expect(bonus.challenge.options).toHaveLength(4);
+    expect(bonus.challenge.options.map((option) => option.correct)).toEqual([false, false, true, false]);
+    // Supabase migration 041 expects choice-id 'a'; it appears as the third visual answer.
+    expect(bonus.challenge.options.find((option) => option.correct)).toMatchObject({
+      id: 'a',
+      label: 'Omdat het nieuwe gezag bang was voor een opstand van de katholieke Bosschenaren.'
+    });
+    expect(challengeAnswerIsCorrect(bonus.challenge, 'a')).toBe(true);
+    for (const wrong of ['b', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(bonus.challenge, wrong)).toBe(false);
+    }
+    expect(bonus.manualVerification.question).toMatch(/verdedigend onderdeel/);
+    expect(bonus.hints).toHaveLength(1);
+    expect(bonus.hints[0].id).toBe('h1');
+    expect(bonus.hints[0].text).not.toMatch(/katholieke|opstand/i);
+    expect(bonus.answerExplanation).toMatch(/1629.*1637 en 1645.*katholieke.*Papenbril.*vijf bastions/i);
+    expect(bonus.reward.title).toBe('Wachterschub');
+    expect(bonus.maximumPoints).toBe(250);
+  });
+
   it('uses the exact on-site Halve Peer GPS point instead of the earlier inaccurate map pins', () => {
     const halvePeer = gamePack.bonusLocations!.find((item) => item.id === 'bonus:halve-peer')!;
     const gerritje = gamePack.stops.find((item) => item.id === 'zoete-lieve-gerritje')!;
