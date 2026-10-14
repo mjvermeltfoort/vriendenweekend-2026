@@ -124,9 +124,26 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Waar machines iets knapperigs maakten, worden nu verhalen vertoond.', revealedDescription: 'Een gebouw hoeft niet te verdwijnen om een nieuw verhaal te beginnen.', estimatedDetourMinutes: 8,
     recommendedBetween: { afterStopId: 'kruithuis', beforeStopId: 'bossche-brouwers' }, visibleAfterStopId: 'kruithuis', maximumPoints: 250,
     manualVerification: { questionId: 'bonus-verkade-primary', question: 'Wat was de oorspronkelijke functie van dit gebouw?' },
-    intro: { title: 'Van Koek naar Cultuur', text: 'Orden het verhaal van fabriek naar cultuur.' },
+    intro: {
+      title: 'Van Koek naar Cultuur',
+      text: 'Ooit rolden hier koekjes van de lopende band. Na de sluiting in 1993 leek het verleden te verdwijnen. Maar de Moerasdraak weet dat het gebouw nog een bijzonder spoor uit de fabriekstijd bewaart.'
+    },
     navigation: { clue: 'Waar machines iets knapperigs maakten, worden nu verhalen vertoond.', fallbackDirections: 'Ga naar Boschdijkstraat 45.', externalMapsQuery: 'Verkadefabriek Den Bosch' },
-    challenge: { kind: 'reorder', prompt: 'Zet de geschiedenis in de juiste volgorde.', items: ['Theater en film', 'Koekjes- en biscuitfabriek', 'Leegstand / einde productie'], correctOrder: ['Koekjes- en biscuitfabriek', 'Leegstand / einde productie', 'Theater en film'], wrongFeedback: 'De geschiedenis loopt anders.' },
-    hints: [{ id: 'h1', text: 'Begin bij productie en eindig bij de huidige bestemming.' }], reward: { id: 'machineschub', title: 'Machineschub', text: 'De machines vertellen verder.', symbol: '◈', resultLabel: 'Machineschub' }
+    // Bron: https://www.verkadefabriek.nl/over-ons/verkadefabriek
+    challenge: {
+      kind: 'choice',
+      prompt: 'Toen de fabriek in 2004 opnieuw opende als plek voor film en theater, besloot de architect iets bijzonders van vroeger te bewaren. Maar liefst 18.000 onderdelen werden één voor één schoongemaakt en opnieuw gebruikt. Wat waren dat?',
+      options: [
+        { id: 'b', label: 'De metalen bakvormen van de koekjes', correct: false },
+        { id: 'c', label: 'De houten transportkisten', correct: false },
+        { id: 'a', label: 'De oude gele vloertegels', correct: true },
+        { id: 'd', label: 'De stenen van de fabrieksschoorsteen', correct: false }
+      ],
+      correctFeedback: 'Goed gevonden! De oude gele vloertegels kregen een tweede leven in het vernieuwde gebouw. Jullie hebben een verborgen spoor uit de fabriekstijd ontdekt!',
+      wrongFeedback: 'Nog niet helemaal. De oude fabriek heeft haar sporen achtergelaten op een plek waar je misschien dagelijks overheen loopt.'
+    },
+    hints: [{ id: 'h1', text: 'Achttienduizend onderdelen?! Daar zou zelfs mijn computer van vastlopen! Ik zou maar eens wat lager zoeken. Soms ligt de geschiedenis letterlijk onder je neus. Of eigenlijk… onder je schoenen!' }],
+    answerExplanation: 'De Verkadefabriek sloot in 1993. Bij de verbouwing tot cultureel centrum werden ongeveer 18.000 oude gele vloertegels één voor één verwijderd, schoongebikt en opnieuw gelegd. Ook de kenmerkende sheddaken bleven behouden. In 2004 opende het gebouw opnieuw, dit keer als plek voor film, theater en cultuur. Zo bleef de geschiedenis van de koekjesfabriek bewaard.',
+    reward: { id: 'machineschub', title: 'Machineschub', text: 'De machines vertellen verder.', symbol: '◈', resultLabel: 'Machineschub' }
   }
 ];
