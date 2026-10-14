@@ -134,9 +134,9 @@ export const bonusLocations: BonusLocation[] = [
       kind: 'choice',
       prompt: 'Toen de fabriek in 2004 opnieuw opende als plek voor film en theater, besloot de architect iets bijzonders van vroeger te bewaren. Maar liefst 18.000 onderdelen werden één voor één schoongemaakt en opnieuw gebruikt. Wat waren dat?',
       options: [
-        { id: 'a', label: 'De oude gele vloertegels', correct: true },
         { id: 'b', label: 'De metalen bakvormen van de koekjes', correct: false },
         { id: 'c', label: 'De houten transportkisten', correct: false },
+        { id: 'a', label: 'De oude gele vloertegels', correct: true },
         { id: 'd', label: 'De stenen van de fabrieksschoorsteen', correct: false }
       ],
       correctFeedback: 'Goed gevonden! De oude gele vloertegels kregen een tweede leven in het vernieuwde gebouw. Jullie hebben een verborgen spoor uit de fabriekstijd ontdekt!',
