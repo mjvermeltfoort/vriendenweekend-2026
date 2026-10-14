@@ -48,7 +48,7 @@ export default defineConfig({
             urlPattern: /\/escape-the-city\/audio\/.*\.(?:mp3|wav)$/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'moerasdraak-audio-v2',
+              cacheName: 'moerasdraak-audio-v3',
               cacheableResponse: {
                 statuses: [0, 200]
               },

@@ -11,6 +11,6 @@
   `action_id` afgespeeld. Daarna wordt serverstate opnieuw opgehaald.
 - Netwerkfouten blijven pending. Functioneel geweigerde of gecontroleerde
   antwoorden worden uit de queue verwijderd.
-- Route preparation stores all narration, scenic and Bellende Engel MP3/WAV files in `moerasdraak-audio-v2`.
+- Route preparation stores all narration, scenic and Bellende Engel MP3/WAV files in `moerasdraak-audio-v3`.
 - The service worker serves `/escape-the-city/audio/*.{mp3,wav}` cache-first.
 - Missing or failed audio falls back to visible story text.

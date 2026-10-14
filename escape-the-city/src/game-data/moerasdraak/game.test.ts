@@ -119,8 +119,7 @@ describe('Moerasdraak player copy', () => {
     const stop = gamePack.stops.find((item) => item.id === 'kruithuis')!;
     expect(stop.title).toBe('Vuur en Water');
     expect(stop.intro.title).toBe('Het geheim van het Kruithuis');
-    // An old MP3 describes a non-existent route; do not play it alongside the new story.
-    expect(stop.intro.audioSrc).toBeUndefined();
+    expect(stop.intro.audioSrc).toMatch(/\/audio\/06-kruithuis\.mp3$/);
     expect(stop.intro.transcript).toMatch(/bouwmeester.*slimme oplossing/s);
     expect(stop.intro.transcript).not.toMatch(/kies de juiste route|vermijd het water/i);
     expect(stop.challenge.kind).toBe('choice');
