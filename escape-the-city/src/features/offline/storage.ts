@@ -107,6 +107,7 @@ export async function deleteTeam(teamId: string) {
   // Also clear per-team UI flags that might resurrect stale UI state.
   localStorage.removeItem(`${TEAM_RADIO_SEEN_PREFIX}${teamId}`);
   localStorage.removeItem(`moerasdraak-bonus-intro:${teamId}`);
+  localStorage.removeItem(`moerasdraak-henk-schub-reminders:v1:${teamId}`);
 }
 
 export async function loadTeams() {

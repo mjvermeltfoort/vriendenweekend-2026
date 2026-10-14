@@ -17,6 +17,7 @@ import { useAudio } from '../features/audio/audioContext';
 import { useGame } from './gameContext';
 import { InstallBanner } from '../features/pwa/InstallBanner';
 import { FloatingTeamRadio } from '../components/FloatingTeamRadio';
+import { HenkSchubReminder } from '../components/HenkSchubReminder';
 
 function AudioSceneController() {
   const location = useLocation();
@@ -65,6 +66,7 @@ export function App() {
       <ContrastController />
       <InstallBanner />
       <FloatingTeamRadio />
+      <HenkSchubReminder pack={gamePack} />
       <Routes>
         <Route path="/" element={<HomePage pack={gamePack} />} />
         <Route path="/team" element={<TeamPage pack={gamePack} />} />

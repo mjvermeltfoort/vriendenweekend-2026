@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { canStartFinale, isFinaleLocationRevealed, visibleBonusLocations } from '../features/game/gameState';
@@ -19,16 +19,26 @@ export function RoutePage({ pack }: { pack: GamePack }) {
   const { activeTeam, progress, syncStatus, syncMessage, deviceLocation, locationError, activeSessionCount } = useGame();
   const [view, setView] = useState<'list' | 'route'>('route');
   const [bonusIntroSeen, setBonusIntroSeen] = useState(true);
+  const [search] = useSearchParams();
+  const focusedLocationId = search.get('schub') ?? undefined;
+  const showMissing = search.get('schubben') === 'ontbrekend';
+  const missingRef = useRef<HTMLElement>(null);
   const finale = progress ? canStartFinale(progress, pack) : { eligible: false, missingCount: pack.stops.length - 1, missingTitles: [] as string[] };
   const finaleLocationRevealed = progress ? isFinaleLocationRevealed(progress, pack) : false;
   const completed = pack.stops.filter((stop) => progress?.stopProgress?.[stop.id]?.state === 'completed').length;
   const visibleBonuses = visibleBonusLocations(pack, progress);
+  const missingBonuses = visibleBonuses.filter((b) => progress?.stopProgress[b.id]?.state !== 'completed');
   const visibleStops = finaleLocationRevealed ? pack.stops : pack.stops.filter((stop) => !stop.isFinal);
   const nextStop = visibleStops.find((stop) => {
     const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
     return state !== 'completed';
   });
   const bonusIntroKey = activeTeam ? `moerasdraak-bonus-intro:${activeTeam.id}` : '';
+
+  useEffect(() => {
+    if (focusedLocationId) setView('route');
+    if (showMissing) missingRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [focusedLocationId, showMissing]);
 
   useEffect(() => {
     if (!bonusIntroKey || typeof window === 'undefined') return;
@@ -71,6 +81,13 @@ export function RoutePage({ pack }: { pack: GamePack }) {
         ) : null}
       </div>
 
+      {showMissing ? <section ref={missingRef} className="card stack" aria-label="Ontbrekende schubben">
+        <h2>Ontbrekende schubben ({missingBonuses.length})</h2>
+        <p>Deze schubben zijn optioneel. Kies een schub om die op de kaart te bekijken.</p>
+        {missingBonuses.map((bonus) => <Link key={bonus.id} className="button secondary" to={`/route?schub=${encodeURIComponent(bonus.id)}`}>{bonus.reward.resultLabel}</Link>)}
+        {!missingBonuses.length ? <p>Jullie hebben alle beschikbare schubben gevonden!</p> : null}
+      </section> : null}
+
       {view === 'list' ? (
         <ol className="route-list route-list--spaced" aria-label="Routepunten">
           {visibleStops.map((stop) => {
@@ -105,6 +122,7 @@ export function RoutePage({ pack }: { pack: GamePack }) {
           locationProvider={browserLocationProvider}
           deviceLocation={deviceLocation}
           locationError={locationError}
+          focusedLocationId={focusedLocationId}
         />
       )}
 

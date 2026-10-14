@@ -44,10 +44,10 @@ describe('RoutePage finale states', () => {
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  async function render(progress: ReturnType<typeof createInitialProgress>, key: string) {
+  async function render(progress: ReturnType<typeof createInitialProgress>, key: string, path = "/route") {
     gameState.current = contextWith(progress);
     await act(async () => root.render(
-      <MemoryRouter key={key}><RoutePage pack={gamePack} /></MemoryRouter>
+      <MemoryRouter key={key} initialEntries={[path]}><RoutePage pack={gamePack} /></MemoryRouter>
     ));
   }
 
@@ -79,6 +79,19 @@ describe('RoutePage finale states', () => {
     expect(container.textContent).toContain('Alle zeven herinneringen zijn hersteld.');
     expect(container.textContent).toContain('Bekijk resultaat');
     expect(container.textContent).not.toContain('Naar finale');
+  });
+
+  it('lists only visible unfinished schubs and links each to map selection', async () => {
+    const progress = createInitialProgress('team-1', gamePack);
+    for (const stop of gamePack.stops.slice(0, -1)) progress.stopProgress[stop.id].state = 'completed';
+    const completed = gamePack.bonusLocations![0];
+    progress.stopProgress[completed.id].state = 'completed';
+    await render(progress, 'missing-schubs', '/route?schubben=ontbrekend');
+    const section = container.querySelector('[aria-label="Ontbrekende schubben"]')!;
+    expect(section.textContent).toContain('Ontbrekende schubben (5)');
+    expect(section.textContent).not.toContain(completed.reward.resultLabel);
+    const remaining = gamePack.bonusLocations![1];
+    expect(section.querySelector(`a[href="#/route?schub=${encodeURIComponent(remaining.id)}"]`) ?? section.querySelector(`a[href="/route?schub=${encodeURIComponent(remaining.id)}"]`)).not.toBeNull();
   });
 
   it('shows route hero before details on mobile-sized route view', async () => {

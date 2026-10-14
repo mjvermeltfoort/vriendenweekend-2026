@@ -7,6 +7,7 @@ on:
       - '.github/workflows/escape-the-city-checks.yml'
       - '.github/scripts/browser-smoke.py'
       - '.github/scripts/henk-browser-check.py'
+      - '.github/scripts/henk-reminder-browser-check.py'
       - '.nvmrc'
   push:
     branches:
@@ -16,6 +17,7 @@ on:
       - '.github/workflows/escape-the-city-checks.yml'
       - '.github/scripts/browser-smoke.py'
       - '.github/scripts/henk-browser-check.py'
+      - '.github/scripts/henk-reminder-browser-check.py'
       - '.nvmrc'
   workflow_dispatch:
 

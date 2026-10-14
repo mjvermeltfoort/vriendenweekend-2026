@@ -61,6 +61,7 @@ with TemporaryDirectory() as site:
                 print("Production app rendered with no uncaught JavaScript errors.")
                 runpy.run_path(str(Path(__file__).with_name("bosch-browser-check.py")))["check_bosch"](page, origin, diagnostics)
                 runpy.run_path(str(Path(__file__).with_name("henk-browser-check.py")))["check_henk"](page, origin, diagnostics)
+                runpy.run_path(str(Path(__file__).with_name("henk-reminder-browser-check.py")))["check_henk_reminders"](page, origin, diagnostics)
                 if errors or local_failures:
                     raise RuntimeError("Bosch browser check failed: " + "; ".join(errors + local_failures))
             finally:
