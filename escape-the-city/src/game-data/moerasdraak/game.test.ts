@@ -155,12 +155,13 @@ describe('Moerasdraak player copy', () => {
 
     expect(bonus.challenge.prompt).toContain('18.000 onderdelen');
     expect(bonus.challenge.options.map((option) => option.label)).toEqual([
-      'De oude gele vloertegels',
       'De metalen bakvormen van de koekjes',
       'De houten transportkisten',
+      'De oude gele vloertegels',
       'De stenen van de fabrieksschoorsteen'
     ]);
-    expect(bonus.challenge.options.map((option) => option.correct)).toEqual([true, false, false, false]);
+    // As with all game questions, the correct option must not be displayed first.
+    expect(bonus.challenge.options.map((option) => option.correct)).toEqual([false, false, true, false]);
     // Migration 040 changes the Supabase answer_spec from reorder to choice id 'a'.
     expect(bonus.challenge.options.find((option) => option.correct)?.id).toBe('a');
     expect(challengeAnswerIsCorrect(bonus.challenge, 'a')).toBe(true);
