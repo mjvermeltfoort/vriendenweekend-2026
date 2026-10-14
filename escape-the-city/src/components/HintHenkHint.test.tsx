@@ -92,6 +92,16 @@ describe('Hint Henk paid hints', () => {
     expect(audio.toggleNarration).not.toHaveBeenCalled();
   });
 
+  it('shows updated paid hint text instead of stale recorded speech', () => {
+    const updated = { id: 'h1', text: 'Pff, zes stappen en jullie komen er niet uit? Zelfs mijn computer kan dit! Nou vooruit: graankorrels moet je eerst bewerken voordat je er iets mee kunt brouwen. En gist? Die houdt absoluut niet van een kokend heet bad! De rest mogen jullie zelf uitvogelen.' };
+    act(() => root.render(<HintHenkHint open stopId="bossche-brouwers" hint={updated} penalty={100} replay onConfirm={pay} onClose={close} />));
+    expect(container.textContent).toContain(updated.text);
+    expect(container.textContent).not.toContain('Mijn brein staat nog niet op de tap');
+    expect(container.textContent).not.toContain('Opnieuw beluisteren');
+    expect(audio.toggleNarration).not.toHaveBeenCalled();
+    expect(pay).not.toHaveBeenCalled();
+  });
+
   it('stops its recording on Escape and on unmount', () => {
     render();
     audio.narration.source = henkConfirmation.source;

@@ -51,8 +51,11 @@ export function HintHenkHint({ open, stopId, hint, penalty, replay = false, onCo
   }, [open, stopId, replay]);
 
   const recording = revealed && selected ? henkHint(stopId, selected.id) : henkConfirmation;
-  const source = recording?.source;
-  const transcript = recording?.transcript ?? selected?.text ?? '';
+  // A hint can change before its recorded MP3 is regenerated. Never play stale
+  // speech (or show its old transcript) in place of a newly paid-for hint.
+  const recordingIsStale = Boolean(revealed && selected && recording && !recording.transcript.includes(selected.text));
+  const source = recordingIsStale ? undefined : recording?.source;
+  const transcript = recordingIsStale ? selected?.text ?? '' : recording?.transcript ?? selected?.text ?? '';
 
   useEffect(() => {
     if (!open || !source) return;
