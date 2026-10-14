@@ -37,6 +37,8 @@ vi.mock('../components/HintHenkHint', () => ({
   HintHenkHint: ({ open }: { open: boolean }) => open ? <div data-testid="hint-dialog">Hintdialoog</div> : null
 }));
 
+vi.mock('../components/HenkWrongAnswer', () => ({ HenkWrongAnswer: ({ seconds, penalty }: { seconds: number; penalty?: number }) => seconds > 0 ? <div data-testid="wrong-answer-henk">Henk: {penalty} / {seconds}</div> : null }));
+
 vi.mock('../components/AudioPlayer', () => ({ AudioPlayer: () => null }));
 vi.mock('../components/BellChallengeAudio', () => ({ BellChallengeAudio: () => null }));
 
@@ -78,6 +80,8 @@ describe('ChallengePage', () => {
     actEnvironment.IS_REACT_ACT_ENVIRONMENT = true;
     container.innerHTML = '';
     vi.clearAllMocks();
+    for (const stop of Object.values(progress.stopProgress)) { delete stop.retryAvailableAt; delete stop.lastWrongAnswerPenalty; }
+    delete progress.serverTimeOffsetMs;
     attemptAnswer.mockResolvedValue({ correct: false, message: 'Probeer opnieuw.' });
   });
 
@@ -85,6 +89,48 @@ describe('ChallengePage', () => {
     act(() => root.render(null));
     container.innerHTML = '';
     actEnvironment.IS_REACT_ACT_ENVIRONMENT = false;
+    vi.useRealTimers();
+  });
+
+  it('blocks only answer submission for a minute after a wrong answer, then allows retry', async () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-14T18:00:00Z'));
+    attemptAnswer.mockResolvedValue({correct:false, message:'Nog niet juist.', retryAvailableAt:new Date(Date.now()+60000).toISOString(), penaltyPoints:25});
+    render('drakenfontein'); act(() => container.querySelector<HTMLInputElement>('input[value="a"]')!.click());
+    await act(async () => button('Controleer antwoord').click());
+    expect(button('Nieuwe poging over').disabled).toBe(true);
+    expect(button('Hint gebruiken').disabled).toBe(false);
+    expect(container.querySelector('[data-testid="wrong-answer-henk"]')?.textContent).toContain('25 / 60');
+    act(() => vi.advanceTimersByTime(59000));
+    expect(button('Nieuwe poging over').textContent).toContain('00:01');
+    act(() => button('Nieuwe poging over').click()); expect(attemptAnswer).toHaveBeenCalledTimes(1);
+    act(() => vi.advanceTimersByTime(1000)); expect(button('Controleer antwoord').disabled).toBe(false);
+  });
+
+  it('restores a shared cooldown from progress after remounting', () => {
+    vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-14T18:00:00Z'));
+    progress.stopProgress.drakenfontein.retryAvailableAt = new Date(Date.now()+60000).toISOString();
+    progress.stopProgress.drakenfontein.lastWrongAnswerPenalty = 25;
+    render('drakenfontein'); expect(button('Nieuwe poging over').disabled).toBe(true);
+    act(() => root.render(null)); render('drakenfontein');
+    expect(button('Nieuwe poging over').disabled).toBe(true); expect(attemptAnswer).not.toHaveBeenCalled();
+    routeTo('sint-jan'); expect(container.textContent).not.toContain('Nieuwe poging over');
+  });
+
+  it('guards a synchronous double tap before React can disable the button', async () => {
+    let resolve!: (value: {correct:boolean;message:string}) => void;
+    attemptAnswer.mockReturnValue(new Promise(done => { resolve = done; }));
+    render('drakenfontein'); act(() => container.querySelector<HTMLInputElement>('input[value="a"]')!.click());
+    const submit = button('Controleer antwoord'); act(() => { submit.click(); submit.click(); });
+    expect(attemptAnswer).toHaveBeenCalledTimes(1);
+    await act(async () => { resolve({correct:false,message:'Nog niet juist.'}); });
+  });
+
+  it('shows network errors without inventing another penalty or locking retry', async () => {
+    attemptAnswer.mockRejectedValue(new Error('Geen verbinding'));
+    render('drakenfontein'); act(() => container.querySelector<HTMLInputElement>('input[value="a"]')!.click());
+    await act(async () => button('Controleer antwoord').click());
+    expect(container.textContent).toContain('Geen verbinding'); expect(button('Controleer antwoord').disabled).toBe(false);
+    expect(container.querySelector('[data-testid="wrong-answer-henk"]')).toBeNull();
   });
 
   it('keeps long Zwanenbroedershuis headings responsive without modifying the floating radio', () => {

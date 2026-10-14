@@ -4,20 +4,28 @@ on:
   pull_request:
     paths:
       - 'escape-the-city/**'
+      - 'supabase/migrations/042_wrong_answer_cooldown.sql'
+      - 'supabase/tests/042_*.sql'
+      - '.github/scripts/test-wrong-answer-sql.sh'
       - '.github/workflows/escape-the-city-checks.yml'
       - '.github/scripts/browser-smoke.py'
       - '.github/scripts/henk-browser-check.py'
       - '.github/scripts/henk-reminder-browser-check.py'
+      - '.github/scripts/henk-wrong-answer-browser-check.py'
       - '.nvmrc'
   push:
     branches:
       - main
     paths:
       - 'escape-the-city/**'
+      - 'supabase/migrations/042_wrong_answer_cooldown.sql'
+      - 'supabase/tests/042_*.sql'
+      - '.github/scripts/test-wrong-answer-sql.sh'
       - '.github/workflows/escape-the-city-checks.yml'
       - '.github/scripts/browser-smoke.py'
       - '.github/scripts/henk-browser-check.py'
       - '.github/scripts/henk-reminder-browser-check.py'
+      - '.github/scripts/henk-wrong-answer-browser-check.py'
       - '.nvmrc'
   workflow_dispatch:
 
@@ -77,3 +85,30 @@ jobs:
           name: browser-smoke-diagnostics
           path: escape-the-city/test-results/browser-smoke/
           if-no-files-found: ignore
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: cooldown_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: local-test-only
+      PGDATABASE: cooldown_test
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test migration, shared cooldown and concurrent submissions
+        run: bash .github/scripts/test-wrong-answer-sql.sh

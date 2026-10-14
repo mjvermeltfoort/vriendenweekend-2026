@@ -11,6 +11,7 @@ export type TeamSyncErrorCode =
   | 'SESSION_REVOKED'
   | 'SESSION_NOT_FOUND'
   | 'VERSION_CONFLICT'
+  | 'ANSWER_COOLDOWN'
   | 'ACTIVE_GAME_EXISTS'
   | 'GAME_NOT_AVAILABLE'
   | 'GAME_ALREADY_COMPLETED'
@@ -205,6 +206,7 @@ const errorMessages: Record<Exclude<TeamSyncErrorCode, 'UNKNOWN'>, string> = {
   SESSION_REVOKED: 'Deze teamsessie is beëindigd. Voer de teamcode opnieuw in.',
   SESSION_NOT_FOUND: 'Deze teamsessie is niet meer beschikbaar. Voer de teamcode opnieuw in.',
   VERSION_CONFLICT: 'De teamvoortgang is op een ander toestel bijgewerkt. De nieuwste stand wordt geladen.',
+  ANSWER_COOLDOWN: 'Jullie team heeft nog bedenktijd. Wacht tot de afteller afgelopen is.',
   ACTIVE_GAME_EXISTS: 'Jullie team is al bezig met een andere opdracht. Rond die opdracht eerst af.',
   GAME_NOT_AVAILABLE: 'Deze opdracht is nu nog niet beschikbaar.',
   GAME_ALREADY_COMPLETED: 'Deze opdracht is al voltooid.',
@@ -261,6 +263,9 @@ function normalizeTeamState(state: RemoteTeamState): TeamState {
     lastActivityAt: state.team.lastActivityAt ?? state.team.updatedAt
   };
   const progress = mergeRemoteProgress(team, state.progress);
+  if (progress.serverNow && Number.isFinite(Date.parse(progress.serverNow))) {
+    progress.serverTimeOffsetMs = Date.parse(progress.serverNow) - Date.now();
+  }
   if (state.activeGame) {
     const activeStop = progress.stopProgress[state.activeGame.gameId];
     if (activeStop) {
@@ -272,8 +277,10 @@ function normalizeTeamState(state: RemoteTeamState): TeamState {
   progress.collectedRewards = completedStops.map((stop) => stop.reward.symbol);
   progress.totalHintsUsed = Object.values(progress.stopProgress)
     .reduce((total, stop) => total + stop.hintsUsed, 0);
-  progress.wrongAttempts = Object.values(progress.stopProgress)
-    .reduce((total, stop) => total + Math.max(0, stop.attempts - 1), 0);
+  progress.wrongAttempts = Object.entries(progress.stopProgress)
+    .reduce((total, [id, stop]) => total + Math.max(0, stop.attempts - (
+      stop.state === 'completed' || (state.activeGame?.gameId === id && state.activeGame.state.answerAccepted === true) ? 1 : 0
+    )), 0);
   if (progress.finalized && !progress.finalResult) {
     progress.finalResult = {
       title: gamePack.title,

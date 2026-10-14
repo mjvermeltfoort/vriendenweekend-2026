@@ -2309,3 +2309,6 @@ details {
   .hint-henk__mascot--speaking,
   .hint-henk__mascot--speaking .asst-mouth { animation: none; }
 }
+
+.answer-cooldown { padding: .75rem; border: 1px solid #d8b65f; border-radius: 10px; color: #fff0bc; background: #10291e; text-align: center; }
+.answer-cooldown strong { font-variant-numeric: tabular-nums; white-space: nowrap; }

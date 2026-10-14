@@ -1,6 +1,8 @@
 import type { GamePack } from '../game/gameTypes';
 import { allBellChallengeImages, allEffectAudio, allScenicAudio, allStandaloneNarration } from '../audio/audioConfig';
 
+import wrongAnswer from '../audio/henkWrongAnswerClip.json';
+import { audioAsset } from '../audio/audioConfig';
 import { allHenkAudio } from '../audio/hintHenkAudio';
 import { allHenkReminderAudio } from '../audio/henkReminderAudio';
 
@@ -18,6 +20,7 @@ export function buildAssetManifest(pack: GamePack) {
   for (const bonus of pack.bonusLocations ?? []) {
     if (bonus.intro.audioSrc) assets.add(bonus.intro.audioSrc);
   }
+  assets.add(audioAsset(`hint-henk/${wrongAnswer.file}`));
   for (const asset of [...allHenkAudio(), ...allHenkReminderAudio()]) assets.add(asset);
   for (const asset of allStandaloneNarration()) assets.add(asset);
   for (const asset of allScenicAudio()) assets.add(asset);
