@@ -1476,6 +1476,12 @@ summary:focus-visible {
 }
 .location-status .game-icon { color: var(--color-gold-light); }
 .location-status p { margin: 0; font-size: 0.88rem; }
+/* Actions follow the icon and message on their own full-width row.
+   Otherwise the grid auto-places the button inside the 44px icon column. */
+.location-status > .button {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
 
 .choice-option {
   min-height: 52px;
