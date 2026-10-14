@@ -2203,6 +2203,14 @@ details {
 .henk-hint > .button { width: 100%; white-space: normal; }
 .henk-hint :focus-visible { outline: 3px solid #ed9d32; outline-offset: 3px; }
 @keyframes henk-hint-appear { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 360px) {
+  .henk-hint--reminder[open] { grid-template-columns: 1fr; gap: .6rem; }
+  .henk-hint--reminder .henk-hint__character { display: flex; align-items: center; gap: .75rem; padding: 0; }
+  .henk-hint--reminder .hint-henk__mascot { width: 58px; height: 68px; }
+  .henk-hint--reminder .hint-henk__mascot .asst-character { scale: .75; }
+  .henk-hint--reminder .henk-hint__bubble { margin-top: 0; }
+  .henk-hint--reminder .henk-hint__bubble p { font-size: .88rem; line-height: 1.45; }
+}
 @media (prefers-reduced-motion: reduce) { .henk-hint[open] { animation: none; } }
 
 .hint-henk__replay {

@@ -156,7 +156,8 @@ describe('RouteMap', () => {
   async function render(
     visibleStops: RouteMapProps['visibleStops'],
     progress: RouteMapProps['progress'],
-    deviceLocation?: RouteMapProps['deviceLocation']
+    deviceLocation?: RouteMapProps['deviceLocation'],
+    focusedLocationId?: string
   ) {
     await act(async () => root.render(
       <MemoryRouter key={testKey}>
@@ -166,10 +167,20 @@ describe('RouteMap', () => {
           visibleStops={visibleStops}
           locationProvider={locationProvider()}
           deviceLocation={deviceLocation}
+          focusedLocationId={focusedLocationId}
         />
       </MemoryRouter>
     ));
   }
+
+  it('opens and centres the schub explicitly requested by a Henk reminder', async () => {
+    const progress = progressWithCurrentStop();
+    progress.stopProgress.drakenfontein.state = 'arrived';
+    const bonus = gamePack.bonusLocations![0];
+    await render(gamePack.stops.filter((s) => !s.isFinal), progress, undefined, bonus.id);
+    expect(container.querySelector(`[aria-label="Schub: ${bonus.title}"]`)).not.toBeNull();
+    expect(mapState.easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [bonus.coordinates.longitude, bonus.coordinates.latitude] }));
+  });
 
   it('starts location polling automatically and keeps manual recenter available', async () => {
     const visibleStops = gamePack.stops.filter((stop) => !stop.isFinal);

@@ -1,0 +1,58 @@
+{
+  "passed": {
+    "file": "passed-v4.mp3",
+    "transcript": "Ahum… mijn uiterst nauwkeurige speurneus zegt dat jullie iets voorbijlopen. Er ligt hier nog een drakenschub! Maar goed, gewoon doorwandelen kan natuurlijk ook…",
+    "durationSeconds": 10.84,
+    "modelId": "eleven_v4",
+    "voiceId": "TCJntnsvZTABT5mPPyf1",
+    "deliveryPrompt": "[mischievously] Ahum… mijn uiterst nauwkeurige speurneus zegt dat jullie iets voorbijlopen. Er ligt hier nog een drakenschub! Maar goed, gewoon doorwandelen kan natuurlijk ook…"
+  },
+  "finale-1": {
+    "file": "finale-1-v4.mp3",
+    "transcript": "Even mijn administratie erbij… jullie missen nog 1 schub! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?",
+    "durationSeconds": 9.72,
+    "modelId": "eleven_v4",
+    "voiceId": "TCJntnsvZTABT5mPPyf1",
+    "deliveryPrompt": "[mischievously] Even mijn administratie erbij… jullie missen nog 1 schub! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?"
+  },
+  "finale-2": {
+    "file": "finale-2-v4.mp3",
+    "transcript": "Even mijn administratie erbij… jullie missen nog 2 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?",
+    "durationSeconds": 9.8,
+    "modelId": "eleven_v4",
+    "voiceId": "TCJntnsvZTABT5mPPyf1",
+    "deliveryPrompt": "[mischievously] Even mijn administratie erbij… jullie missen nog 2 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?"
+  },
+  "finale-3": {
+    "file": "finale-3-v4.mp3",
+    "transcript": "Even mijn administratie erbij… jullie missen nog 3 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?",
+    "durationSeconds": 9.8,
+    "modelId": "eleven_v4",
+    "voiceId": "TCJntnsvZTABT5mPPyf1",
+    "deliveryPrompt": "[mischievously] Even mijn administratie erbij… jullie missen nog 3 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?"
+  },
+  "finale-4": {
+    "file": "finale-4-v4.mp3",
+    "transcript": "Even mijn administratie erbij… jullie missen nog 4 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?",
+    "durationSeconds": 9.87,
+    "modelId": "eleven_v4",
+    "voiceId": "TCJntnsvZTABT5mPPyf1",
+    "deliveryPrompt": "[mischievously] Even mijn administratie erbij… jullie missen nog 4 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?"
+  },
+  "finale-5": {
+    "file": "finale-5-v4.mp3",
+    "transcript": "Even mijn administratie erbij… jullie missen nog 5 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?",
+    "durationSeconds": 9.87,
+    "modelId": "eleven_v4",
+    "voiceId": "TCJntnsvZTABT5mPPyf1",
+    "deliveryPrompt": "[mischievously] Even mijn administratie erbij… jullie missen nog 5 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?"
+  },
+  "finale-6": {
+    "file": "finale-6-v4.mp3",
+    "transcript": "Even mijn administratie erbij… jullie missen nog 6 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?",
+    "durationSeconds": 9.8,
+    "modelId": "eleven_v4",
+    "voiceId": "TCJntnsvZTABT5mPPyf1",
+    "deliveryPrompt": "[mischievously] Even mijn administratie erbij… jullie missen nog 6 schubben! Willen jullie die nog zoeken, of moet ik dit avontuur met een onvolledige verzameling afsluiten?"
+  }
+}

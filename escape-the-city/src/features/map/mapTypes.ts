@@ -33,6 +33,7 @@ export interface AccuracyPolygon {
 }
 
 export interface RouteMapProps {
+  focusedLocationId?: string;
   gamePack: GamePack;
   progress: GameProgress | null;
   visibleStops: RouteStop[];

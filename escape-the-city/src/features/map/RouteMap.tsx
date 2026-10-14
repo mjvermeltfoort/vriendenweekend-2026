@@ -162,7 +162,7 @@ export function mapFocusStops(currentStopId: string | undefined, visibleStops: R
   return currentIndex === -1 ? visibleStops : visibleStops.slice(currentIndex, currentIndex + 2);
 }
 
-export function RouteMap({ gamePack, progress, visibleStops, locationProvider, deviceLocation, locationError }: RouteMapProps) {
+export function RouteMap({ gamePack, progress, visibleStops, locationProvider, deviceLocation, locationError, focusedLocationId }: RouteMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const stopPollingRef = useRef<(() => void) | null>(null);
@@ -257,6 +257,16 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
     revealSheetRef.current = false;
     setSelectedStopId(null);
   }
+
+  useEffect(() => {
+    const target = mapLocations.find((stop) => stop.id === focusedLocationId);
+    if (!target) return;
+    selectMapStop(target);
+    if (mode === 'live' && target.coordinates.latitude !== null && target.coordinates.longitude !== null) {
+      userMovedMapRef.current = true;
+      mapRef.current?.easeTo({ center: [target.coordinates.longitude, target.coordinates.latitude], zoom: 16, duration: 350 });
+    }
+  }, [focusedLocationId, mode, mapLocationIdsKey]);
 
   useEffect(() => {
     let cancelled = false;
