@@ -47,7 +47,7 @@ export const audioTranscripts = {
     'De bouwmeester wist dat hij niet ieder ongeluk kon voorkomen. Maar hij kon wel proberen de stad te beschermen als het misging.',
     'Daarom verborg hij een slimme oplossing in het ontwerp van dit bijzondere gebouw.',
     'Ontrafel dat geheim en herstel de zesde herinnering van de Moerasdraak.'
-  ].join('\\n\\n'),
+  ].join('\n\n'),
   tramkade: [
     'De stenen van de oude stad liggen achter jullie.',
     'Voor je staat een ander Den Bosch: gebouwd uit staal, graan, arbeid en industrie.',
