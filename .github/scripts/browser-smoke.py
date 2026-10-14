@@ -48,8 +48,8 @@ with TemporaryDirectory() as site:
             page.on("requestfailed", lambda request: local_failures.append(
                 f"{request.failure} {request.url}"
             ) if request.url.startswith(origin + "/")
-                # Closing a speaking dialog intentionally cancels its media stream.
-                and not (request.resource_type == "media" and request.failure == "net::ERR_ABORTED") else None)
+                # Reloading the app or closing a speaking dialog cancels in-flight requests.
+                and request.failure != "net::ERR_ABORTED" else None)
             try:
                 page.goto(origin + "/escape-the-city/", wait_until="load")
                 page.wait_for_function(
