@@ -113,10 +113,27 @@ export const bonusLocations: BonusLocation[] = [
     hiddenClue: 'Zoek de bril waardoor de machthebbers de stad bekeken.', revealedDescription: 'De bril keek niet alleen naar de vijand, maar ook naar de stad zelf.', estimatedDetourMinutes: 6,
     recommendedBetween: { afterStopId: 'kruithuis', beforeStopId: 'bossche-brouwers' }, visibleAfterStopId: 'kruithuis', maximumPoints: 250,
     manualVerification: { questionId: 'bonus-citadel-primary', question: 'Welk verdedigend onderdeel vormt hier nog steeds de toegang tot de Citadel?' },
-    intro: { title: 'De Papenbril', text: 'Twee lenzen vormen samen een vestingvorm.' },
+    intro: {
+      title: 'De Papenbril',
+      text: 'Na de verovering van Den Bosch verscheen hier een machtig fort. De Moerasdraak ontdekte iets vreemds: de kanonnen wezen niet alleen naar buiten, maar óók naar de stad zelf. Waarom zou een vesting haar eigen stad onder schot houden?'
+    },
     navigation: { clue: 'Zoek de bril waardoor de machthebbers de stad bekeken.', fallbackDirections: 'Volg de Citadellaan naar de vestingwal.', externalMapsQuery: 'Citadel Den Bosch' },
-    challenge: { kind: 'lens', prompt: 'Draai beide lenzen tot de vijfpuntige vestingvorm verschijnt.', correctAnswer: 'vesting', wrongFeedback: 'De lenzen vormen nog geen vesting.' },
-    hints: [{ id: 'h1', text: 'Een vesting heeft scherpe punten naar buiten.' }], reward: { id: 'wachterschub', title: 'Wachterschub', text: 'De vesting blijft waken.', symbol: '◈', resultLabel: 'Wachterschub' }
+    // Bronnen: BHIC en Erfgoed 's-Hertogenbosch over Fort Willem Maria / de Papenbril.
+    challenge: {
+      kind: 'choice',
+      prompt: 'Waarom waren de kanonnen van de Citadel ook op Den Bosch gericht?',
+      options: [
+        { id: 'b', label: 'Om vijandelijke schepen vanuit de haven te kunnen beschieten.', correct: false },
+        { id: 'c', label: 'Om de oude stadsmuren vanuit het fort te kunnen verdedigen.', correct: false },
+        { id: 'a', label: 'Omdat het nieuwe gezag bang was voor een opstand van de katholieke Bosschenaren.', correct: true },
+        { id: 'd', label: 'Om waarschuwingsschoten te lossen wanneer de stadspoorten sloten.', correct: false }
+      ],
+      correctFeedback: 'Precies! Dit fort hield niet alleen de vijand buiten, maar ook de eigen bevolking in de gaten. De Wachterschub is gevonden!',
+      wrongFeedback: 'Niet helemaal. Wie vertrouwde het nieuwe gezag na de verovering van Den Bosch misschien nog niet?'
+    },
+    hints: [{ id: 'h1', text: 'Een bril om de vijand buiten te zien, dacht je? De machthebbers keken ook achterom. Na 1629 hadden ze de stad veroverd… maar hadden ze ook de harten van de Bosschenaren gewonnen?' }],
+    answerExplanation: 'In 1629 veroverde Frederik Hendrik Den Bosch op de Spanjaarden. Het Staatse bewind liet tussen 1637 en 1645 Fort Willem Maria bouwen. Het fort diende om aanvallen van buiten af te slaan, maar ook om de overwegend katholieke Bosschenaren onder controle te houden: de nieuwe machthebbers vreesden trouw aan Spanje en mogelijke opstanden. Daarom waren kanonnen ook op de stad gericht en kreeg het fort de spotnaam Papenbril. Oorspronkelijk had de Citadel vijf bastions.',
+    reward: { id: 'wachterschub', title: 'Wachterschub', text: 'De vesting blijft waken.', symbol: '◈', resultLabel: 'Wachterschub' }
   },
   {
     id: 'bonus:verkadefabriek', isBonus: true, order: 0, slug: 'verkadefabriek', title: 'Verkadefabriek', shortTitle: 'Verborgen vondst', locationName: 'Boschdijkstraat 45',
