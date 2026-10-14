@@ -12,13 +12,7 @@ describe('Hint Henk production recordings', () => {
     for (const stop of [...gamePack.stops, ...(gamePack.bonusLocations ?? [])]) {
       for (const hint of stop.hints) {
         const recording = henkHint(stop.id, hint.id)!;
-        if (stop.id === 'bossche-brouwers' && hint.id === 'h1') {
-          // TODO #177: regenerate the Brouwcode recording, then remove this exception.
-          // The UI correctly falls back to current game text while this MP3 is stale.
-          expect(recording.transcript).not.toContain(hint.text);
-        } else {
-          expect(recording.transcript).toContain(hint.text);
-        }
+        expect(recording.transcript).toContain(hint.text);
         expect(recording.durationSeconds).toBeGreaterThan(1);
         expect(assets).toContain(recording.source);
       }

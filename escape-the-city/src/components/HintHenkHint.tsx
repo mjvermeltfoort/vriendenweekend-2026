@@ -25,8 +25,8 @@ export function HintHenkHint({ open, stopId, hint, penalty, replay = false, onCo
   const [revealed, setRevealed] = useState(replay);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const audioRef = useRef({ source: narration.source, soundEnabled });
-  audioRef.current = { source: narration.source, soundEnabled };
+  const audioRef = useRef({ source: narration.source, soundEnabled, stopNarration, toggleNarration });
+  audioRef.current = { source: narration.source, soundEnabled, stopNarration, toggleNarration };
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -60,13 +60,15 @@ export function HintHenkHint({ open, stopId, hint, penalty, replay = false, onCo
   useEffect(() => {
     if (!open || !source) return;
     if (audioRef.current.soundEnabled) {
-      stopNarration();
-      toggleNarration(source);
+      audioRef.current.stopNarration();
+      audioRef.current.toggleNarration(source);
     }
     return () => {
-      if (audioRef.current.source === source) stopNarration();
+      if (audioRef.current.source === source) audioRef.current.stopNarration();
     };
-  }, [open, source, stopNarration, toggleNarration]);
+    // Progress/sync renders may replace the audio callbacks. They must not
+    // stop and restart this recording; only opening or changing clips does.
+  }, [open, source]);
 
   useEffect(() => () => { request.current += 1; }, []);
 

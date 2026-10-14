@@ -93,13 +93,42 @@ describe('Hint Henk paid hints', () => {
   });
 
   it('shows updated paid hint text instead of stale recorded speech', () => {
-    const updated = { id: 'h1', text: 'Pff, zes stappen en jullie komen er niet uit? Zelfs mijn computer kan dit! Nou vooruit: graankorrels moet je eerst bewerken voordat je er iets mee kunt brouwen. En gist? Die houdt absoluut niet van een kokend heet bad! De rest mogen jullie zelf uitvogelen.' };
+    const updated = { id: 'h1', text: 'Een toekomstige hint waarvoor nog geen nieuwe opname bestaat.' };
     act(() => root.render(<HintHenkHint open stopId="bossche-brouwers" hint={updated} penalty={100} replay onConfirm={pay} onClose={close} />));
     expect(container.textContent).toContain(updated.text);
     expect(container.textContent).not.toContain('Mijn brein staat nog niet op de tap');
     expect(container.textContent).not.toContain('Opnieuw beluisteren');
     expect(audio.toggleNarration).not.toHaveBeenCalled();
     expect(pay).not.toHaveBeenCalled();
+  });
+
+  it('does not restart warning or paid speech when sync refreshes audio callbacks', async () => {
+    render();
+    expect(audio.toggleNarration).toHaveBeenCalledTimes(1);
+    const originalToggle = audio.toggleNarration;
+    const originalStop = audio.stopNarration;
+    try {
+      audio.narration.source = henkConfirmation.source;
+      audio.toggleNarration = vi.fn();
+      audio.stopNarration = vi.fn();
+      render();
+      expect(audio.toggleNarration).not.toHaveBeenCalled();
+      expect(audio.stopNarration).not.toHaveBeenCalled();
+      await act(async () => button('Hint tonen').click());
+      expect(audio.toggleNarration).toHaveBeenCalledTimes(1);
+      audio.narration.source = henkHint('drakenfontein', 'h1')!.source;
+      audio.toggleNarration = vi.fn();
+      audio.stopNarration = vi.fn();
+      render();
+      expect(audio.toggleNarration).not.toHaveBeenCalled();
+      expect(audio.stopNarration).not.toHaveBeenCalled();
+      act(() => button('Opnieuw beluisteren').click());
+      expect(audio.toggleNarration).toHaveBeenCalledTimes(1);
+    } finally {
+      audio.toggleNarration = originalToggle;
+      audio.stopNarration = originalStop;
+      render();
+    }
   });
 
   it('stops its recording on Escape and on unmount', () => {
