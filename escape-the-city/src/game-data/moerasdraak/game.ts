@@ -159,9 +159,7 @@ export const gamePack: GamePack = {
       shortTitle: 'Kruithuis',
       locationName: 'Kruithuis, Citadellaan 7',
       coordinates: { latitude: 51.693656, longitude: 5.305112, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      // De oude 06-kruithuis.mp3 beschrijft een routepuzzel die niet bestaat.
-      // Audio pas opnieuw aansluiten na een opname die met het transcript overeenkomt.
-      intro: { title: 'Het geheim van het Kruithuis', text: 'Eén vonk kon Den Bosch laten beven. De bouwmeester verborg een slimme bescherming in dit gebouw. Ontdekken jullie zijn geheim?', transcript: audioTranscripts.kruithuis },
+      intro: { title: 'Het geheim van het Kruithuis', text: 'Eén vonk kon Den Bosch laten beven. De bouwmeester verborg een slimme bescherming in dit gebouw. Ontdekken jullie zijn geheim?', audioSrc: audioAsset('06-kruithuis.mp3'), transcript: audioTranscripts.kruithuis },
       navigation: { clue: 'Zoek het oude Kruithuis aan de Citadellaan. Wat vertelt het gebouw over de verdediging van de stad?', fallbackDirections: 'Ga naar het Kruithuis aan de Citadellaan 7.', externalMapsQuery: 'Kruithuis Den Bosch' },
       challenge: {
         kind: 'choice',

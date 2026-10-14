@@ -1,7 +1,7 @@
 import type { GamePack } from '../game/gameTypes';
 import { allBellChallengeImages, allEffectAudio, allScenicAudio, allStandaloneNarration } from '../audio/audioConfig';
 
-const MEDIA_CACHE = 'moerasdraak-audio-v2';
+const MEDIA_CACHE = 'moerasdraak-audio-v3';
 export const ROUTE_OFFLINE_ASSETS = [
   './routes/moerasdraak-den-bosch.geojson',
   './maps/route-map-fallback.webp'

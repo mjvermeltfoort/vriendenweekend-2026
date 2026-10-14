@@ -22,4 +22,4 @@ Bestanden in `scenic/` lopen als contextuele achtergrondmuziek. Drakenfontein, B
 
 Bestanden in `effects/bellende-engel/` vormen de luisteropdracht bij de Sint-Jan. De map bevat een ontwakingsgeluid, telefoonintro, vier herkenningsklokken en vier WAV-referentietonen.
 
-Alle 26 MP3- en WAV-bestanden worden tijdens routevoorbereiding opgeslagen in `moerasdraak-audio-v2`.
+Alle 26 MP3- en WAV-bestanden worden tijdens routevoorbereiding opgeslagen in `moerasdraak-audio-v3`.
