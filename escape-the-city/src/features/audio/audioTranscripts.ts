@@ -42,11 +42,11 @@ export const audioTranscripts = {
     'De boodschap is kort. De betekenis ervan vinden jullie pas wanneer alle delen op hun plaats vallen.'
   ].join('\n\n'),
   kruithuis: [
-    'Hier werden vuur en vernietiging achter dikke muren bewaard.',
-    'Eén vonk kon alles doen ontploffen. Te veel water maakte het kruit waardeloos. Alleen wie voorzichtig handelde, kon de voorraad veilig bewaren.',
-    'De zesde herinnering vraagt daarom niet alleen om moed, maar ook om verstand.',
-    'Kies de juiste route. Houd afstand van het vuur, vermijd het water en vertrouw niet iedere doorgang.',
-    'Een held die niet nadenkt, bereikt zelden het einde van zijn verhaal.'
+    'Hier, bij het Kruithuis, waakte de Moerasdraak over een gevaarlijke voorraad.',
+    'Achter deze muren lag buskruit opgeslagen. Eén vonk kon genoeg zijn om Den Bosch op zijn grondvesten te laten schudden.',
+    'De bouwmeester wist dat hij niet ieder ongeluk kon voorkomen. Maar hij kon wel proberen de stad te beschermen als het misging.',
+    'Daarom verborg hij een slimme oplossing in het ontwerp van dit bijzondere gebouw.',
+    'Ontrafel dat geheim en herstel de zesde herinnering van de Moerasdraak.'
   ].join('\n\n'),
   tramkade: [
     'De stenen van de oude stad liggen achter jullie.',
