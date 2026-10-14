@@ -2,7 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
-import { canAccessChallenge, canStartFinale, canViewResult, hasLocationUnlock, isBonusVisible, isFinaleLocationRevealed, locationById, nextStop, stopById } from '../features/game/gameState';
+import { canAccessChallenge, canStartFinale, canViewResult, hasLocationUnlock, isBonusVisible, isFinaleLocationRevealed, locationById, nextStop } from '../features/game/gameState';
 import { isBonusLocation } from '../features/game/gameTypes';
 import { createSimulatorProvider, defaultSimulatorState, type SimulatorState } from '../features/location/simulator';
 import { GameIcon, PageShell } from '../components/GameUi';
@@ -37,6 +37,8 @@ export function StopPage({ pack }: { pack: GamePack }) {
   } = useGame();
   const stop = stopId ? locationById(pack, stopId) : null;
   const [gpsMessage, setGpsMessage] = useState('');
+  const [challengeOpenError, setChallengeOpenError] = useState('');
+  const [openingChallenge, setOpeningChallenge] = useState(false);
   const [fallbackReady, setFallbackReady] = useState(false);
   const [fallbackNow, setFallbackNow] = useState(() => Date.now());
   const [answer, setAnswer] = useState('');
@@ -203,9 +205,42 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const isDev = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_TOOLS === 'true';
   const followingStop = isBonusLocation(currentStop) ? null : nextStop(pack, currentStop.id);
   const currentStopIsActive = !isBonusLocation(currentStop) && progress?.currentStopId === currentStop.id;
-  const otherActiveGame = activeGameRun?.status === 'active' && activeGameRun.gameId !== currentStop.id
-    ? stopById(pack, activeGameRun.gameId)
+  const otherActiveGameId = activeGameRun?.status === 'active' && activeGameRun.gameId !== currentStop.id
+    ? activeGameRun.gameId
     : null;
+  const otherActiveGame = otherActiveGameId ? locationById(pack, otherActiveGameId) : null;
+
+  async function openChallenge() {
+    if (openingChallenge) return;
+    setChallengeOpenError('');
+
+    if (otherActiveGameId) {
+      setChallengeOpenError('Jullie team is al bezig met een andere opdracht. Rond die eerst af.');
+      return;
+    }
+
+    // Een al gestarte opdracht hoeft niet opnieuw op de server gestart te worden.
+    if (progress && canAccessChallenge(progress, currentStop.id)) {
+      navigate(`/challenge/${currentStop.id}`);
+      return;
+    }
+
+    setOpeningChallenge(true);
+    try {
+      const started = await startStop(currentStop.id);
+      if (started) {
+        navigate(`/challenge/${currentStop.id}`);
+      } else {
+        // startStop kan false teruggeven bij een andere actieve opdracht of een
+        // inmiddels gewijzigde teamstatus. Laat dit niet stilzwijgend mislukken.
+        setChallengeOpenError('De opdracht kon niet worden geopend. Controleer of jullie team al een andere opdracht speelt en probeer opnieuw.');
+      }
+    } catch (error) {
+      setChallengeOpenError(error instanceof Error ? error.message : 'De opdracht kon niet worden geopend. Probeer opnieuw.');
+    } finally {
+      setOpeningChallenge(false);
+    }
+  }
 
   async function sendSimulatedLocation() {
     const provider = createSimulatorProvider(() => devState);
@@ -346,13 +381,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
             location={mainStopPosition}
             locationError={locationError}
             showOpenButton
-            onOpenChallenge={() => {
-              void startStop(currentStop.id).then((started) => {
-                if (started) navigate(`/challenge/${currentStop.id}`);
-              }).catch((error) => {
-                setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.');
-              });
-            }}
+            onOpenChallenge={() => { void openChallenge(); }}
           />
         ) : null}
 
@@ -506,16 +535,22 @@ export function StopPage({ pack }: { pack: GamePack }) {
             {!currentStopIsActive || !canPlay ? (
               <button
                 className="button primary"
-                disabled={!canPlay || !finaleEligibility.eligible || Boolean(otherActiveGame)}
-                onClick={() => void startStop(currentStop.id).then((started) => {
-                  if (started) navigate(`/challenge/${currentStop.id}`);
-                }).catch((error) => setGpsMessage(error instanceof Error ? error.message : 'De opdracht kon niet worden gestart.'))}
+                type="button"
+                disabled={openingChallenge || !canPlay || !finaleEligibility.eligible || Boolean(otherActiveGameId)}
+                onClick={() => { void openChallenge(); }}
               >
-                Opdracht openen
+                {openingChallenge ? 'Opdracht openen…' : 'Opdracht openen'}
               </button>
             ) : null}
         </>
       )}
+
+      {challengeOpenError ? (
+        <div className="location-status" role="alert">
+          <GameIcon name="location" />
+          <p>{challengeOpenError}</p>
+        </div>
+      ) : null}
 
       {currentStop.isFinal && !finaleEligibility.eligible ? <p className="error">Nog {finaleEligibility.missingCount} opdrachten te voltooien.</p> : null}
     </PageShell>
