@@ -213,4 +213,26 @@ describe('Moerasdraak player copy', () => {
       expect(bonus?.intro.text).toMatch(context);
     }
   });
+  it('keeps the Brouwcode finale reorder intact while improving only copy and Hint Henk', () => {
+    const stop = gamePack.stops.find((item) => item.id === 'bossche-brouwers')!;
+    expect(stop.title).toBe('De Brouwcode');
+    expect(stop.isFinal).toBe(true);
+    expect(stop.intro.title).toBe('De finale');
+    expect(stop.intro.text).toContain('zes stappen van het geheime brouwrecept');
+    expect(stop.intro.audioSrc).toMatch(/\\/audio\\/07-tramkade\\.mp3$/);
+    expect(stop.challenge.kind).toBe('reorder');
+    if (stop.challenge.kind !== 'reorder') return;
+    expect(stop.challenge.prompt).toContain('Zet de zes brouwstappen in de juiste volgorde');
+    expect(stop.challenge.items).toEqual(['Gisten', 'Schroten', 'Koelen', 'Maischen', 'Koken', 'Filteren']);
+    expect(stop.challenge.correctOrder).toEqual(['Schroten', 'Maischen', 'Filteren', 'Koken', 'Koelen', 'Gisten']);
+    expect(challengeAnswerIsCorrect(stop.challenge, stop.challenge.correctOrder)).toBe(true);
+    expect(challengeAnswerIsCorrect(stop.challenge, stop.challenge.items)).toBe(false);
+    expect(stop.challenge.wrongFeedback).toContain('De ketel begint te pruttelen');
+    expect(stop.hints).toHaveLength(1);
+    expect(stop.hints[0].id).toBe('h1');
+    expect(stop.hints[0].text).toContain('kokend heet bad');
+    expect(stop.hints[0].text).not.toContain('Schroten');
+    expect(stop.reward.title).toBe('Rust');
+  });
+
 });
