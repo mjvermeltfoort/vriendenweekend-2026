@@ -35,7 +35,7 @@ let gameState = {
   startStop: vi.fn(),
   teamLocation: null as TeamLocation | null,
   deviceLocation: null as LocationResult | null,
-  activeGameRun: null,
+  activeGameRun: null as { status: 'active' | 'completed'; gameId: string } | null,
   locationError: null as LocationErrorResult | null,
   currentObservation: null,
   observationStatus: 'unavailable' as const,
@@ -538,4 +538,76 @@ describe('StopPage completion copy', () => {
     expect(container.textContent).not.toContain('Locatietoegang geweigerd.');
     expect(container.textContent).not.toContain('Kom dichter bij de schub.');
   });
+  it('opens an already-started bonus challenge without starting a second run', async () => {
+    const progress = createProgress();
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'started';
+    progress.stopProgress['bonus:bolwerk-sint-jan'].unlockMethod = 'gps';
+    gameState = { ...gameState, progress, startStop: vi.fn() };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bonus-resume" initialEntries={['/stop/bonus:bolwerk-sint-jan']}>
+        <Routes>
+          <Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} />
+          <Route path="/challenge/:stopId" element={<p>Bonusopdracht geopend</p>} />
+        </Routes>
+      </MemoryRouter>
+    ));
+
+    const button = Array.from(container.querySelectorAll('button')).find((element) => element.textContent === 'Opdracht openen');
+    expect(button).toBeDefined();
+    await act(async () => { button!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    expect(container.textContent).toContain('Bonusopdracht geopend');
+    expect(gameState.startStop).not.toHaveBeenCalled();
+  });
+
+  it('shows a visible explanation when the server refuses to open a bonus challenge', async () => {
+    const progress = createProgress();
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'arrived';
+    progress.stopProgress['bonus:bolwerk-sint-jan'].unlockMethod = 'gps';
+    gameState = { ...gameState, progress, startStop: vi.fn().mockResolvedValue(false) };
+
+    await act(async () => root.render(
+      <MemoryRouter key="bonus-blocked" initialEntries={['/stop/bonus:bolwerk-sint-jan']}>
+        <Routes>
+          <Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} />
+          <Route path="/challenge/:stopId" element={<p>Bonusopdracht geopend</p>} />
+        </Routes>
+      </MemoryRouter>
+    ));
+
+    const button = Array.from(container.querySelectorAll('button')).find((element) => element.textContent === 'Opdracht openen');
+    expect(button).toBeDefined();
+    await act(async () => { button!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    expect(gameState.startStop).toHaveBeenCalledWith('bonus:bolwerk-sint-jan');
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('De opdracht kon niet worden geopend');
+    expect(container.textContent).not.toContain('Bonusopdracht geopend');
+  });
+
+  it('identifies another active bonus challenge rather than presenting an unresponsive button', async () => {
+    const progress = createProgress();
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'arrived';
+    progress.stopProgress['bonus:bolwerk-sint-jan'].unlockMethod = 'gps';
+    gameState = {
+      ...gameState,
+      progress,
+      activeGameRun: { status: 'active', gameId: 'bonus:halve-peer' },
+      startStop: vi.fn()
+    };
+    await act(async () => root.render(
+      <MemoryRouter key="bonus-other-active" initialEntries={['/stop/bonus:bolwerk-sint-jan']}>
+        <Routes>
+          <Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} />
+          <Route path="/challenge/:stopId" element={<p>Andere bonusopdracht geopend</p>} />
+        </Routes>
+      </MemoryRouter>
+    ));
+    expect(container.textContent).toContain('Jullie team is al bezig met een andere opdracht.');
+    const openButton = Array.from(container.querySelectorAll('button')).find((element) => element.textContent === 'Opdracht openen');
+    expect(openButton?.disabled).toBe(true);
+    const goButton = Array.from(container.querySelectorAll('button')).find((element) => element.textContent === 'Ga naar actieve opdracht');
+    await act(async () => { goButton!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    expect(container.textContent).toContain('Andere bonusopdracht geopend');
+    expect(gameState.startStop).not.toHaveBeenCalled();
+  });
+
 });
