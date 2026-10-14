@@ -94,7 +94,7 @@ describe('Moerasdraak player copy', () => {
     expect(stop.coordinates).toMatchObject({ latitude: 51.689089, longitude: 5.30375, radiusMeters: 35, maximumAccuracyMeters: 40 });
     expect(stop.navigation.fallbackDirections).not.toContain('Markt 29,');
     expect(stop.intro.title).toBe('Het Monster van Bosch');
-    expect(stop.intro.audioSrc).toContain('07-tramkade.mp3');
+    expect(stop.intro.audioSrc).toMatch(/\/audio\/04-jheronimus-bosch\.mp3$/);
     expect(stop.intro.text).not.toMatch(/schetsboek|sokkel|aanwijzing|penseel|palet|1516|boomman|snavel|schubben/i);
     expect(stop.intro.transcript?.split('\n\n')).toHaveLength(5);
     expect(stop.intro.transcript).toContain('Hier groeide een jongen op die de wereld anders zag dan ieder ander.');
@@ -220,7 +220,7 @@ describe('Moerasdraak player copy', () => {
     expect(stop.isFinal).toBe(true);
     expect(stop.intro.title).toBe('De finale');
     expect(stop.intro.text).toContain('zes stappen van het geheime brouwrecept');
-    expect(stop.intro.audioSrc).toMatch(/\\/audio\\/07-tramkade\\.mp3$/);
+    expect(stop.intro.audioSrc).toContain('07-tramkade.mp3');
     expect(stop.challenge.kind).toBe('reorder');
     if (stop.challenge.kind !== 'reorder') return;
     expect(stop.challenge.prompt).toContain('Zet de zes brouwstappen in de juiste volgorde');
