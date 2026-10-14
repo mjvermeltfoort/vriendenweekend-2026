@@ -127,7 +127,7 @@ describe('ChallengePage', () => {
     expect(input.getAttribute('aria-describedby')).toBe('code-answer-help');
   });
 
-  it('resets answer, ordering, lens, feedback, busy, and dialog state on route changes', async () => {
+  it('resets answer, ordering, feedback, busy, and dialog state on route changes', async () => {
     render('sint-jan');
     const code = container.querySelector<HTMLInputElement>('.code-input')!;
     act(() => setFormValue(code, '3142'));
@@ -163,7 +163,7 @@ describe('ChallengePage', () => {
 
     routeTo('bonus:citadel');
     expect(button('Controleer antwoord').disabled).toBe(true);
-    act(() => button('Linkerlens draaien').click());
+    act(() => container.querySelector<HTMLInputElement>('input[name="choice"][value="b"]')!.click());
     expect(button('Controleer antwoord').disabled).toBe(false);
 
     routeTo('bossche-brouwers');
@@ -248,25 +248,28 @@ describe('ChallengePage', () => {
     expect(container.textContent).not.toContain('Spoor in straat');
   });
 
-  it('allows wrong and correct lens attempts without revealing the solution in button state', async () => {
+  it('shows the Citadel historical question with no misleading on-site card and submits choices', async () => {
     attemptAnswer.mockImplementation(async (_stopId, _challenge, answer) => ({
-      correct: answer === 'vesting',
-      message: answer === 'vesting' ? 'Goed.' : 'Nog niet.'
+      correct: answer === 'a',
+      message: answer === 'a' ? 'Goed.' : 'Nog niet.'
     }));
     render('bonus:citadel');
     const submit = button('Controleer antwoord');
     expect(submit.disabled).toBe(true);
+    expect(container.textContent).toContain('Waarom waren de kanonnen van de Citadel ook op Den Bosch gericht?');
+    expect(container.textContent).not.toContain('Linkerlens draaien');
+    expect(container.textContent).not.toContain('Gebruik details op locatie om deze opdracht op te lossen.');
+    expect(container.querySelector('section.challenge-card > .audio-panel')).toBeNull();
+    expect(container.querySelectorAll('input[name="choice"]')).toHaveLength(4);
 
-    act(() => button('Linkerlens draaien').click());
+    act(() => container.querySelector<HTMLInputElement>('input[name="choice"][value="b"]')!.click());
     expect(submit.disabled).toBe(false);
     await act(async () => submit.click());
-    expect(attemptAnswer).toHaveBeenLastCalledWith('bonus:citadel', expect.anything(), '');
+    expect(attemptAnswer).toHaveBeenLastCalledWith('bonus:citadel', expect.anything(), 'b');
     expect(container.textContent).toContain('Nog niet.');
 
-    act(() => button('Linkerlens draaien').click());
-    for (let index = 0; index < 3; index += 1) act(() => button('Rechterlens draaien').click());
-    expect(submit.disabled).toBe(false);
+    act(() => container.querySelector<HTMLInputElement>('input[name="choice"][value="a"]')!.click());
     await act(async () => submit.click());
-    expect(attemptAnswer).toHaveBeenLastCalledWith('bonus:citadel', expect.anything(), 'vesting');
+    expect(attemptAnswer).toHaveBeenLastCalledWith('bonus:citadel', expect.anything(), 'a');
   });
 });
