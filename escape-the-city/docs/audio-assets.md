@@ -9,3 +9,5 @@
 - Alle tien fragmenten hebben de volledige gesproken tekst als tekstversie; regie-, geluids- en stemaanwijzingen worden niet getoond.
 - Mastergeluid en sfeermuziek kunnen apart worden uitgeschakeld.
 - Routevoorbereiding cachet alle 26 MP3- en WAV-bestanden voor offline gebruik.
+
+- Hint Henk gebruikt 22 eigen fragmenten met ElevenLabs `eleven_v4`: 14 hint-/kostenfragmenten, 7 schubherinneringen en `hint-henk/wrong-answer-v4.mp3` voor een fout antwoord. De nieuwe opname is gekoppeld aan dezelfde Hint Henk-stem en wordt meegenomen in het offlinepakket. De tekstversie blijft beschikbaar als geluid uitstaat.

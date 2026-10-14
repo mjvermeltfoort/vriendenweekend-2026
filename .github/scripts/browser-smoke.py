@@ -47,7 +47,9 @@ with TemporaryDirectory() as site:
             ) if response.url.startswith(origin + "/") and response.status >= 400 else None)
             page.on("requestfailed", lambda request: local_failures.append(
                 f"{request.failure} {request.url}"
-            ) if request.url.startswith(origin + "/") else None)
+            ) if request.url.startswith(origin + "/")
+                # Reloading the app or closing a speaking dialog cancels in-flight requests.
+                and request.failure != "net::ERR_ABORTED" else None)
             try:
                 page.goto(origin + "/escape-the-city/", wait_until="load")
                 page.wait_for_function(
@@ -62,6 +64,7 @@ with TemporaryDirectory() as site:
                 runpy.run_path(str(Path(__file__).with_name("bosch-browser-check.py")))["check_bosch"](page, origin, diagnostics)
                 runpy.run_path(str(Path(__file__).with_name("henk-browser-check.py")))["check_henk"](page, origin, diagnostics)
                 runpy.run_path(str(Path(__file__).with_name("henk-reminder-browser-check.py")))["check_henk_reminders"](page, origin, diagnostics)
+                runpy.run_path(str(Path(__file__).with_name("henk-wrong-answer-browser-check.py")))["check_henk_wrong_answer"](page, origin, diagnostics)
                 if errors or local_failures:
                     raise RuntimeError("Bosch browser check failed: " + "; ".join(errors + local_failures))
             finally:

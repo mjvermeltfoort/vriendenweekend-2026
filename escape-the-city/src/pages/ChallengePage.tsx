@@ -1,3 +1,6 @@
+import { HenkWrongAnswer } from '../components/HenkWrongAnswer';
+import { formatAnswerWait, type AnswerAttemptResult } from '../features/game/answerCooldown';
+import { useAnswerCooldown } from '../features/game/useAnswerCooldown';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
@@ -33,7 +36,7 @@ function labelForCompositeOption(category: string, option: string) {
 export function ChallengePage({ pack }: { pack: GamePack }) {
   const { stopId } = useParams();
   const navigate = useNavigate();
-  const { progress, attemptAnswer, useHint, completeFinale } = useGame();
+  const { activeTeam, progress, attemptAnswer, useHint, completeFinale } = useGame();
   const stop = stopId ? locationById(pack, stopId) : null;
   const [choice, setChoice] = useState('');
   const [code, setCode] = useState('');
@@ -45,6 +48,14 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const [lensInteracted, setLensInteracted] = useState(false);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [attemptFeedback, setAttemptFeedback] = useState<AnswerAttemptResult | null>(null);
+  const submitting = useRef(false);
+  const submissionId = useRef(0);
+  const stopProgress = stop ? progress?.stopProgress[stop.id] : undefined;
+  const serverDeadlineIsLatest = (Date.parse(stopProgress?.retryAvailableAt ?? '') || 0) >= (Date.parse(attemptFeedback?.retryAvailableAt ?? '') || 0);
+  const retryAvailableAt = serverDeadlineIsLatest ? stopProgress?.retryAvailableAt : attemptFeedback?.retryAvailableAt;
+  const wrongPenalty = serverDeadlineIsLatest ? stopProgress?.lastWrongAnswerPenalty : attemptFeedback?.penaltyPoints;
+  const waitSeconds = useAnswerCooldown(retryAvailableAt, progress?.serverTimeOffsetMs ?? attemptFeedback?.serverTimeOffsetMs);
   const [hintOpen, setHintOpen] = useState(false);
   const [replayHint, setReplayHint] = useState(false);
   const activeStopId = useRef(stopId);
@@ -62,6 +73,9 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     setLensInteracted(false);
     setMessage('');
     setBusy(false);
+    submitting.current = false;
+    submissionId.current += 1;
+    setAttemptFeedback(null);
     setHintOpen(false);
     setReplayHint(false);
   }, [stopId, stop]);
@@ -111,6 +125,9 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   })();
 
   async function submit() {
+    if (submitting.current || waitSeconds > 0 || !canSubmit) return;
+    submitting.current = true;
+    const requestId = ++submissionId.current;
     const submittedStopId = currentStop.id;
     setBusy(true);
     try {
@@ -126,8 +143,9 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
                 ? currentStop.challenge.correctAnswer
                 : '';
       const result = await attemptAnswer(currentStop.id, currentStop.challenge, answer);
-      if (activeStopId.current !== submittedStopId) return;
+      if (activeStopId.current !== submittedStopId || submissionId.current !== requestId) return;
       setMessage(result.message);
+      setAttemptFeedback(result);
       if (result.correct) {
         if (isFinal) {
           await completeFinale();
@@ -136,8 +154,10 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           navigate(`/stop/${currentStop.id}`);
         }
       }
+    } catch (error) {
+      if (activeStopId.current === submittedStopId && submissionId.current === requestId) setMessage(error instanceof Error ? error.message : 'Het antwoord kon niet worden gecontroleerd. Probeer het opnieuw.');
     } finally {
-      if (activeStopId.current === submittedStopId) setBusy(false);
+      if (activeStopId.current === submittedStopId && submissionId.current === requestId) { submitting.current = false; setBusy(false); }
     }
   }
 
@@ -276,12 +296,14 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
         {revealedHint ? <div className="revealed-hint"><p><strong>Hint Henk:</strong> {revealedHint.text}</p>
           <button type="button" className="text-link" onClick={() => { setReplayHint(true); setHintOpen(true); }}>Hint Henk opnieuw bekijken</button>
         </div> : null}
+        {waitSeconds > 0 ? <p className="answer-cooldown" role="status">Nieuwe poging over <strong>{formatAnswerWait(waitSeconds)}</strong> · Dit geldt voor het hele team.</p> : null}
+        <HenkWrongAnswer key={currentStop.id} teamId={activeTeam?.id ?? progress.teamId} stopId={currentStop.id} deadline={retryAvailableAt} seconds={waitSeconds} penalty={wrongPenalty} />
         {message ? <p className="feedback" id="answer-feedback" role="alert">{message}</p> : null}
 
         <div className="stack">
           {currentStop.id !== 'bosch-wezen' || boschBookOpen ? (
-            <button className="button primary" disabled={busy || !canSubmit} onClick={() => void submit()}>
-              {busy ? 'Antwoord controleren…' : currentStop.id === 'bosch-wezen' ? 'Wek het monster tot leven' : 'Controleer antwoord'}
+            <button className="button primary" disabled={busy || waitSeconds > 0 || !canSubmit} onClick={() => void submit()}>
+              {waitSeconds > 0 ? `Nieuwe poging over ${formatAnswerWait(waitSeconds)}` : busy ? 'Antwoord controleren…' : currentStop.id === 'bosch-wezen' ? 'Wek het monster tot leven' : 'Controleer antwoord'}
             </button>
           ) : null}
           {activeHint ? (

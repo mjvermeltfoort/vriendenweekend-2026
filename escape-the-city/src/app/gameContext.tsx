@@ -1,3 +1,4 @@
+import { answerRetrySeconds, type AnswerAttemptResult } from '../features/game/answerCooldown';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { gamePack } from '../game-data/moerasdraak/game';
 import { canStartFinale, challengeAnswerIsCorrect, hasLocationUnlock, normalizeJoinCode, type GameProgress, type TeamRecord } from '../features/game/gameState';
@@ -89,7 +90,7 @@ interface GameContextValue {
   sendRadioMessage: (payload: { audio: Blob; durationMs: number; transcript?: string }) => Promise<void>;
   startStop: (stopId: string) => Promise<boolean>;
   useHint: (stopId: string, hintId: string) => Promise<void>;
-  attemptAnswer: (stopId: string, challenge: ChallengeConfig, answer: unknown) => Promise<{ correct: boolean; message: string }>;
+  attemptAnswer: (stopId: string, challenge: ChallengeConfig, answer: unknown) => Promise<AnswerAttemptResult>;
   completeFinale: () => Promise<void>;
 }
 
@@ -521,7 +522,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       await fetchServerState(activeSession.id);
       return updated;
     } catch (error) {
-      if (error instanceof TeamSyncError && error.code === 'VERSION_CONFLICT') {
+      if (error instanceof TeamSyncError && ['VERSION_CONFLICT', 'ANSWER_COOLDOWN'].includes(error.code)) {
         await fetchServerState(activeSession.id);
       }
       throw error;
@@ -669,7 +670,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     await runVersionedAction(stopId, 'use_hint', { hintId });
   }
 
-  async function attemptAnswer(stopId: string, challenge: ChallengeConfig, answer: unknown) {
+  async function attemptAnswer(stopId: string, challenge: ChallengeConfig, answer: unknown): Promise<AnswerAttemptResult> {
     const currentProgress = progressRef.current;
     if (!currentProgress || !activeTeam) return { correct: false, message: 'Geen actieve voortgang.' };
     const stop = currentProgress.stopProgress[stopId];
@@ -678,8 +679,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (stop.state !== 'started' || !hasLocationUnlock(currentProgress, stopId)) {
       return { correct: false, message: 'Controleer eerst jullie locatie.' };
     }
+    if (answerRetrySeconds(stop.retryAvailableAt, currentProgress.serverTimeOffsetMs)) {
+      return { correct: false, message: 'Jullie team heeft nog bedenktijd.', retryAvailableAt: stop.retryAvailableAt, penaltyPoints: stop.lastWrongAnswerPenalty, serverTimeOffsetMs: currentProgress.serverTimeOffsetMs };
+    }
     const expectedCorrect = challengeAnswerIsCorrect(challenge, answer);
-    const updated = await runVersionedAction(stopId, 'submit_answer', { answer });
+    let updated;
+    try { updated = await runVersionedAction(stopId, 'submit_answer', { answer }); }
+    catch (error) {
+      if (error instanceof TeamSyncError && error.code === 'ANSWER_COOLDOWN') {
+        const latest = progressRef.current;
+        const pending = latest?.stopProgress[stopId];
+        return { correct: false, message: error.message, retryAvailableAt: pending?.retryAvailableAt, penaltyPoints: pending?.lastWrongAnswerPenalty, serverTimeOffsetMs: latest?.serverTimeOffsetMs };
+      }
+      throw error;
+    }
     const correct = updated.actionResult?.correct === true;
     if (correct !== expectedCorrect && import.meta.env.DEV) {
       console.warn('Server- en clientantwoordvalidatie verschillen voor', stopId);
@@ -697,7 +710,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
     return correct
       ? { correct: true, message: 'Goed antwoord.' }
-      : { correct: false, message: 'Nog niet juist.' };
+      : { correct: false, message: 'Nog niet juist.',
+        retryAvailableAt: typeof updated.actionResult?.retryAvailableAt === 'string' ? updated.actionResult.retryAvailableAt : undefined,
+        penaltyPoints: typeof updated.actionResult?.penaltyPoints === 'number' ? updated.actionResult.penaltyPoints : undefined,
+        serverTimeOffsetMs: progressRef.current?.serverTimeOffsetMs
+      };
   }
 
   async function completeFinale() {

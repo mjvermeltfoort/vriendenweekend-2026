@@ -4,6 +4,9 @@ import { calculateStopScore, normalizeAnswer } from './scoring';
 export type StopStatus = 'locked' | 'available' | 'arrived' | 'started' | 'completed';
 
 export interface StopProgress {
+  retryAvailableAt?: string;
+  lastWrongAnswerAt?: string;
+  lastWrongAnswerPenalty?: number;
   state: StopStatus;
   attempts: number;
   hintsUsed: number;
@@ -96,6 +99,8 @@ export interface ResultData {
 }
 
 export interface GameProgress {
+  serverNow?: string;
+  serverTimeOffsetMs?: number;
   teamId: string;
   gameSlug: string;
   gameVersion: number;
