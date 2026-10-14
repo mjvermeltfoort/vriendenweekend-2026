@@ -156,24 +156,28 @@ export const gamePack: GamePack = {
       order: 6,
       slug: 'kruithuis',
       title: 'Vuur en Water',
-      shortTitle: 'Balans',
+      shortTitle: 'Kruithuis',
       locationName: 'Kruithuis, Citadellaan 7',
       coordinates: { latitude: 51.693656, longitude: 5.305112, radiusMeters: 35, maximumAccuracyMeters: 40, needsOnSiteVerification: true },
-      intro: { title: 'Vuur, water en verdediging', text: 'Breng drie krachten in balans.', audioSrc: audioAsset('06-kruithuis.mp3'), transcript: audioTranscripts.kruithuis },
-      navigation: { clue: 'Zoek baksteen, water en muur.', fallbackDirections: 'Ga naar het Kruithuis of Citadel.', externalMapsQuery: 'Kruithuis Den Bosch' },
+      // De oude 06-kruithuis.mp3 beschrijft een routepuzzel die niet bestaat.
+      // Audio pas opnieuw aansluiten na een opname die met het transcript overeenkomt.
+      intro: { title: 'Het geheim van het Kruithuis', text: 'Eén vonk kon Den Bosch laten beven. De bouwmeester verborg een slimme bescherming in dit gebouw. Ontdekken jullie zijn geheim?', transcript: audioTranscripts.kruithuis },
+      navigation: { clue: 'Zoek het oude Kruithuis aan de Citadellaan. Wat vertelt het gebouw over de verdediging van de stad?', fallbackDirections: 'Ga naar het Kruithuis aan de Citadellaan 7.', externalMapsQuery: 'Kruithuis Den Bosch' },
       challenge: {
         kind: 'choice',
-        prompt: 'Wat hoort hier het meest bij?',
+        prompt: 'De Moerasdraak bewaakte hier ooit een gevaarlijke voorraad. Eén vonk kon genoeg zijn om het hele gebouw te laten ontploffen. De bouwmeester bedacht daarom een slimme manier om de stad te beschermen. Wat moest er gebeuren met de kracht van een explosie als het buskruit toch ontplofte?',
         options: [
-          { id: 'b', label: 'Zwemmen', correct: false },
-          { id: 'a', label: 'Verdediging', correct: true },
-          { id: 'c', label: 'Bakken', correct: false }
+          { id: 'b', label: 'De kracht moest via ondergrondse gangen ontsnappen.', correct: false },
+          { id: 'c', label: 'De kracht moest door de dikke muren worden opgevangen.', correct: false },
+          { id: 'a', label: 'De kracht moest vooral omhoog, door het lichtere dak.', correct: true },
+          { id: 'd', label: 'De kracht moest via het water van de gracht worden afgevoerd.', correct: false }
         ],
-        correctFeedback: 'Juist: balans houdt stand.',
-        wrongFeedback: 'Niet de juiste kracht.'
+        correctFeedback: 'Precies! Door de lichte dakconstructie kon de druk vooral omhoog ontsnappen, weg van de stad. Het geheim van het Kruithuis is ontrafeld!',
+        wrongFeedback: 'Dat zou de stad niet goed genoeg beschermen. Denk aan de richting waarin de kracht van de explosie het gebouw het makkelijkst kon verlaten.'
       },
-      hints: [{ id: 'h1', text: 'Kijk naar functie, niet naar sfeer.' }],
-      reward: { title: 'Moed', text: 'De verdediging staat.', symbol: '🛡️' }
+      hints: [{ id: 'h1', text: 'BOEM! Daar gaat mijn kapsel! Gelukkig dacht de bouwmeester vooruit. Kijk eens omhoog… Wat is gemakkelijker kapot te krijgen: een muur van een meter dik of een dak?' }],
+      answerExplanation: 'Het Bossche Kruithuis werd tussen 1618 en 1620 gebouwd om buskruit veilig op te slaan. Het zeshoekige gebouw kreeg buitenmuren van ongeveer één meter dik, dunnere muren rond de binnenplaats en een relatief lichte dakconstructie. Bij een ontploffing moest de druk daardoor vooral omhoog en van de stad af worden geleid. Oorspronkelijk lag er ook een gracht om het gebouw. Het is het laatste overgebleven kruithuis uit de Tachtigjarige Oorlog in Nederland.',
+      reward: { title: 'Moed', text: 'Het geheim van het Kruithuis is ontrafeld.', symbol: '🛡️' }
     },
     {
       id: 'bossche-brouwers',
