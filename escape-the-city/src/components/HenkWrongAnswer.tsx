@@ -28,7 +28,7 @@ export function HenkWrongAnswer({ teamId, stopId, deadline, seconds, penalty }: 
   }
   if (!seconds) return null;
   return <>
-    <button className="text-link" type="button" onClick={() => setOpen(true)}>Bekijk Henks foutmelding</button>
+    <button className="text-link henk-wrong-reopen" type="button" onClick={() => setOpen(true)}>Bekijk Henks foutmelding</button>
     {open ? <WrongAnswerDialog seconds={seconds} penalty={penalty} onClose={close} /> : null}
   </>;
 }

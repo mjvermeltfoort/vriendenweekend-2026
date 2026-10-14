@@ -20,6 +20,8 @@ def check_henk_wrong_answer(page, origin, diagnostics):
     dialog = page.get_by_role('dialog', name='Hint Henk', exact=True)
     expect(dialog).to_contain_text('Puntenaftrek: −25 punten')
     expect(dialog).to_contain_text('01:00')
+    assert dialog.locator('.answer-cooldown').evaluate('e => getComputedStyle(e).color') == 'rgb(255, 240, 188)'
+    assert dialog.locator('p.small').evaluate('e => getComputedStyle(e).color') == 'rgb(234, 216, 175)'
     for width in (320, 390):
         page.set_viewport_size({'width':width, 'height':740})
         box = dialog.bounding_box()
