@@ -115,6 +115,34 @@ describe('Moerasdraak player copy', () => {
     expect(stop.reward.title).toBe('Verbeelding');
   });
 
+  it('asks how the Kruithuis directed the force of an explosion away from the city', () => {
+    const stop = gamePack.stops.find((item) => item.id === 'kruithuis')!;
+    expect(stop.title).toBe('Vuur en Water');
+    expect(stop.intro.title).toBe('Het geheim van het Kruithuis');
+    // An old MP3 describes a non-existent route; do not play it alongside the new story.
+    expect(stop.intro.audioSrc).toBeUndefined();
+    expect(stop.intro.transcript).toMatch(/bouwmeester.*slimme oplossing/s);
+    expect(stop.intro.transcript).not.toMatch(/kies de juiste route|vermijd het water/i);
+    expect(stop.challenge.kind).toBe('choice');
+    if (stop.challenge.kind !== 'choice') return;
+    expect(stop.challenge.prompt).toMatch(/kracht van een explosie/);
+    expect(stop.challenge.options).toHaveLength(4);
+    expect(stop.challenge.options.map((option) => option.correct)).toEqual([false, false, true, false]);
+    // Supabase still validates choice 'a'; do not change it.
+    expect(stop.challenge.options.find((option) => option.correct)).toMatchObject({
+      id: 'a', label: 'De kracht moest vooral omhoog, door het lichtere dak.'
+    });
+    expect(challengeAnswerIsCorrect(stop.challenge, 'a')).toBe(true);
+    for (const wrong of ['b', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(stop.challenge, wrong)).toBe(false);
+    }
+    expect(stop.hints).toHaveLength(1);
+    expect(stop.hints[0].id).toBe('h1');
+    expect(stop.hints[0].text).toMatch(/daar gaat mijn kapsel/i);
+    expect(stop.answerExplanation).toMatch(/1618 en 1620.*zeshoekige.*dunnere muren.*omhoog.*Tachtigjarige Oorlog/i);
+    expect(stop.reward.title).toBe('Moed');
+  });
+
   it('does not repeat manual verification questions as bonus challenge prompts', () => {
     for (const bonus of gamePack.bonusLocations ?? []) {
       expect(bonus.challenge.prompt).not.toBe(bonus.manualVerification.question);
