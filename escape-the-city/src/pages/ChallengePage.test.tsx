@@ -98,6 +98,8 @@ describe('ChallengePage', () => {
     render('drakenfontein'); act(() => container.querySelector<HTMLInputElement>('input[value="a"]')!.click());
     await act(async () => button('Controleer antwoord').click());
     expect(button('Nieuwe poging over').disabled).toBe(false);
+    expect(container.querySelector('.challenge-card > .answer-cooldown')).toBeNull();
+    expect(container.textContent?.match(/Nieuwe poging over/g)).toHaveLength(1);
     expect(button('Hint gebruiken').disabled).toBe(false);
     expect(container.textContent).not.toContain('Bekijk Henks foutmelding');
     expect(container.querySelector('[data-testid="wrong-answer-henk"]')?.textContent).toContain('25 / 60');
@@ -107,8 +109,9 @@ describe('ChallengePage', () => {
     expect(attemptAnswer).toHaveBeenCalledTimes(1);
     expect(container.querySelector('[data-testid="wrong-answer-henk"]')?.getAttribute('data-reopen-request')).toBe('1');
     act(() => vi.advanceTimersByTime(1000));
-    expect(button('Opnieuw proberen').disabled).toBe(false);
-    await act(async () => button('Opnieuw proberen').click());
+    expect(button('Controleer antwoord').disabled).toBe(false);
+    expect(container.textContent).not.toContain('Opnieuw proberen');
+    await act(async () => button('Controleer antwoord').click());
     expect(attemptAnswer).toHaveBeenCalledTimes(2);
   });
 

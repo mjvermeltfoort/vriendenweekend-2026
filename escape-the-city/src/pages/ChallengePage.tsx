@@ -57,7 +57,6 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const retryAvailableAt = serverDeadlineIsLatest ? stopProgress?.retryAvailableAt : attemptFeedback?.retryAvailableAt;
   const wrongPenalty = serverDeadlineIsLatest ? stopProgress?.lastWrongAnswerPenalty : attemptFeedback?.penaltyPoints;
   const waitSeconds = useAnswerCooldown(retryAvailableAt, progress?.serverTimeOffsetMs ?? attemptFeedback?.serverTimeOffsetMs);
-  const retryAfterWrongAnswer = Boolean(retryAvailableAt);
   const [hintOpen, setHintOpen] = useState(false);
   const [replayHint, setReplayHint] = useState(false);
   const activeStopId = useRef(stopId);
@@ -299,7 +298,6 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
         {revealedHint ? <div className="revealed-hint"><p><strong>Hint Henk:</strong> {revealedHint.text}</p>
           <button type="button" className="text-link" onClick={() => { setReplayHint(true); setHintOpen(true); }}>Hint Henk opnieuw bekijken</button>
         </div> : null}
-        {waitSeconds > 0 ? <p className="answer-cooldown" role="status">Nieuwe poging over <strong>{formatAnswerWait(waitSeconds)}</strong> · Dit geldt voor het hele team.</p> : null}
         <HenkWrongAnswer key={currentStop.id} teamId={activeTeam?.id ?? progress.teamId} stopId={currentStop.id} deadline={retryAvailableAt} seconds={waitSeconds} penalty={wrongPenalty} reopenRequest={wrongAnswerReplayRequest} />
         {message ? <p className="feedback" id="answer-feedback" role="alert">{message}</p> : null}
 
@@ -319,7 +317,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
                 }
               }}
             >
-              {waitSeconds > 0 ? `Nieuwe poging over ${formatAnswerWait(waitSeconds)}` : busy ? 'Antwoord controleren…' : retryAfterWrongAnswer ? 'Opnieuw proberen' : currentStop.id === 'bosch-wezen' ? 'Wek het monster tot leven' : 'Controleer antwoord'}
+              {waitSeconds > 0 ? `Nieuwe poging over ${formatAnswerWait(waitSeconds)}` : busy ? 'Antwoord controleren…' : currentStop.id === 'bosch-wezen' ? 'Wek het monster tot leven' : 'Controleer antwoord'}
             </button>
           ) : null}
           {activeHint ? (
