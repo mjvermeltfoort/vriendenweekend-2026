@@ -1,0 +1,72 @@
+{
+  "drakenfontein:h1": {
+    "file": "drakenfontein-h1.mp3",
+    "transcript": "Aha, jullie hebben mijn briljante brein nodig! De gouden draak trekt alle aandacht. Loop eens om de fontein heen en kijk ook lager dan de top. Zie je vanaf iedere kant hetzelfde?",
+    "durationSeconds": 10.34
+  },
+  "zoete-lieve-gerritje:h1": {
+    "file": "zoete-lieve-gerritje-h1.mp3",
+    "transcript": "Een beetje hulp van een expert kan geen kwaad. Het beeld vertelt maar een deel van het verhaal. Zoek de woorden die achter Gerritje zijn achtergebleven.",
+    "durationSeconds": 8.36
+  },
+  "binnendieze:h1": {
+    "file": "binnendieze-h1.mp3",
+    "transcript": "Vreemd hè? Een rivier zonder water! Soms laat het verleden zijn sporen gewoon op straat achter. Volg de kleur die bij water past!",
+    "durationSeconds": 8.39
+  },
+  "bosch-wezen:h1": {
+    "file": "bosch-wezen-h1.mp3",
+    "transcript": "Mijn artistieke inzicht komt weer eens van pas. Het standbeeld geeft je het begin: wat draagt een schilder en welk laatste jaartal staat op de sokkel? Voor het monster: zoek een mensengezicht, een hol ei met een herberg en boomstammen die in bootjes staan.",
+    "durationSeconds": 15.73
+  },
+  "sint-jan:h1": {
+    "file": "sint-jan-h1.mp3",
+    "transcript": "Oren open, speurneuzen. Henk helpt wel even. Tel korte en lange signalen apart.",
+    "durationSeconds": 5.2
+  },
+  "kruithuis:h1": {
+    "file": "kruithuis-h1.mp3",
+    "transcript": "BOEM! Daar gaat mijn kapsel! Gelukkig dacht de bouwmeester vooruit. Kijk eens omhoog… Wat is gemakkelijker kapot te krijgen: een muur van een meter dik of een dak?",
+    "durationSeconds": 9.93
+  },
+  "bossche-brouwers:h1": {
+    "file": "bossche-brouwers-h1.mp3",
+    "transcript": "Geen zorgen. Mijn brein staat nog niet op de tap. Denk in processtappen, van korrel naar gist.",
+    "durationSeconds": 5.15
+  },
+  "bonus:bolwerk-sint-jan:h1": {
+    "file": "bonus-bolwerk-sint-jan-h1.mp3",
+    "transcript": "Jullie persoonlijke speurneus heeft iets ontdekt. Niet alles wat verdwenen is, ligt onder de grond. Soms vertelt een steen je precies wat hier vroeger stond. Kijk eens bij je voeten!",
+    "durationSeconds": 10.34
+  },
+  "bonus:halve-peer:h1": {
+    "file": "bonus-halve-peer-h1.mp3",
+    "transcript": "Een halve Peer, maar gelukkig een hele Henk. Zelfs een halve Peer heeft een handtekening. Zoek de woorden bij het beeld, niet alleen het gezicht.",
+    "durationSeconds": 9.61
+  },
+  "bonus:de-moriaan:h1": {
+    "file": "bonus-de-moriaan-h1.mp3",
+    "transcript": "Als ik een middeleeuws huis moest bewaken, zou ik een plekje zoeken met goed uitzicht. Kijk eens omhoog, helemaal naar de hoek!",
+    "durationSeconds": 7.94
+  },
+  "bonus:zwanenbroedershuis:h1": {
+    "file": "bonus-zwanenbroedershuis-h1.mp3",
+    "transcript": "Die zwaan bovenop trekt natuurlijk alle aandacht. Maar kijk eens een stukje lager. Daar staan een paar heren al eeuwen op wacht. Hoeveel zijn het er?",
+    "durationSeconds": 9.64
+  },
+  "bonus:citadel:h1": {
+    "file": "bonus-citadel-h1.mp3",
+    "transcript": "Een bril om de vijand buiten te zien, dacht je? De machthebbers keken ook achterom. Na 1629 hadden ze de stad veroverd… maar hadden ze ook de harten van de Bosschenaren gewonnen?",
+    "durationSeconds": 11.78
+  },
+  "bonus:verkadefabriek:h1": {
+    "file": "bonus-verkadefabriek-h1.mp3",
+    "transcript": "Achttienduizend onderdelen?! Daar zou zelfs mijn computer van vastlopen! Ik zou maar eens wat lager zoeken. Soms ligt de geschiedenis letterlijk onder je neus. Of eigenlijk… onder je schoenen!",
+    "durationSeconds": 12.56
+  },
+  "confirmation": {
+    "file": "confirmation.mp3",
+    "transcript": "Aha, jullie hebben mijn briljante brein nodig! Maar deze hint kost jullie punten. Weten jullie het zeker?",
+    "durationSeconds": 6.5
+  }
+}

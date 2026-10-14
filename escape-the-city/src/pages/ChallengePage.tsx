@@ -4,7 +4,8 @@ import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
 import { canAccessChallenge, canViewResult, hasLocationUnlock, isFinaleLocationRevealed, locationById } from '../features/game/gameState';
 import { isBonusLocation } from '../features/game/gameTypes';
-import { GameIcon, HintDialog, PageShell } from '../components/GameUi';
+import { GameIcon, PageShell } from '../components/GameUi';
+import { HintHenkHint } from '../components/HintHenkHint';
 import { AudioPlayer } from '../components/AudioPlayer';
 import { BellChallengeAudio } from '../components/BellChallengeAudio';
 import { BoschMonsterPuzzle } from '../components/BoschMonsterPuzzle';
@@ -45,6 +46,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
+  const [replayHint, setReplayHint] = useState(false);
   const activeStopId = useRef(stopId);
 
   activeStopId.current = stopId;
@@ -61,6 +63,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
     setMessage('');
     setBusy(false);
     setHintOpen(false);
+    setReplayHint(false);
   }, [stopId, stop]);
 
   if (!stop) return <PageShell title="Opdracht" backTo="/route"><p>Opdracht niet gevonden.</p></PageShell>;
@@ -270,7 +273,9 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
           </div>
         ) : null}
 
-        {revealedHint ? <p className="revealed-hint"><strong>Hint:</strong> {revealedHint.text}</p> : null}
+        {revealedHint ? <div className="revealed-hint"><p><strong>Hint Henk:</strong> {revealedHint.text}</p>
+          <button type="button" className="text-link" onClick={() => { setReplayHint(true); setHintOpen(true); }}>Hint Henk opnieuw bekijken</button>
+        </div> : null}
         {message ? <p className="feedback" id="answer-feedback" role="alert">{message}</p> : null}
 
         <div className="stack">
@@ -280,7 +285,7 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
             </button>
           ) : null}
           {activeHint ? (
-            <button className="button secondary" type="button" onClick={() => setHintOpen(true)}>
+            <button className="button secondary" type="button" onClick={() => { setReplayHint(false); setHintOpen(true); }}>
               <GameIcon name="lightbulb" size={18} /> Hint gebruiken · −{penalty} punten
             </button>
           ) : <p className="center muted small">Geen extra hints beschikbaar.</p>}
@@ -288,15 +293,16 @@ export function ChallengePage({ pack }: { pack: GamePack }) {
       </section>
       ) : null}
 
-      <HintDialog
+      {hintOpen ? <HintHenkHint
+        key={currentStop.id}
         open={hintOpen}
-        hint={activeHint?.text ?? ''}
+        stopId={currentStop.id}
+        hint={replayHint ? revealedHint ?? undefined : activeHint}
+        replay={replayHint}
         penalty={penalty}
         onClose={() => setHintOpen(false)}
-        onConfirm={() => {
-          if (activeHint) void useHint(currentStop.id, activeHint.id);
-        }}
-      />
+        onConfirm={(hintId) => useHint(currentStop.id, hintId)}
+      /> : null}
     </PageShell>
   );
 }
