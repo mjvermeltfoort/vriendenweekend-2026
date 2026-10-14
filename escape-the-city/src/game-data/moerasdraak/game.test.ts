@@ -142,6 +142,39 @@ describe('Moerasdraak player copy', () => {
     expect(stop.reward.title).toBe('Moed');
   });
 
+  it('uses the reclaimed yellow floor tiles as the Verkadefabriek secret', () => {
+    const bonus = gamePack.bonusLocations?.find((item) => item.id === 'bonus:verkadefabriek');
+    expect(bonus).toBeDefined();
+    if (!bonus) return;
+
+    expect(bonus.title).toBe('Verkadefabriek');
+    expect(bonus.intro.title).toBe('Van Koek naar Cultuur');
+    expect(bonus.intro.text).not.toMatch(/vloer|tegels|schoenen/i);
+    expect(bonus.challenge.kind).toBe('choice');
+    if (bonus.challenge.kind !== 'choice') return;
+
+    expect(bonus.challenge.prompt).toMatch(/18\\.000 onderdelen/);
+    expect(bonus.challenge.options.map((option) => option.label)).toEqual([
+      'De oude gele vloertegels',
+      'De metalen bakvormen van de koekjes',
+      'De houten transportkisten',
+      'De stenen van de fabrieksschoorsteen'
+    ]);
+    expect(bonus.challenge.options.map((option) => option.correct)).toEqual([true, false, false, false]);
+    // Migration 040 changes the Supabase answer_spec from reorder to choice id 'a'.
+    expect(bonus.challenge.options.find((option) => option.correct)?.id).toBe('a');
+    expect(challengeAnswerIsCorrect(bonus.challenge, 'a')).toBe(true);
+    for (const wrong of ['b', 'c', 'd']) {
+      expect(challengeAnswerIsCorrect(bonus.challenge, wrong)).toBe(false);
+    }
+    expect(bonus.manualVerification.question).toMatch(/oorspronkelijke functie/i);
+    expect(bonus.hints).toHaveLength(1);
+    expect(bonus.hints[0].id).toBe('h1');
+    expect(bonus.hints[0].text).toMatch(/onder je schoenen/i);
+    expect(bonus.answerExplanation).toMatch(/1993.*18\\.000.*gele vloertegels.*sheddaken.*2004/i);
+    expect(bonus.reward.title).toBe('Machineschub');
+  });
+
   it('does not repeat manual verification questions as bonus challenge prompts', () => {
     for (const bonus of gamePack.bonusLocations ?? []) {
       expect(bonus.challenge.prompt).not.toBe(bonus.manualVerification.question);
