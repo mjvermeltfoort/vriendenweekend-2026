@@ -61,6 +61,13 @@
   - Supabase: enable Anonymous provider; run migrations in order (001–014 for dossier; 015+ for city features).
   - Config: copy .env.example to .env in escape-the-city when developing locally; the app can also fall back to root config.js at runtime.
   - Node: .nvmrc pins 26.5.0 (the CI also uses Node 26.5.0). Browsers are the runtime for the root app.
+- Supabase migration permissions (from October 30, 2026):
+  - Supabase no longer automatically grants Data API access to newly created tables in the `public` schema. This also applies when rebuilding databases for new projects, preview branches, or `supabase db reset`.
+  - In the **same migration** that creates a `public` table, explicitly grant only the Data API privileges actually needed by `anon`, `authenticated`, and/or `service_role` (and revoke unintended access). Never rely on implicit/default grants or grant blanket CRUD access just to make an API call work.
+  - Enable RLS and define restrictive policies for any `public` table exposed to browser clients. SQL GRANTs and RLS are separate requirements: both must permit the intended operation.
+  - Keep `city_game` and `private` tables inaccessible to direct browser Data API calls. Prefer the existing approved `public` security-definer RPCs and explicitly manage EXECUTE privileges for those functions; do not expose internal tables as a workaround.
+  - Preserve the intentional read-only `authenticated` access and RLS on `public.dashboard_team_projection` and `public.dashboard_radio_notifications` for the dashboard's Realtime subscriptions.
+  - For new migrations or changes to database authorization, verify expected GRANTs and denied access in a clean database rebuild/reset, plus regression tests where practical. Include automated SQL/CI authorization checks when extending the test suite.
 - Lint and format commands
   - City lint: npm run lint (tsc --noEmit). No ESLint/Prettier config is present.
   - No formatter is configured repo-wide; follow two-space indentation for JS/HTML/CSS/SQL.
