@@ -7,6 +7,7 @@ import {
   subscribeToDashboardRadioNotifications,
   type RealtimeStatus
 } from './api';
+import { SpacingPanel } from './SpacingPanel';
 import { DashboardMap } from './DashboardMap';
 import { DashboardRadioPanel } from './DashboardRadioPanel';
 import { dashboardReducer, initialDashboardState } from './store';
@@ -392,6 +393,7 @@ export function DashboardApp() {
           <button className="primary" type="button" onClick={() => setDialog({ kind: 'create' })}>Nieuw team</button>
         </section>
 
+        <SpacingPanel teams={state.teams} />
         <div className="dashboard-grid">
           <section className="team-list" aria-label="Alle teams">
             {sortedTeams.map((team) => (

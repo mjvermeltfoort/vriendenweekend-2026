@@ -20,6 +20,7 @@ export function buildAssetManifest(pack: GamePack) {
   for (const bonus of pack.bonusLocations ?? []) {
     if (bonus.intro.audioSrc) assets.add(bonus.intro.audioSrc);
   }
+  assets.add(`${import.meta.env.BASE_URL}audio/henk/spacing.mp3`);
   assets.add(audioAsset(`hint-henk/${wrongAnswer.file}`));
   for (const asset of [...allHenkAudio(), ...allHenkReminderAudio()]) assets.add(asset);
   for (const asset of allStandaloneNarration()) assets.add(asset);

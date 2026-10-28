@@ -31,3 +31,8 @@ do $$ begin
   end if;
 end; $$;
 SQL
+
+# A fresh migration surface for event-scoped spacing, start slots and privacy.
+psql -X -v ON_ERROR_STOP=1 -f supabase/tests/043_team_spacing_fixture.sql
+psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/043_team_spacing.sql
+psql -X -v ON_ERROR_STOP=1 -f supabase/tests/043_team_spacing_regression.sql

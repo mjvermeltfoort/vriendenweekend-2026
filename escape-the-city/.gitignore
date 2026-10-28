@@ -8,3 +8,5 @@ node_modules/
 .cave/
 .forge/
 .continue/
+
+test-results/

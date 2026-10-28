@@ -17,6 +17,7 @@ import { useAudio } from '../features/audio/audioContext';
 import { useGame } from './gameContext';
 import { InstallBanner } from '../features/pwa/InstallBanner';
 import { FloatingTeamRadio } from '../components/FloatingTeamRadio';
+import { TeamSpacing } from '../features/spacing/TeamSpacing';
 import { HenkSchubReminder } from '../components/HenkSchubReminder';
 
 function AudioSceneController() {
@@ -66,19 +67,21 @@ export function App() {
       <ContrastController />
       <InstallBanner />
       <FloatingTeamRadio />
-      <HenkSchubReminder pack={gamePack} />
-      <Routes>
-        <Route path="/" element={<HomePage pack={gamePack} />} />
-        <Route path="/team" element={<TeamPage pack={gamePack} />} />
-        <Route path="/voorbereiden" element={<PreparationPage pack={gamePack} />} />
-        <Route path="/route" element={<RoutePage pack={gamePack} />} />
-        <Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} />
-        <Route path="/challenge/:stopId" element={<ChallengePage pack={gamePack} />} />
-        <Route path="/resultaat" element={<ResultPage pack={gamePack} />} />
-        <Route path="/instellingen" element={<SettingsPage />} />
-        {import.meta.env.DEV ? <Route path="/dev/design-system" element={<DesignSystemPage />} /> : null}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <TeamSpacing>
+        <HenkSchubReminder pack={gamePack} />
+        <Routes>
+          <Route path="/" element={<HomePage pack={gamePack} />} />
+          <Route path="/team" element={<TeamPage pack={gamePack} />} />
+          <Route path="/voorbereiden" element={<PreparationPage pack={gamePack} />} />
+          <Route path="/route" element={<RoutePage pack={gamePack} />} />
+          <Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} />
+          <Route path="/challenge/:stopId" element={<ChallengePage pack={gamePack} />} />
+          <Route path="/resultaat" element={<ResultPage pack={gamePack} />} />
+          <Route path="/instellingen" element={<SettingsPage />} />
+          {import.meta.env.DEV ? <Route path="/dev/design-system" element={<DesignSystemPage />} /> : null}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </TeamSpacing>
     </>
   );
 }

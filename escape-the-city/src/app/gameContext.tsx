@@ -59,6 +59,7 @@ import { shouldSendLocation, type LastSentLocation } from '../features/location/
 import type { LocationErrorResult, LocationResult } from '../features/location/provider';
 
 interface GameContextValue {
+  teamSessionId: string | null;
   loading: boolean;
   teams: TeamRecord[];
   activeTeam: TeamRecord | null;
@@ -728,7 +729,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       title: gamePack.title,
       summary: `MOERASDRAAK\nTeam ${activeTeam.name}\n\nGebrouwen met water, moed, verbeelding en een sterk verhaal.`,
       score: currentProgress.totalScore,
-      durationMinutes: Math.max(1, Math.round((Date.now() - Date.parse(activeTeam.createdAt)) / 60000)),
+      durationMinutes: Math.max(1, Math.round((Date.now() - Date.parse(activeTeam.startedAt ?? activeTeam.createdAt)) / 60000)),
       hintsUsed: currentProgress.totalHintsUsed,
       wrongAttempts: currentProgress.wrongAttempts,
       symbols: currentProgress.collectedRewards,
@@ -750,6 +751,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<GameContextValue>(() => ({
     loading,
+    teamSessionId: session?.id ?? null,
     teams,
     activeTeam,
     progress,
