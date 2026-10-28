@@ -65,6 +65,7 @@ with TemporaryDirectory() as site:
                 runpy.run_path(str(Path(__file__).with_name("henk-browser-check.py")))["check_henk"](page, origin, diagnostics)
                 runpy.run_path(str(Path(__file__).with_name("henk-reminder-browser-check.py")))["check_henk_reminders"](page, origin, diagnostics)
                 runpy.run_path(str(Path(__file__).with_name("henk-wrong-answer-browser-check.py")))["check_henk_wrong_answer"](page, origin, diagnostics)
+                runpy.run_path(str(Path(__file__).with_name("spacing-browser-check.py")))["check_spacing"](browser, origin, diagnostics)
                 if errors or local_failures:
                     raise RuntimeError("Bosch browser check failed: " + "; ".join(errors + local_failures))
             finally:

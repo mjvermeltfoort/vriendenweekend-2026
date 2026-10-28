@@ -48,7 +48,7 @@ function TeamSchubReminders({ teamId, pack }: { teamId: string; pack: GamePack }
       // these blockers disappear without a fresh GPS callback.
       if (document.hidden || !['/route', `/stop/${pack.finalStopId}`].includes(location.pathname)
         || audio.narration.playing || audio.effectPlaying
-        || document.querySelector('dialog[open], [role="dialog"], .hint-henk__overlay')) return;
+        || document.querySelector('dialog[open], [role="dialog"], .hint-henk__overlay, .spacing-henk')) return;
       const candidate = nextSchubReminder(memory.current, missing, canStartFinale(progress, pack).eligible, fix, now);
       if (!candidate || (candidate.kind === 'passed' && location.pathname !== '/route')) return;
       memory.current = markSchubReminderShown(memory.current, candidate, now);

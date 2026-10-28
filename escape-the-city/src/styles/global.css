@@ -2321,3 +2321,13 @@ details {
 
 .henk-hint > p:not(.answer-cooldown) { color: var(--color-text); }
 .parchment-card .henk-wrong-reopen { color: var(--color-parchment-text); }
+
+.spacing-countdown { font-size: 3rem; font-variant-numeric: tabular-nums; }
+.spacing-henk { position: fixed; z-index: 35; bottom: 1rem; left: 50%; transform: translateX(-50%); width: min(92vw, 28rem); max-height: 80dvh; overflow-y: auto; box-shadow: 0 8px 40px #0009; border: 2px solid var(--gold, #e7bd68); }
+.spacing-henk__heading { display: flex; align-items: center; gap: 1rem; }
+.spacing-henk { padding: 16px; gap: 10px; background: #071a12; bottom: 5rem; max-height: calc(100dvh - 8rem); font-size: 1rem; line-height: 1.4; }
+.spacing-henk p, .spacing-henk h2 { margin: 0; }
+.spacing-henk__heading { padding-right: 24px; }
+.spacing-henk__heading .hint-henk__mascot { width: 54px; height: 64px; margin: 0; flex: 0 0 54px; }
+.spacing-henk__heading .hint-henk__mascot .asst-character { scale: .65; }
+.spacing-henk__close { position: absolute; right: 8px; top: 8px; z-index: 1; width: 44px; height: 44px; font-size: 1.5rem; border: 0; background: transparent; color: #f5db9a; }

@@ -19,6 +19,7 @@ export interface StopProgress {
 }
 
 export interface TeamRecord {
+  startedAt?: string | null;
   id: string;
   gameSlug: string;
   gameVersion: number;

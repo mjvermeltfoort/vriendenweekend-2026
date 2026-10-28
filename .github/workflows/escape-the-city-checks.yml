@@ -6,9 +6,13 @@ on:
       - 'escape-the-city/**'
       - 'supabase/migrations/042_wrong_answer_cooldown.sql'
       - 'supabase/tests/042_*.sql'
+      - 'supabase/migrations/043_team_spacing.sql'
+      - 'supabase/tests/043_*.sql'
       - '.github/scripts/test-wrong-answer-sql.sh'
+      - '.github/scripts/test-spacing-rebuild.sh'
       - '.github/workflows/escape-the-city-checks.yml'
       - '.github/scripts/browser-smoke.py'
+      - '.github/scripts/spacing-browser-check.py'
       - '.github/scripts/henk-browser-check.py'
       - '.github/scripts/henk-reminder-browser-check.py'
       - '.github/scripts/henk-wrong-answer-browser-check.py'
@@ -20,9 +24,13 @@ on:
       - 'escape-the-city/**'
       - 'supabase/migrations/042_wrong_answer_cooldown.sql'
       - 'supabase/tests/042_*.sql'
+      - 'supabase/migrations/043_team_spacing.sql'
+      - 'supabase/tests/043_*.sql'
       - '.github/scripts/test-wrong-answer-sql.sh'
+      - '.github/scripts/test-spacing-rebuild.sh'
       - '.github/workflows/escape-the-city-checks.yml'
       - '.github/scripts/browser-smoke.py'
+      - '.github/scripts/spacing-browser-check.py'
       - '.github/scripts/henk-browser-check.py'
       - '.github/scripts/henk-reminder-browser-check.py'
       - '.github/scripts/henk-wrong-answer-browser-check.py'
@@ -110,5 +118,7 @@ jobs:
       PGDATABASE: cooldown_test
     steps:
       - uses: actions/checkout@v6
-      - name: Test migration, shared cooldown and concurrent submissions
+      - name: Test migrations, shared cooldown, concurrent submissions and team spacing
         run: bash .github/scripts/test-wrong-answer-sql.sh
+      - name: Rebuild all migrations and verify spacing with actual RPCs
+        run: bash .github/scripts/test-spacing-rebuild.sh
