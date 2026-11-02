@@ -437,7 +437,7 @@ describe('StopPage completion copy', () => {
 
     expect(container.textContent).toContain('Nog ongeveer 120 m (hemelsbreed)');
     expect(container.textContent).not.toContain('Nog ongeveer 0 m lopen');
-    expect(container.textContent).toContain('Opdracht openen');
+    expect(container.textContent).not.toContain('Opdracht openen');
 
     const lockedProgress = createProgress();
     lockedProgress.currentStopId = 'bonus:bolwerk-sint-jan';
@@ -452,7 +452,7 @@ describe('StopPage completion copy', () => {
 
     expect(container.textContent).toContain('Nog ongeveer 120 m (hemelsbreed)');
     expect(container.textContent).not.toContain('Nog ongeveer 0 m lopen');
-    expect(container.textContent).toContain('Opdracht openen');
+    expect(container.textContent).not.toContain('Opdracht openen');
   });
 
   it('shows hemelsbrede distance for positive bonus distance', async () => {
@@ -635,6 +635,48 @@ describe('StopPage completion copy', () => {
     await act(async () => { button!.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
     expect(gameState.startStop).toHaveBeenCalledWith('kruithuis');
     expect(container.textContent).toContain('Hoofdopdracht geopend');
+  });
+
+  it('shows one primary arrival action with collapsed location details', async () => {
+    const progress = createProgress();
+    progress.currentStopId = 'zoete-lieve-gerritje';
+    progress.stopProgress['zoete-lieve-gerritje'].state = 'arrived';
+    progress.stopProgress['zoete-lieve-gerritje'].unlockMethod = 'gps';
+    gameState = { ...gameState, progress };
+    await act(async () => root.render(
+      <MemoryRouter key="compact-arrival" initialEntries={['/stop/zoete-lieve-gerritje']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+    expect(container.textContent).not.toContain('Volgende stap:');
+    expect(container.textContent).toContain('Locatie bereikt');
+    const card = container.querySelector('[aria-label="Locatie en opdracht"]')!;
+    expect(card.querySelectorAll('button.button.primary')).toHaveLength(1);
+    expect(card.querySelector('button')?.textContent).toBe('Opdracht openen');
+    expect(card.querySelector('[data-testid="active-stop-gps"]')).toBeNull();
+    const details = card.querySelector<HTMLDetailsElement>('details')!;
+    expect(details.open).toBe(false);
+    expect(details.textContent).toContain(gamePack.stops[1].navigation.clue);
+    expect(card.querySelector('a')?.className).toBe('stop-route-link');
+    expect(container.querySelector('[data-testid="stop-audio-player"]')).not.toBeNull();
+  });
+
+  it('keeps directions and the route button visible while travelling, without an unusable challenge button', async () => {
+    const progress = createProgress();
+    progress.currentStopId = 'zoete-lieve-gerritje';
+    progress.stopProgress['zoete-lieve-gerritje'].state = 'available';
+    gameState = { ...gameState, progress };
+    await act(async () => root.render(
+      <MemoryRouter key="compact-travelling" initialEntries={['/stop/zoete-lieve-gerritje']}>
+        <Routes><Route path="/stop/:stopId" element={<StopPage pack={gamePack} />} /></Routes>
+      </MemoryRouter>
+    ));
+    const card = container.querySelector('[aria-label="Locatie en opdracht"]')!;
+    expect(card.textContent).toContain(gamePack.stops[1].navigation.clue);
+    expect(card.querySelector('details')).toBeNull();
+    expect(card.querySelector('a.button.secondary')?.textContent).toBe('Bekijk op de routekaart');
+    expect(card.querySelector('[data-testid="active-stop-gps"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('Opdracht openen');
   });
 
 });
