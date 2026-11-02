@@ -243,9 +243,9 @@ export function DashboardMap({ teams, selectedTeamId, now, onSelect }: Dashboard
   const showAll = () => mapRef.current?.fitBounds(dashboardBounds, { padding: 54, duration: 500 });
 
   return (
-    <section className="dashboard-map-panel" aria-label="Realtime teamkaart">
+    <section className="dashboard-map-panel" aria-label="Realtime kaart van actieve teams">
       <div ref={containerRef} className="dashboard-map" />
-      <button className="dashboard-map__all" type="button" onClick={showAll}>Toon alle teams</button>
+      <button className="dashboard-map__all" type="button" onClick={showAll}>Toon alle actieve teams</button>
       {error ? <p className="dashboard-map__error" role="alert">{error}</p> : null}
     </section>
   );

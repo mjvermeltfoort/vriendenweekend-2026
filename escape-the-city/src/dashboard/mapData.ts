@@ -1,7 +1,11 @@
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { createAccuracyPolygon } from '../features/map/mapTypes';
 import { gamePack } from '../game-data/moerasdraak/game';
-import { MAX_VISUAL_ACCURACY_M, teamHealth, type DashboardTeam } from './types';
+import { activeParticipants, MAX_VISUAL_ACCURACY_M, teamHealth, type DashboardTeam } from './types';
+
+function isMapActiveTeam(team: DashboardTeam, now: number) {
+  return team.status === 'active' && activeParticipants(team, now).length > 0;
+}
 
 export function stopFeatures(): FeatureCollection<Point> {
   return {
@@ -34,7 +38,7 @@ export function bonusStopFeatures(): FeatureCollection<Point> {
 export function teamMarkerFeatures(teams: DashboardTeam[], selectedTeamId: string | null, now = Date.now()): FeatureCollection<Point> {
   return {
     type: 'FeatureCollection',
-    features: teams.flatMap((team): Feature<Point>[] => team.location ? [{
+    features: teams.flatMap((team): Feature<Point>[] => isMapActiveTeam(team, now) && team.location ? [{
       type: 'Feature',
       id: team.id,
       properties: {
@@ -55,7 +59,7 @@ export function teamMarkerFeatures(teams: DashboardTeam[], selectedTeamId: strin
 export function accuracyFeatures(teams: DashboardTeam[], selectedTeamId: string | null, now = Date.now()): FeatureCollection<Polygon> {
   return {
     type: 'FeatureCollection',
-    features: teams.flatMap((team): Feature<Polygon>[] => team.location ? [{
+    features: teams.flatMap((team): Feature<Polygon>[] => isMapActiveTeam(team, now) && team.location ? [{
       type: 'Feature',
       id: team.id,
       properties: {

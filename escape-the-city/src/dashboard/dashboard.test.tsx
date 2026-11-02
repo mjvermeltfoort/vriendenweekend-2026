@@ -125,6 +125,29 @@ describe('dashboard data model', () => {
     expect(circles.features[0].geometry.coordinates[0]).toHaveLength(65);
   });
 
+  it('shows only active teams with active participants on the map', () => {
+    const active = team({ id: 'active' });
+    const offline = team({
+      id: 'offline',
+      participants: [{ ...team().participants[0], lastSeenAt: '2026-07-29T11:58:00Z' }]
+    });
+    const completed = team({ id: 'completed', status: 'completed' });
+    const disabled = team({ id: 'disabled', status: 'disabled' });
+    const teams = [active, offline, completed, disabled];
+
+    expect(teamMarkerFeatures(teams, null, now).features.map((feature) => feature.id))
+      .toEqual(['active']);
+    expect(accuracyFeatures(teams, null, now).features.map((feature) => feature.id))
+      .toEqual(['active']);
+  });
+
+  it('does not create a map marker for an active team without a location', () => {
+    const activeWithoutLocation = team({ id: 'no-location', location: null });
+
+    expect(teamMarkerFeatures([activeWithoutLocation], null, now).features).toHaveLength(0);
+    expect(accuracyFeatures([activeWithoutLocation], null, now).features).toHaveLength(0);
+  });
+
   it('exposes all configured bonus stops as distinct map features', () => {
     const bonuses = bonusStopFeatures();
     expect(bonuses.features.length).toBe(6);
