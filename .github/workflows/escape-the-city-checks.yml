@@ -17,24 +17,6 @@ on:
       - '.github/scripts/henk-reminder-browser-check.py'
       - '.github/scripts/henk-wrong-answer-browser-check.py'
       - '.nvmrc'
-  push:
-    branches:
-      - main
-    paths:
-      - 'escape-the-city/**'
-      - 'supabase/migrations/042_wrong_answer_cooldown.sql'
-      - 'supabase/tests/042_*.sql'
-      - 'supabase/migrations/043_team_spacing.sql'
-      - 'supabase/tests/043_*.sql'
-      - '.github/scripts/test-wrong-answer-sql.sh'
-      - '.github/scripts/test-spacing-rebuild.sh'
-      - '.github/workflows/escape-the-city-checks.yml'
-      - '.github/scripts/browser-smoke.py'
-      - '.github/scripts/spacing-browser-check.py'
-      - '.github/scripts/henk-browser-check.py'
-      - '.github/scripts/henk-reminder-browser-check.py'
-      - '.github/scripts/henk-wrong-answer-browser-check.py'
-      - '.nvmrc'
   workflow_dispatch:
 
 permissions:
