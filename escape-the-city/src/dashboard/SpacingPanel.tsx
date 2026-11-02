@@ -38,8 +38,10 @@ export function SpacingPanel({ teams }: { teams: DashboardTeam[] }) {
   const eligible = teams.filter(t => t.status === 'active' && !t.stopProgress.some(p => p.startedAt || p.state === 'completed')
     && !rows.find(r => r.teamId === t.id)?.departedAt);
   const chosen = selected.filter(id => eligible.some(t => t.id === id));
-  return <section className="team-detail spacing-panel" aria-label="Teamspreiding">
-    <h2>Teamspreiding</h2>
+  return <details className="team-detail spacing-panel" aria-label="Teamspreiding">
+    <summary className="spacing-panel__summary">
+      <span className="spacing-panel__title" role="heading" aria-level={2}>Teamspreiding</span>
+    </summary>
     <p>Plan een speelsessie voor de gekozen teams. Alleen teams uit die sessie worden met elkaar vergeleken. Henk adviseert; nabijheid blokkeert geen opdrachten.</p>
     <form className="spacing-plan" onSubmit={event => {
       event.preventDefault(); const data = new FormData(event.currentTarget);
@@ -49,7 +51,7 @@ export function SpacingPanel({ teams }: { teams: DashboardTeam[] }) {
       }));
     }}>
       <label>Naam speelsessie<input name="name" defaultValue="Vriendenweekend" minLength={2} maxLength={80} required /></label>
-      <label>Eerste vertrek (lokale tijd)<input type="datetime-local" required value={startAt} onChange={e => setStartAt(e.target.value)} /></label>
+      <label>Eerste vertrek (lokale tijd)<input lang="nl-NL" type="datetime-local" required value={startAt} onChange={e => setStartAt(e.target.value)} /></label>
       <label>Minuten tussen teams<input name="interval" type="number" min={1} max={30} defaultValue={5} required /></label>
       <label>Waarschuwen onder (meter)<input name="gap" type="number" min={50} max={300} defaultValue={100} required /></label>
       <fieldset><legend>Teams kiezen — de lijst eronder bepaalt de vertrekvolgorde</legend>
@@ -69,10 +71,10 @@ export function SpacingPanel({ teams }: { teams: DashboardTeam[] }) {
         <td>{row.departedAt ? `Gestart ${new Date(row.departedAt).toLocaleTimeString('nl-NL')}` : <form onSubmit={event => {
           event.preventDefault(); const value = new FormData(event.currentTarget).get('time') as string;
           void action(() => spacingRpc('dashboard_update_spacing', { p_team_id: row.teamId, p_scheduled_at: new Date(value).toISOString(), p_enabled: null, p_client_id: dashboardClientId() }));
-        }}><input aria-label={`Vertrekmoment ${teams.find(t => t.id === row.teamId)?.name}`} key={row.scheduledAt} name="time" type="datetime-local" required defaultValue={localDateInput(new Date(row.scheduledAt))} /><button disabled={busy}>Wijzigen</button></form>}</td>
+        }}><input lang="nl-NL" aria-label={`Vertrekmoment ${teams.find(t => t.id === row.teamId)?.name}`} key={row.scheduledAt} name="time" type="datetime-local" required defaultValue={localDateInput(new Date(row.scheduledAt))} /><button disabled={busy}>Wijzigen</button></form>}</td>
         <td>{row.gapM === null ? 'Geen betrouwbare nabijheidsmeting' : `${Math.round(row.gapM)} m tot ${teams.find(t => t.id === row.aheadTeamId)?.name ?? 'voorganger'}`}{row.closeSince && Date.now() - Date.parse(row.closeSince) >= 30_000 ? ' · te dicht op elkaar' : ''}</td>
         <td><button disabled={busy} onClick={() => void action(() => spacingRpc('dashboard_update_spacing', { p_team_id: row.teamId, p_scheduled_at: null, p_enabled: !row.enabled, p_client_id: dashboardClientId() }))}>{row.enabled ? 'Sessie uitschakelen' : 'Sessie inschakelen'}</button></td>
       </tr>)}
     </tbody></table></div> : null}
-  </section>;
+  </details>;
 }

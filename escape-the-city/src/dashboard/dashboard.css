@@ -401,6 +401,19 @@ p { line-height: 1.45; }
 }
 
 .spacing-panel { margin: 1rem 0; }
+.spacing-panel:not([open]) { min-height: 0; }
+.spacing-panel__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  list-style: none;
+}
+.spacing-panel__summary::-webkit-details-marker { display: none; }
+.spacing-panel__summary::before { content: '▸'; color: #e0bc78; }
+.spacing-panel[open] .spacing-panel__summary::before { content: '▾'; }
+.spacing-panel__summary:focus-visible { outline: 2px solid #35d4c7; outline-offset: 4px; }
+.spacing-panel__title { color: #f4e6c5; font-size: 1.25rem; font-weight: 700; }
 .spacing-plan { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; }
 .spacing-plan label { display: grid; gap: .4rem; }
 .spacing-plan fieldset { width: 100%; display: flex; flex-wrap: wrap; gap: 1rem; }
@@ -410,4 +423,5 @@ p { line-height: 1.45; }
 .spacing-table table { width: 100%; text-align: left; border-collapse: collapse; }
 .spacing-table td, .spacing-table th { padding: .75rem; border-bottom: 1px solid #526179; }
 .spacing-panel input:not([type="checkbox"]) { color: #f1dcac; background: #071a12; border: 1px solid #786139; border-radius: 6px; padding: .5rem; font: inherit; }
+.spacing-panel input[type="datetime-local"] { min-width: 18rem; }
 .spacing-plan fieldset { border: 1px solid #786139; border-radius: 6px; }
