@@ -14,7 +14,7 @@ export function isFreshLocation(location: LocationResult | null, now: number): l
 }
 
 // Local metre projection is sufficient for the short walking legs in Den Bosch.
-export function distanceFromLeg(location: LocationResult, leg: RouteLegFeature): number {
+export function distanceFromLeg(location: LocationResult, leg: Pick<RouteLegFeature, 'geometry'>): number {
   const scale = Math.PI / 180 * 6_371_000;
   const longitudeScale = scale * Math.cos(location.latitude * Math.PI / 180);
   let closest = Infinity;

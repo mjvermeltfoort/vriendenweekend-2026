@@ -2419,3 +2419,5 @@ details {
 .stop-location-details[open] > summary::before { content: '▾'; }
 .stop-location-details p { margin: 0.5rem 0 0; }
 .stop-route-link { display: flex; min-height: 48px; align-items: center; justify-content: center; text-align: center; font-size: 0.875rem; text-underline-offset: 3px; }
+
+.fallback-route-map__connector { stroke: #35d4c7; stroke-width: 4; stroke-dasharray: 2 2; }

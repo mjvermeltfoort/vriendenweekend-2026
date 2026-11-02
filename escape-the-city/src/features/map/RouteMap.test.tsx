@@ -22,7 +22,8 @@ const mapState = vi.hoisted(() => ({
   loaded: vi.fn(() => true),
   getLayer: vi.fn(() => true),
   setData: vi.fn(),
-  getSource: vi.fn(() => ({ setData: mapState.setData })),
+  setConnectorData: vi.fn(),
+  getSource: vi.fn((id: string) => ({ setData: id === 'schub-connector' ? mapState.setConnectorData : mapState.setData })),
   project: vi.fn(([longitude, latitude]: [number, number]) => ({ x: longitude * 100, y: latitude * 100 })),
   setLayoutProperty: vi.fn(),
   setFilter: vi.fn(),
@@ -210,12 +211,12 @@ describe('RouteMap', () => {
   it('keeps map instance stable when visibleStops gets a new equal array', async () => {
     const visibleStops = gamePack.stops.filter((stop) => !stop.isFinal);
     await render(visibleStops, progressWithCurrentStop());
-    expect(mapState.addSource.mock.calls.length).toBe(2);
-    expect(mapState.addLayer.mock.calls.length).toBe(6);
+    expect(mapState.addSource.mock.calls.length).toBe(3);
+    expect(mapState.addLayer.mock.calls.length).toBe(7);
     const fits = mapState.fitBounds.mock.calls.length;
     await render([...visibleStops], progressWithCurrentStop());
-    expect(mapState.addSource.mock.calls.length).toBe(2);
-    expect(mapState.addLayer.mock.calls.length).toBe(6);
+    expect(mapState.addSource.mock.calls.length).toBe(3);
+    expect(mapState.addLayer.mock.calls.length).toBe(7);
     expect(mapState.fitBounds.mock.calls.length).toBe(fits);
   });
 
@@ -413,6 +414,53 @@ describe('RouteMap', () => {
     await render(stops, progressWithCurrentStop(), null, undefined, error);
     expect(container.querySelector('.interactive-route-map [role="status"]')?.textContent).toBe(error.message);
     expect(container.querySelector('.map-location-message')).toBeNull();
+  });
+
+  it('draws a dashed walking connector after leaving a completed schub', async () => {
+    const progress = progressAtGerritje();
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'completed';
+    const bonus = gamePack.bonusLocations![0];
+    const fix = { latitude: bonus.coordinates.latitude!, longitude: bonus.coordinates.longitude!, accuracy: 8, capturedAt: new Date().toISOString() };
+    await render(gamePack.stops.filter((stop) => !stop.isFinal), progress, fix);
+    expect(mapState.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'schub-connector', paint: expect.objectContaining({ 'line-dasharray': [2, 2] })
+    }));
+    expect(mapState.setConnectorData).toHaveBeenCalledWith(expect.objectContaining({
+      features: [expect.objectContaining({ properties: expect.objectContaining({ bonusId: bonus.id, legIndex: 0 }) })]
+    }));
+    expect(container.querySelectorAll('.route-bottom-sheet__actions a')).toHaveLength(1);
+  });
+
+  it('keeps the connector after leaving the schub and removes it upon rejoining the main route', async () => {
+    const progress = progressAtGerritje();
+    progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'completed';
+    const bonus = gamePack.bonusLocations![0];
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    const fix = { latitude: bonus.coordinates.latitude!, longitude: bonus.coordinates.longitude!, accuracy: 8, capturedAt: new Date().toISOString() };
+    await render(stops, progress, fix);
+    const initial = mapState.setConnectorData.mock.calls.at(-1)?.[0];
+    expect(initial.features[0].properties.bonusId).toBe(bonus.id);
+    mapState.setConnectorData.mockClear();
+    await render(stops, progress, { ...fix, latitude: 51.690322, longitude: 5.299194 });
+    expect(mapState.setConnectorData).not.toHaveBeenCalled();
+    await render(stops, progress, { ...fix, latitude: 51.692, longitude: 5.304 });
+    expect(mapState.setConnectorData).toHaveBeenLastCalledWith({ type: 'FeatureCollection', features: [] });
+  });
+
+  it('draws the same connector on the offline map without new controls', async () => {
+    vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue(null);
+    try {
+      const progress = progressAtGerritje();
+      progress.stopProgress['bonus:bolwerk-sint-jan'].state = 'completed';
+      const bonus = gamePack.bonusLocations![0];
+      await render(gamePack.stops.filter((stop) => !stop.isFinal), progress, {
+        latitude: bonus.coordinates.latitude!, longitude: bonus.coordinates.longitude!, accuracy: 8, capturedAt: new Date().toISOString()
+      });
+      expect(container.querySelector('polyline.fallback-route-map__connector')?.getAttribute('points')).toContain(',');
+      expect(container.querySelectorAll('.route-bottom-sheet__actions a')).toHaveLength(1);
+    } finally {
+      vi.mocked(HTMLCanvasElement.prototype.getContext).mockReturnValue({} as never);
+    }
   });
 
   it('moves the GPS marker on successive device updates without resetting the map', async () => {

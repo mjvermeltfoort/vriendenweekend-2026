@@ -22,7 +22,8 @@ import {
 import { RouteMarker } from './RouteMarker';
 import { isBonusLocation, type BonusLocation, type RouteStop } from '../game/gameTypes';
 import { visibleBonusLocations } from '../game/gameState';
-import { emptyDeviation, isFreshLocation, updateDeviation } from './navigationHelp';
+import { distanceFromLeg, emptyDeviation, isFreshLocation, updateDeviation } from './navigationHelp';
+import { nearbyConnectorBonus, schubConnectorFor } from './schubConnectors';
 
 type MapMode = 'loading' | 'live' | 'fallback';
 type MarkerPosition = { left: string; top: string };
@@ -58,7 +59,7 @@ function projectFallback([longitude, latitude]: LngLat): MarkerPosition {
   return { left: `${x}%`, top: `${y}%` };
 }
 
-function polylinePoints(feature: RouteGeoJson['features'][number]) {
+function polylinePoints(feature: { geometry: { coordinates: LngLat[] } }) {
   return feature.geometry.coordinates.map((coordinate) => {
     const point = projectFallback(coordinate);
     return `${Number.parseFloat(point.left)},${Number.parseFloat(point.top)}`;
@@ -180,6 +181,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   const [mode, setMode] = useState<MapMode>('loading');
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
   const [markerPositions, setMarkerPositions] = useState<Record<string, MarkerPosition>>({});
+  const [connectorBonusId, setConnectorBonusId] = useState<string | null>(null);
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const selectionOriginRef = useRef<'default' | 'gps' | 'manual'>('default');
   const nearbyBonusRef = useRef<string | null>(null);
@@ -208,6 +210,11 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
     location, visibleBonusLocationsMemo, progress, nearbyBonusRef.current, currentMainStop
   );
   const selectedNearbyBonus = selectedStopId !== null && selectedStopId === nearbyBonusId;
+  const selectedBonusId = selectedStop && isBonusLocation(selectedStop) ? selectedStop.id : null;
+  const connectorOrigin = selectedBonusId ?? connectorBonusId;
+  const connector = useMemo(() => visibleBonusLocationsMemo.some((bonus) => bonus.id === connectorOrigin)
+    ? schubConnectorFor(connectorOrigin, presentation.activeLegIndex) : null,
+    [connectorOrigin, presentation.activeLegIndex, visibleBonusLocationsMemo]);
 
   useEffect(() => {
     if (selectedStopId || sheetDismissedRef.current || selectionOriginRef.current !== 'default') return;
@@ -342,6 +349,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
         window.clearTimeout(fallbackTimer);
         applyMoerasdraakTheme(map);
         map.addSource('moerasdraak-route', { type: 'geojson', data: route });
+        map.addSource('schub-connector', { type: 'geojson', data: emptyFeatureCollection });
         map.addSource('route-accuracy', { type: 'geojson', data: emptyFeatureCollection });
         map.addLayer({
           id: 'route-full',
@@ -373,6 +381,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           filter: presentation.activeLegIndex === null ? hiddenLegFilter() : legFilter([presentation.activeLegIndex]),
           layout: { 'line-cap': 'round', 'line-join': 'round' },
           paint: { 'line-color': mapColors.active, 'line-width': 5, 'line-opacity': 1 }
+        });
+        map.addLayer({
+          id: 'schub-connector',
+          type: 'line',
+          source: 'schub-connector',
+          layout: { 'line-cap': 'round', 'line-join': 'round' },
+          paint: { 'line-color': mapColors.active, 'line-width': 4, 'line-dasharray': [2, 2], 'line-opacity': 0.95 }
         });
         map.addLayer({
           id: 'route-accuracy',
@@ -458,6 +473,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   useEffect(() => {
     const map = mapRef.current;
     if (!map || mode !== 'live') return;
+    const source = map.getSource('schub-connector') as GeoJSONSource | undefined;
+    source?.setData(connector ? { type: 'FeatureCollection', features: [connector] } : emptyFeatureCollection);
+  }, [connector, mode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mode !== 'live') return;
     const accuracySource = map.getSource('route-accuracy') as GeoJSONSource | undefined;
     accuracySource?.setData(location ? accuracyFeature(location) : emptyFeatureCollection);
     if (!location) {
@@ -484,7 +506,19 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
 
   const activeLeg = presentation.activeLegIndex === null ? null
     : route?.features.find((leg) => leg.properties.legIndex === presentation.activeLegIndex) ?? null;
-  const bonusDetour = Boolean(selectedStop && isBonusLocation(selectedStop)
+  useEffect(() => {
+    if (!isFreshLocation(location, Date.now()) || location.accuracy > 40) return;
+    const nearby = nearbyConnectorBonus(location, visibleBonusLocationsMemo);
+    if (nearby) setConnectorBonusId(nearby);
+    else if (!activeLeg || distanceFromLeg(location, activeLeg) <= 25 + location.accuracy) {
+      setConnectorBonusId(null);
+    }
+    // Keep the last visited schub's line while walking back; reaching the active
+    // route removes it. A map selection can also preview a visible schub's line.
+  }, [location, activeLeg, visibleBonusLocationsMemo]);
+
+  const bonusDetour = Boolean(connector && location && distanceFromLeg(location, connector) <= 40 + location.accuracy)
+    || Boolean(selectedStop && isBonusLocation(selectedStop)
     && selectedState !== 'completed' && selectedState !== 'locked')
     || Boolean(location && visibleBonusLocationsMemo.some((bonus) =>
       progress?.stopProgress[bonus.id]?.state !== 'completed'
@@ -594,6 +628,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
                   <polyline className="fallback-route-map__active" points={polylinePoints(route.features[presentation.activeLegIndex])} />
                 </>
               ) : null}
+              {connector ? <polyline className="fallback-route-map__connector" points={polylinePoints(connector)} /> : null}
               {fallbackAccuracyPoints ? <polygon className="fallback-route-map__accuracy" points={fallbackAccuracyPoints} /> : null}
             </svg>
             {fallbackLocationPosition ? (
