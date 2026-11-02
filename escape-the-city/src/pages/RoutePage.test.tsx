@@ -10,11 +10,11 @@ const gameState = vi.hoisted(() => ({ current: {} }));
 vi.mock('../app/gameContext', () => ({ useGame: () => gameState.current }));
 vi.mock('../components/GameUi', () => ({
   PageShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
-  ProgressBar: () => null,
+  ProgressBar: () => <div>Herinneringen hersteld</div>,
   SyncStatus: () => null,
   GameIcon: () => <span aria-hidden="true" />
 }));
-vi.mock('../features/map/RouteMap', () => ({ RouteMap: () => <div>Routekaart</div> }));
+vi.mock('../features/map/RouteMap', () => ({ RouteMap: () => <div data-testid="route-map">Routekaart</div> }));
 
 import { RoutePage } from './RoutePage';
 
@@ -57,6 +57,10 @@ describe('RoutePage finale states', () => {
     expect(container.textContent).toContain('Verborgen eindlocatie');
     expect(container.textContent).toMatch(/Nog 6 opdrachten te voltooien/);
     expect(container.textContent).toContain('Eindlocatie verborgen');
+    const details = container.querySelector('details')!;
+    expect(details.open).toBe(false);
+    expect(details.querySelector('[aria-label="Finale"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('Bossche Brouwers');
   });
 
   it('reveals the finale after the first six memories', async () => {
@@ -68,6 +72,8 @@ describe('RoutePage finale states', () => {
     expect(container.textContent).toContain('Bossche Brouwers');
     expect(container.textContent).toContain('Zes herinneringen zijn hersteld');
     expect(container.textContent).toContain('Naar finale');
+    expect(container.querySelector('details [aria-label="Finale"]')).toBeNull();
+    expect(container.querySelector('a[href="/stop/bossche-brouwers"]')).not.toBeNull();
   });
 
   it('prioritizes the result after the game is finalized', async () => {
@@ -94,12 +100,23 @@ describe('RoutePage finale states', () => {
     expect(section.querySelector(`a[href="#/route?schub=${encodeURIComponent(remaining.id)}"]`) ?? section.querySelector(`a[href="/route?schub=${encodeURIComponent(remaining.id)}"]`)).not.toBeNull();
   });
 
-  it('shows route hero before details on mobile-sized route view', async () => {
-    await render(createInitialProgress('team-1', gamePack), 'hero');
+  it('places the map before progress, collapsed information and team status without a duplicate hero', async () => {
+    await render(createInitialProgress('team-1', gamePack), 'map-first');
+    const map = container.querySelector('[data-testid="route-map"]')!;
+    for (const selector of ['[aria-label="Voortgang"]', 'details', '[aria-label="Teamstatus"]']) {
+      expect(map.compareDocumentPosition(container.querySelector(selector)! ) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    expect(container.querySelector('.route-hero')).toBeNull();
+    expect(container.querySelector('details')?.open).toBe(false);
+    expect(container.querySelector('[aria-label="Routeweergave"]')).toBeNull();
+  });
 
-    const text = container.textContent ?? '';
-    expect(text).toContain('Route');
-    expect(text).toContain('Routekaart');
-    expect(text).toContain('Verborgen eindlocatie');
+  it('opens the list through the bottom navigation URL and keeps progress below it', async () => {
+    await render(createInitialProgress('team-1', gamePack), 'list-view', '/route?weergave=lijst');
+    expect(container.querySelector('[aria-label="Routepunten"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="route-map"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Voortgang"]')).not.toBeNull();
+    await render(createInitialProgress('team-1', gamePack), 'back-to-map', '/route');
+    expect(container.querySelector('[data-testid="route-map"]')).not.toBeNull();
   });
 });
