@@ -79,8 +79,12 @@ def check_spacing(browser, origin, diagnostics):
         dashboard=context.new_page()
         dashboard.set_viewport_size({'width':1440,'height':1000})
         dashboard.goto(origin+'/escape-the-city/dashboard.html',wait_until='load')
-        panel=dashboard.get_by_role('region',name='Teamspreiding')
+        # <details> is exposed as a group rather than a region and starts collapsed.
+        # Target the semantic component and expand it before interacting with its form.
+        panel=dashboard.locator('details.spacing-panel')
         expect(panel).to_be_visible(timeout=15000)
+        panel.locator('summary').click()
+        expect(panel).to_have_attribute('open', '')
         panel.get_by_label('Speurneuzen',exact=True).check()
         panel.get_by_label('Drakenjagers',exact=True).check()
         panel.get_by_role('button',name='Eerder').nth(1).click()
