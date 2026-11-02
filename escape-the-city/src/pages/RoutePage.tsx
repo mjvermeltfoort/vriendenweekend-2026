@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { GamePack } from '../features/game/gameTypes';
 import { useGame } from '../app/gameContext';
@@ -17,9 +17,8 @@ const statusLabels = {
 
 export function RoutePage({ pack }: { pack: GamePack }) {
   const { activeTeam, progress, syncStatus, syncMessage, deviceLocation, locationError, activeSessionCount } = useGame();
-  const [view, setView] = useState<'list' | 'route'>('route');
-  const [bonusIntroSeen, setBonusIntroSeen] = useState(true);
   const [search] = useSearchParams();
+  const view = search.get('weergave') === 'lijst' ? 'list' : 'route';
   const focusedLocationId = search.get('schub') ?? undefined;
   const showMissing = search.get('schubben') === 'ontbrekend';
   const missingRef = useRef<HTMLElement>(null);
@@ -29,57 +28,79 @@ export function RoutePage({ pack }: { pack: GamePack }) {
   const visibleBonuses = visibleBonusLocations(pack, progress);
   const missingBonuses = visibleBonuses.filter((b) => progress?.stopProgress[b.id]?.state !== 'completed');
   const visibleStops = finaleLocationRevealed ? pack.stops : pack.stops.filter((stop) => !stop.isFinal);
-  const nextStop = visibleStops.find((stop) => {
-    const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
-    return state !== 'completed';
-  });
-  const bonusIntroKey = activeTeam ? `moerasdraak-bonus-intro:${activeTeam.id}` : '';
 
   useEffect(() => {
-    if (focusedLocationId) setView('route');
     if (showMissing) missingRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }, [focusedLocationId, showMissing]);
 
-  useEffect(() => {
-    if (!bonusIntroKey || typeof window === 'undefined') return;
-    setBonusIntroSeen(window.localStorage.getItem(bonusIntroKey) === 'seen');
-  }, [bonusIntroKey]);
-
-  function dismissBonusIntro() {
-    if (bonusIntroKey && typeof window !== 'undefined') window.localStorage.setItem(bonusIntroKey, 'seen');
-    setBonusIntroSeen(true);
-  }
+  const finaleCard = (
+    <section className="card stack route-finale" aria-label="Finale">
+      <div className="row">
+        <span className="route-marker"><GameIcon name="star" size={20} /></span>
+        <div>
+          <p className="eyebrow">Finale</p>
+          <h2>{finaleLocationRevealed ? 'Bossche Brouwers' : 'Verborgen eindlocatie'}</h2>
+        </div>
+      </div>
+      <p>{progress?.finalized
+        ? 'Alle zeven herinneringen zijn hersteld.'
+        : finaleLocationRevealed
+          ? 'Zes herinneringen zijn hersteld'
+          : `Nog ${finale.missingCount} opdrachten te voltooien voordat de eindlocatie wordt onthuld.`}</p>
+      {progress?.finalized
+        ? <Link className="button secondary" to="/resultaat">Bekijk resultaat</Link>
+        : finale.eligible
+          ? <Link className="button primary" to="/stop/bossche-brouwers">Naar finale</Link>
+          : <span className="button" aria-disabled="true">Eindlocatie verborgen</span>}
+    </section>
+  );
 
   return (
-    <PageShell title="Route" backTo="/">
-      <div className="route-summary">
-        <span>{activeTeam?.name ?? 'Geen actief team'}</span>
-        <SyncStatus status={syncStatus} message={syncMessage} />
-        {activeSessionCount > 0 ? <span className="muted small">{activeSessionCount} speler{activeSessionCount === 1 ? '' : 's'} actief</span> : null}
+    <PageShell title="Route" backTo="/" className="route-page">
+      <h1 className="visually-hidden">Route</h1>
+      <div id="route-content">
+        {view === 'list' ? (
+          <ol className="route-list route-list--spaced" aria-label="Routepunten">
+            {visibleStops.map((stop) => {
+              const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
+              const unlocked = state !== 'locked';
+              const isCurrent = progress?.currentStopId === stop.id && state !== 'completed';
+              const classes = [
+                'route-stop',
+                `route-stop--${state}`,
+                isCurrent ? 'route-stop--current' : ''
+              ].filter(Boolean).join(' ');
+              return (
+                <li key={stop.id} className={classes}>
+                  <span className="route-marker" aria-label={`Stop ${stop.order}, ${statusLabels[state]}`}>
+                    {state === 'completed' ? <GameIcon name="check" size={20} /> : state === 'locked' ? <GameIcon name="lock" size={18} /> : stop.order}
+                  </span>
+                  <section className="card route-stop__card">
+                    <span className="route-stop__meta">{stop.isFinal ? 'Finale' : `Opdracht ${stop.order}`} · {statusLabels[state]}</span>
+                    <h2>{unlocked ? stop.title : `Verborgen stop ${stop.order}`}</h2>
+                    <p className="muted">{unlocked ? stop.navigation.clue : 'Voltooi vorige opdracht om deze plek te onthullen.'}</p>
+                    {unlocked ? <Link className={`button ${isCurrent ? 'primary' : 'secondary'}`} to={`/stop/${stop.id}`}>{isCurrent ? 'Ga naar deze stop' : 'Bekijk stop'}</Link> : null}
+                  </section>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <RouteMap
+            gamePack={pack}
+            progress={progress}
+            visibleStops={visibleStops}
+            locationProvider={browserLocationProvider}
+            deviceLocation={deviceLocation}
+            locationError={locationError}
+            focusedLocationId={focusedLocationId}
+          />
+        )}
       </div>
-      <div className="route-hero card stack">
-        <p className="eyebrow">Route</p>
-        <h1>{nextStop?.title ?? 'Geen volgende stop'}</h1>
-        <p className="muted">{nextStop?.navigation.clue ?? 'De route staat klaar zodra de volgende opdracht beschikbaar is.'}</p>
-        <div className="route-tabs" aria-label="Routeweergave">
-          <button className={view === 'list' ? 'is-active' : ''} type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
-            <GameIcon name="location" size={16} /> Lijst
-          </button>
-          <button className={view === 'route' ? 'is-active' : ''} type="button" aria-pressed={view === 'route'} onClick={() => setView('route')}>
-            <GameIcon name="map" size={16} /> Route
-          </button>
-        </div>
+
+      <section className="route-progress" aria-label="Voortgang">
         <ProgressBar value={completed} max={pack.stops.length} label="Herinneringen hersteld" />
-        {visibleBonuses.length > 0 && !bonusIntroSeen ? (
-          <details className="route-details">
-            <summary>Meer informatie</summary>
-            <div className="stack">
-              <p>Niet alle herinneringen liggen op de hoofdroute. In de stad zijn zes verborgen Drakenschubben achtergebleven. Ze zijn niet nodig om het avontuur te voltooien, maar oplettende teams kunnen er extra punten mee verdienen.</p>
-              <button className="button primary" type="button" onClick={dismissBonusIntro}>BEKIJK DE VERBORGEN SCHUBBEN</button>
-            </div>
-          </details>
-        ) : null}
-      </div>
+      </section>
 
       {showMissing ? <section ref={missingRef} className="card stack" aria-label="Ontbrekende schubben">
         <h2>Ontbrekende schubben ({missingBonuses.length})</h2>
@@ -88,63 +109,26 @@ export function RoutePage({ pack }: { pack: GamePack }) {
         {!missingBonuses.length ? <p>Jullie hebben alle beschikbare schubben gevonden!</p> : null}
       </section> : null}
 
-      {view === 'list' ? (
-        <ol className="route-list route-list--spaced" aria-label="Routepunten">
-          {visibleStops.map((stop) => {
-            const state = progress?.stopProgress?.[stop.id]?.state ?? 'locked';
-            const unlocked = state !== 'locked';
-            const isCurrent = progress?.currentStopId === stop.id && state !== 'completed';
-            const classes = [
-              'route-stop',
-              `route-stop--${state}`,
-              isCurrent ? 'route-stop--current' : ''
-            ].filter(Boolean).join(' ');
-            return (
-              <li key={stop.id} className={classes}>
-                <span className="route-marker" aria-label={`Stop ${stop.order}, ${statusLabels[state]}`}>
-                  {state === 'completed' ? <GameIcon name="check" size={20} /> : state === 'locked' ? <GameIcon name="lock" size={18} /> : stop.order}
-                </span>
-                <section className="card route-stop__card">
-                  <span className="route-stop__meta">{stop.isFinal ? 'Finale' : `Opdracht ${stop.order}`} · {statusLabels[state]}</span>
-                  <h2>{unlocked ? stop.title : `Verborgen stop ${stop.order}`}</h2>
-                  <p className="muted">{unlocked ? stop.navigation.clue : 'Voltooi vorige opdracht om deze plek te onthullen.'}</p>
-                  {unlocked ? <Link className={`button ${isCurrent ? 'primary' : 'secondary'}`} to={`/stop/${stop.id}`}>{isCurrent ? 'Ga naar deze stop' : 'Bekijk stop'}</Link> : null}
-                </section>
-              </li>
-            );
-          })}
-        </ol>
-      ) : (
-        <RouteMap
-          gamePack={pack}
-          progress={progress}
-          visibleStops={visibleStops}
-          locationProvider={browserLocationProvider}
-          deviceLocation={deviceLocation}
-          locationError={locationError}
-          focusedLocationId={focusedLocationId}
-        />
-      )}
+      {finaleLocationRevealed || progress?.finalized ? finaleCard : null}
 
-      <section className="card stack">
-        <div className="row">
-          <span className="route-marker"><GameIcon name="star" size={20} /></span>
-          <div>
-            <p className="eyebrow">Finale</p>
-            <h2>{finaleLocationRevealed ? 'Bossche Brouwers' : 'Verborgen eindlocatie'}</h2>
-          </div>
+      <details className="route-details route-more-info">
+        <summary>Meer informatie</summary>
+        <div className="stack">
+          {visibleBonuses.length > 0 ? (
+            <section className="stack" aria-label="Verborgen schubben">
+              <p>In de stad liggen zes verborgen Drakenschubben. Ze zijn optioneel en leveren extra punten op.</p>
+              <Link className="button secondary" to="/route?schubben=ontbrekend">Bekijk de verborgen schubben</Link>
+            </section>
+          ) : null}
+          {!finaleLocationRevealed && !progress?.finalized ? finaleCard : null}
         </div>
-        <p>{progress?.finalized
-          ? 'Alle zeven herinneringen zijn hersteld.'
-          : finaleLocationRevealed
-            ? 'Zes herinneringen zijn hersteld'
-            : `Nog ${finale.missingCount} opdrachten te voltooien voordat de eindlocatie wordt onthuld.`}</p>
-        {progress?.finalized
-          ? <Link className="button secondary" to="/resultaat">Bekijk resultaat</Link>
-          : finale.eligible
-            ? <Link className="button primary" to="/stop/bossche-brouwers">Naar finale</Link>
-            : <span className="button" aria-disabled="true">Eindlocatie verborgen</span>}
-      </section>
+      </details>
+
+      <footer className="route-summary route-team-status" aria-label="Teamstatus">
+        <span>{activeTeam?.name ?? 'Geen actief team'}</span>
+        <SyncStatus status={syncStatus} message={syncMessage} />
+        {activeSessionCount > 0 ? <span className="muted small">{activeSessionCount} speler{activeSessionCount === 1 ? '' : 's'} actief</span> : null}
+      </footer>
     </PageShell>
   );
 }

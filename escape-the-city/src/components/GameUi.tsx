@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useGame } from '../app/gameContext';
 import { useAudio } from '../features/audio/audioContext';
 
@@ -131,11 +131,13 @@ export function GameTopBar({ title, backTo }: { title: string; backTo?: string }
 }
 
 export function BottomGameNavigation() {
-  const { progress, syncStatus, syncMessage } = useGame();
+  const { progress } = useGame();
   const location = useLocation();
+  const listView = new URLSearchParams(location.search).get('weergave') === 'lijst';
   const currentStop = progress?.currentStopId ? `/stop/${progress.currentStopId}` : '/route';
   const links = [
-    { to: '/route', label: 'Route', icon: 'location' as IconName, active: location.pathname === '/route' },
+    { to: '/route', label: 'Route', icon: 'location' as IconName, active: location.pathname === '/route' && !listView },
+    { to: '/route?weergave=lijst', label: 'Lijst', icon: 'menu' as IconName, active: location.pathname === '/route' && listView },
     { to: '/team', label: 'Team', icon: 'team' as IconName, active: location.pathname === '/team' },
     { to: currentStop, label: 'Spel', icon: 'scroll' as IconName, active: location.pathname.startsWith('/stop/') || location.pathname.startsWith('/challenge/') },
     { to: '/instellingen', label: 'Info', icon: 'info' as IconName, active: location.pathname === '/instellingen' }
@@ -144,7 +146,7 @@ export function BottomGameNavigation() {
   return (
     <nav className="bottom-nav" aria-label="Hoofdnavigatie">
       {links.map((item) => (
-        <NavLink
+        <Link
           key={item.label}
           to={item.to}
           aria-current={item.active ? 'page' : undefined}
@@ -152,7 +154,7 @@ export function BottomGameNavigation() {
         >
           <GameIcon name={item.icon} />
           <span>{item.label}</span>
-        </NavLink>
+        </Link>
       ))}
 
     </nav>
