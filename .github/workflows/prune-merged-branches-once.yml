@@ -1,0 +1,74 @@
+name: One-time merged branch cleanup
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prune-merged-branches-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  prune:
+    if: github.repository == 'mjvermeltfoort/vriendenweekend-2026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Remove only SHA-verified branches from merged PRs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          deleted=0
+          skipped=0
+          while read -r pr branch expected_sha; do
+            [[ -z "$pr" ]] && continue
+            pr_json="$(gh api "repos/${GH_REPO}/pulls/${pr}")"
+            pr_merged="$(jq -r '.merged_at // empty' <<<"$pr_json")"
+            pr_branch="$(jq -r '.head.ref' <<<"$pr_json")"
+            pr_sha="$(jq -r '.head.sha' <<<"$pr_json")"
+            pr_base="$(jq -r '.base.ref' <<<"$pr_json")"
+            if [[ -z "$pr_merged" || "$pr_branch" != "$branch" || "$pr_sha" != "$expected_sha" || "$pr_base" != "main" ]]; then
+              echo "SKIP $branch: PR #$pr cannot be verified as merged at expected head"
+              skipped=$((skipped+1))
+              continue
+            fi
+            ref_json="$(gh api "repos/${GH_REPO}/git/ref/heads/${branch}")"
+            current_sha="$(jq -r '.object.sha' <<<"$ref_json")"
+            if [[ "$current_sha" != "$expected_sha" ]]; then
+              echo "SKIP $branch: branch moved since verification"
+              skipped=$((skipped+1))
+              continue
+            fi
+            gh api --method DELETE "repos/${GH_REPO}/git/refs/heads/${branch}"
+            echo "DELETED $branch (PR #$pr)"
+            deleted=$((deleted+1))
+          done <<'VERIFIED_MERGED_BRANCHES'
+          150 chatgpt/bosch-monster-minigame-20261012 3987c85266889c7cd80744896afb824c66c592e6
+          152 chatgpt/fix-bosch-monster-text-contrast-20261012 5faa6eabb6f961ee8afca61c60e4c3806c8f8edd
+          166 chatgpt/mobile-challenge-layout-20261013 f754cf81c52a538e264656bc6af6718a8dfb8838
+          164 chatgpt/zwanenbroedershuis-gevelwachters-20261013 7aff652dc05f975f4ac84f8b79806de4c8b05e2d
+          193 ci/checks-pr-only 5431bb25808d7fe3c8e1e4e801738c861bd1067c
+          192 cleanup/remove-issue-bot 82f0d145285d98ee6184626082147e8e3432e533
+          182 feat/henk-schub-reminders 5911728a38076912afae2f0257d06eee37e131d6
+          174 feat/hint-henk-spoken-hints 902cf90437aaa4843296dd156569c052cb546c54
+          180 feat/hint-henk-v4 babda3dfae59e413f3cde55d283840b494d6c433
+          191 feat/mobile-route-navigation fbde610d2a10e0e4b0fbe4b74bd6cf5e329df60b
+          184 feat/wrong-answer-cooldown a34baf1b8b37e067ecf6095d1d93d6482de4d82f
+          172 feature/citadel-papenbril-historische-vraag 919faa8e22bd3ff77b4a2137eff6503a9adc29aa
+          167 feature/kruithuis-geheim-explosie 1a718c04fe4004164c72e983ab0d351e58217f0c
+          171 feature/verkadefabriek-vloertegels-raadsel 554719953303a4fc2afdf9a0a05429724ef03f79
+          186 fix/active-challenge-button-mobile-layout 316c907b169c359bed3a249b66cde788e31bf45e
+          162 fix/bosch-remove-extra-controls-161 036d84b829bf56f022155f0feb29c7f2a9609260
+          158 fix/bosch-story-audio-157 a946d3717642e85ad4402e7fd8907709df70ff1a
+          185 fix/escape-city-open-bonus-challenge e28383136bb7ff7bfcfa3e410fee6987a1d1abbc
+          188 fix/hint-henk-single-countdown-display 52ca1b06ef98d469f8bd2aa4f1962b6c698d56fe
+          170 fix/kruithuis-audio-text 241d5da5320390be7de04af7c259078f976bc035
+          187 fix/replay-henk-from-retry-button 91c0f6473be58216aa48cfbe217e2975d368143b
+          176 fix/stale-henk-brouwcode-hint cf81bca0c36ec60cdf7384fdc8e3516b0f5ba65d
+          190 fix/voorbereiden-teksten c0933638e1943ca6a0bcff08937de3a700121460
+          175 improve-brouwcode-text-hint 22fe947327e3e848ee8e3617c0c6eab6a823eedb
+          VERIFIED_MERGED_BRANCHES
+          echo "Deleted: $deleted; Skipped: $skipped"
+          [[ "$skipped" -eq 0 ]]
