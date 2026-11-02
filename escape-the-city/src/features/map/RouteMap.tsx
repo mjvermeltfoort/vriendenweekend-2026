@@ -22,6 +22,7 @@ import {
 import { RouteMarker } from './RouteMarker';
 import { isBonusLocation, type BonusLocation, type RouteStop } from '../game/gameTypes';
 import { visibleBonusLocations } from '../game/gameState';
+import { emptyDeviation, isFreshLocation, updateDeviation } from './navigationHelp';
 
 type MapMode = 'loading' | 'live' | 'fallback';
 type MarkerPosition = { left: string; top: string };
@@ -69,7 +70,7 @@ function hiddenLegFilter() {
 }
 
 // De eerste GPS-meting mag het startbeeld corrigeren wanneer de deelnemer
-// werkelijk in de buurt van de route is. Latere metingen bewegen alleen de stip.
+// werkelijk in de buurt van de route is.
 export function locationNearRoute(location: LocationResult, stops: RouteStop[]) {
   return stops.some((stop) => Number.isFinite(stop.coordinates.latitude)
     && Number.isFinite(stop.coordinates.longitude)
@@ -168,9 +169,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   const stopPollingRef = useRef<(() => void) | null>(null);
   const autoStartedRef = useRef(false);
   const locationRef = useRef<LocationResult | null>(null);
-  const hasIncludedLocationRef = useRef(false);
-  const userMovedMapRef = useRef(false);
   const fittingMapRef = useRef(false);
+  const [following, setFollowing] = useState(true);
+  const [now, setNow] = useState(Date.now);
+  const [offRoute, setOffRoute] = useState(false);
+  const [helpDismissed, setHelpDismissed] = useState(false);
+  const deviationRef = useRef(emptyDeviation());
+  const deviationLegRef = useRef<string | undefined>(undefined);
   const [gpsMarkerPosition, setGpsMarkerPosition] = useState<MarkerPosition | null>(null);
   const [mode, setMode] = useState<MapMode>('loading');
   const [route, setRoute] = useState<RouteGeoJson | null>(null);
@@ -183,13 +188,11 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   const sheetDismissedRef = useRef(false);
   const [location, setLocation] = useState<LocationResult | null>(null);
   const [locationMessage, setLocationMessage] = useState('');
-  const [locationEnabled, setLocationEnabled] = useState(false);
   // Ook bij de initiële map.load-callback moet de nieuwste GPS-fix beschikbaar zijn.
   locationRef.current = location;
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
 
   const visibleBonusLocationsMemo = useMemo(() => visibleBonusLocations(gamePack, progress), [gamePack, progress]);
-  const visibleStopIdsKey = useMemo(() => visibleStops.map((stop) => stop.id).join('|'), [visibleStops]);
   const mapLocationIdsKey = useMemo(
     () => [...visibleStops, ...visibleBonusLocationsMemo].map((stop) => stop.id).join('|'),
     [visibleStops, visibleBonusLocationsMemo]
@@ -241,6 +244,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   }, [selectedStopId]);
 
   function selectMapStop(stop: RouteStop | BonusLocation) {
+    setFollowing(false);
     selectionOriginRef.current = 'manual';
     sheetDismissedRef.current = false;
     revealSheetRef.current = true;
@@ -263,7 +267,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
     if (!target) return;
     selectMapStop(target);
     if (mode === 'live' && target.coordinates.latitude !== null && target.coordinates.longitude !== null) {
-      userMovedMapRef.current = true;
       mapRef.current?.easeTo({ center: [target.coordinates.longitude, target.coordinates.latitude], zoom: 16, duration: 350 });
     }
   }, [focusedLocationId, mode, mapLocationIdsKey]);
@@ -390,7 +393,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
         const initialLocation = locationRef.current;
         if (initialLocation && locationNearRoute(initialLocation, visibleStops)) {
           coordinates.push([initialLocation.longitude, initialLocation.latitude]);
-          hasIncludedLocationRef.current = true;
         }
         if (coordinates.length) {
           const bounds = coordinates.reduce(
@@ -411,9 +413,13 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
         updateMarkerPositions();
         setMode('live');
       });
-      map.on('dragstart', () => { userMovedMapRef.current = true; });
-      map.on('zoomstart', () => {
-        if (!fittingMapRef.current) userMovedMapRef.current = true;
+      map.on('dragstart', () => {
+        setFollowing(false);
+      });
+      map.on('zoomstart', (event) => {
+        if (event.originalEvent && !fittingMapRef.current) {
+          setFollowing(false);
+        }
       });
       map.on('move', updateMarkerPositions);
       map.on('resize', updateMarkerPositions);
@@ -461,36 +467,39 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
     const projected = map.project([location.longitude, location.latitude]);
     setGpsMarkerPosition({ left: `${projected.x}px`, top: `${projected.y}px` });
 
-    // Eenmalig GPS toevoegen aan het startbeeld, ook als de eerste fix pas na
-    // het laden van de kaart arriveert. Niet bijwerken als iemand zelf heeft
-    // gezoomd of gesleept; latere GPS-updates beïnvloeden de camera nooit.
-    if (!hasIncludedLocationRef.current && !userMovedMapRef.current
-      && locationNearRoute(location, visibleStops)) {
-      const coordinates = mapFocusStops(progress?.currentStopId, visibleStops).map((stop) => [
-        stop.coordinates.longitude!,
-        stop.coordinates.latitude!
-      ] as LngLat);
-      coordinates.push([location.longitude, location.latitude]);
-      void import('maplibre-gl').then(({ LngLatBounds }) => {
-        if (mapRef.current !== map || userMovedMapRef.current) return;
-        const bounds = coordinates.reduce(
-          (result, coordinate) => result.extend(coordinate),
-          new LngLatBounds(coordinates[0], coordinates[0])
-        );
-        hasIncludedLocationRef.current = true;
-        fittingMapRef.current = true;
-        try {
-          map.fitBounds(bounds, {
-            padding: { top: 46, right: 46, bottom: 104, left: 46 },
-            maxZoom: 16.8,
-            duration: 0
-          });
-        } finally {
-          fittingMapRef.current = false;
-        }
-      });
+    if (following && location.accuracy <= 40 && isFreshLocation(location, Date.now())) {
+      map.easeTo({ center: [location.longitude, location.latitude], zoom: 16.5, duration: 300 });
     }
-  }, [location, mode, progress?.currentStopId, visibleStopIdsKey]);
+  }, [location, mode, following]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const refresh = () => setNow(Date.now());
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, []);
+
+  const activeLeg = presentation.activeLegIndex === null ? null
+    : route?.features.find((leg) => leg.properties.legIndex === presentation.activeLegIndex) ?? null;
+  const bonusDetour = Boolean(selectedStop && isBonusLocation(selectedStop)
+    && selectedState !== 'completed' && selectedState !== 'locked')
+    || Boolean(location && visibleBonusLocationsMemo.some((bonus) =>
+      progress?.stopProgress[bonus.id]?.state !== 'completed'
+      && haversineDistanceMeters(location, {
+        latitude: bonus.coordinates.latitude!, longitude: bonus.coordinates.longitude!
+      }) <= bonus.coordinates.radiusMeters + 100));
+
+  useEffect(() => {
+    const legId = activeLeg?.properties.toStopId;
+    if (deviationLegRef.current !== legId) deviationRef.current = emptyDeviation();
+    deviationLegRef.current = legId;
+    deviationRef.current = updateDeviation(deviationRef.current, location, activeLeg, Date.now(), bonusDetour);
+    setOffRoute(deviationRef.current.confirmed);
+    if (!deviationRef.current.confirmed) setHelpDismissed(false);
+  }, [activeLeg, location, now, bonusDetour]);
 
   useEffect(() => () => stopPollingRef.current?.(), []);
 
@@ -498,28 +507,23 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   // metingen rechtstreeks zodat de marker niet aan een verouderde teampositie hangt.
   useEffect(() => {
     if (deviceLocation === undefined) return;
-    const age = deviceLocation?.capturedAt ? Date.now() - Date.parse(deviceLocation.capturedAt) : Number.POSITIVE_INFINITY;
-    const isCurrent = Boolean(deviceLocation && Number.isFinite(deviceLocation.latitude)
-      && Number.isFinite(deviceLocation.longitude) && Number.isFinite(age) && age >= 0 && age <= 60_000);
-    const current = isCurrent ? deviceLocation! : null;
+    const current = isFreshLocation(deviceLocation ?? null, Date.now()) ? deviceLocation! : null;
     setLocation(current);
-    setLocationEnabled(Boolean(current));
     setLocationMessage(current
       ? `Jij bent hier. Nauwkeurig tot ongeveer ${Math.round(current.accuracy)} meter.`
-      : locationError?.message ?? 'GPS-positie bepalen…');
-  }, [deviceLocation, locationError]);
+      : locationError?.message ?? 'Locatie wordt bijgewerkt…');
+  }, [deviceLocation, locationError, now]);
 
   // Fallback voor losse kaartweergaven buiten de gamecontext (o.a. componenttests).
   useEffect(() => {
     if (deviceLocation !== undefined || autoStartedRef.current || stopPollingRef.current) return;
     autoStartedRef.current = true;
     stopPollingRef.current = startLocationPolling(locationProvider, handleLocationOutcome);
-    setLocationEnabled(true);
   }, [locationProvider, deviceLocation]);
 
   function handleLocationOutcome(outcome: LocationOutcome) {
     if (isLocationResult(outcome)) {
-      setLocation(outcome);
+      setLocation({ ...outcome, capturedAt: outcome.capturedAt ?? new Date().toISOString() });
       setLocationMessage(`Jij bent hier. Nauwkeurig tot ongeveer ${Math.round(outcome.accuracy)} meter.`);
       return;
     }
@@ -533,19 +537,28 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
         .then(handleLocationOutcome);
       return;
     }
-    if (locationEnabled) return;
-    setLocationEnabled(true);
+    if (stopPollingRef.current) return;
     stopPollingRef.current = startLocationPolling(locationProvider, handleLocationOutcome);
   }
 
   function centerOnLocation() {
     const map = mapRef.current;
     const current = location;
-    if (!map || !current) return;
-    map.easeTo({ center: [current.longitude, current.latitude], duration: 300 });
+    setFollowing(true);
+    if (mode === 'fallback') {
+      setHelpDismissed(true);
+      containerRef.current?.parentElement?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (!map || !current || !isFreshLocation(current, Date.now())) return;
+    map.easeTo({ center: [current.longitude, current.latitude], zoom: 16.5, duration: 300 });
   }
 
-  const activeLocation = location;
+  const activeLocation = isFreshLocation(location, Date.now()) ? location : null;
+  const showHelp = offRoute && !helpDismissed && Boolean(activeLocation) && !locationError;
+  const gpsMessage = !activeLocation ? locationError?.message ?? 'Locatie wordt bijgewerkt…'
+    : activeLocation.accuracy > 40 ? `GPS is onnauwkeurig (± ${Math.round(activeLocation.accuracy)} m). Ga naar een open plek.`
+    : locationError?.message ?? locationMessage;
   const fallbackLocationPosition = activeLocation
     ? projectFallback([activeLocation.longitude, activeLocation.latitude])
     : null;
@@ -558,7 +571,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
 
   return (
     <section className="route-map-view" aria-label="Interactieve routekaart">
-      <div className={`interactive-route-map interactive-route-map--${mode}`}>
+      <div className={`interactive-route-map interactive-route-map--${mode}${showHelp ? ' has-navigation-help' : ''}`}>
         <div
           ref={containerRef}
           className="interactive-route-map__canvas"
@@ -608,7 +621,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
         ) : null}
 
         <div className="route-marker-layer">
-          {mode === 'live' && location && gpsMarkerPosition ? (
+          {mode === 'live' && activeLocation && gpsMarkerPosition ? (
             <span
               className="route-map__my-location"
               style={gpsMarkerPosition}
@@ -636,31 +649,30 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           })}
         </div>
 
-        <button
+        <span className="map-follow-status">{mode === 'fallback' ? 'Offline kaart'
+          : !activeLocation ? 'GPS zoeken…' : activeLocation.accuracy > 40 ? 'GPS onnauwkeurig' : following ? 'Locatie volgen aan' : 'Volgen gepauzeerd'}</span>
+        {mode !== 'fallback' || !activeLocation ? <button
           className="map-location-button"
           type="button"
-          onClick={enableLocation}
-          aria-pressed={locationEnabled}
-          aria-label={locationEnabled ? 'Locatie aan' : 'Mijn locatie inschakelen'}
-          title={locationEnabled ? 'Locatie aan' : 'Mijn locatie inschakelen'}
+          onClick={activeLocation ? centerOnLocation : enableLocation}
+          aria-pressed={Boolean(activeLocation) && following}
+          aria-label={activeLocation ? 'Centreer op mijn locatie' : 'Mijn locatie inschakelen'}
+          title={activeLocation ? 'Centreer op mijn locatie' : 'Mijn locatie inschakelen'}
         >
           <GameIcon name="location" size={20} />
-        </button>
-        {activeLocation ? (
-          <button
-            className="map-location-button map-location-button--secondary"
-            type="button"
-            onClick={centerOnLocation}
-            aria-label="Centreer op mijn locatie"
-            title="Centreer op mijn locatie"
-          >
-            <GameIcon name="compass" size={20} />
-          </button>
+        </button> : null}
+        {showHelp && currentMainStop ? (
+          <section className="map-navigation-help" aria-label="Navigatiehulp">
+            <button className="route-bottom-sheet__close" type="button" aria-label="Navigatiehulp sluiten" onClick={() => setHelpDismissed(true)}>×</button>
+            <h2>Even de weg kwijt?</h2>
+            <p role="status">Jullie lijken van de route af te wijken.</p>
+            <button className="button primary" type="button" onClick={centerOnLocation}>{mode === 'fallback' ? 'Toon de routekaart' : 'Toon mijn locatie'}</button>
+            <a className="button secondary" href={externalNavigationUrl(currentMainStop)} target="_blank" rel="noreferrer">Open wandelnavigatie</a>
+          </section>
         ) : null}
-        {mode === 'fallback' ? <span className="map-fallback-badge">Offline kaart</span> : null}
       </div>
-      <p className="map-location-message" aria-live="polite">{locationMessage}</p>
-      {selectedStop && (selectedState !== 'locked' || isBonusLocation(selectedStop)) ? (
+      <p className="map-location-message" aria-live="polite">{gpsMessage}</p>
+      {!showHelp && selectedStop && (selectedState !== 'locked' || isBonusLocation(selectedStop)) ? (
         <section ref={sheetRef} className="route-bottom-sheet" aria-label={isBonusLocation(selectedStop) ? `Schub: ${selectedStop.title}` : `Stop ${selectedStop.order}: ${selectedStop.title}`}>
           <button className="route-bottom-sheet__close" type="button" aria-label="Stopinformatie sluiten" onClick={closeStopSheet}>×</button>
           <span className="route-stop__meta">{isBonusLocation(selectedStop)
@@ -670,14 +682,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           <p>{isBonusLocation(selectedStop) && selectedState !== 'completed' ? selectedStop.hiddenClue : selectedStop.navigation.clue}</p>
           {isBonusLocation(selectedStop) ? <p className="muted small">Omweg: circa {selectedStop.estimatedDetourMinutes} minuten · maximaal {selectedStop.maximumPoints} bonuspunten</p> : null}
           <div className="route-bottom-sheet__actions">
-            <a
-              className="button secondary"
-              href={externalNavigationUrl(selectedStop)}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Open navigatie
-            </a>
             <Link className="button primary" to={`/stop/${selectedStop.id}`}>{isBonusLocation(selectedStop) ? selectedNearbyBonus ? 'Open schubopdracht' : 'Bekijk schub' : 'Bekijk stop'}</Link>
           </div>
         </section>
