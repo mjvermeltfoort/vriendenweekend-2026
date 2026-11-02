@@ -317,11 +317,10 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const completedRouteLabel = followingStop ? 'Bekijk volgende routepunt op kaart' : 'Bekijk resultaat';
 
   return (
-    <PageShell title={isCompleted ? (isBonusLocation(currentStop) ? 'Drakenschub' : 'Herinnering') : 'Verhaal'} backTo="/route">
+    <PageShell title={isCompleted ? (isBonusLocation(currentStop) ? 'Drakenschub' : 'Herinnering') : 'Verhaal'} backTo="/route" className="stop-page">
       {showParchment ? (
-        <section className="parchment-card stack">
+        <section className="parchment-card stop-story-card stack">
           <p className="eyebrow">{isBonusLocation(currentStop) ? 'Verborgen vondst' : `Opdracht ${currentStop.order} van ${pack.stops.length}`}</p>
-          {!isCompleted ? <p className="parchment-instruction small">Volgende stap: gebruik de aanwijzing hieronder en open daarna pas de opdracht.</p> : null}
           <h1>{currentStop.intro.title}</h1>
           {currentStop.intro.audioSrc ? (
             <>
@@ -339,50 +338,71 @@ export function StopPage({ pack }: { pack: GamePack }) {
       ) : null}
 
       {showStopDetails ? (
-      <section className="card card--compact stack stack--compact" style={{ marginTop: '0.5rem' }}>
-        <p className="eyebrow">Vind de locatie</p>
-        <h2>{currentStop.title}</h2>
-        <p className="muted">{currentStop.navigation.clue}</p>
-        <p className="muted small">{currentStop.locationName}</p>
+        <section className="card stop-location-card stack" aria-label="Locatie en opdracht">
+          {!canPlay ? <p className="eyebrow">Vind de locatie</p> : null}
+          <h2>{currentStop.title}</h2>
+          {canPlay ? (
+            <>
+              <p className="stop-arrival-status" role="status"><GameIcon name="check" size={20} /> Locatie bereikt</p>
+              <button
+                className="button primary"
+                type="button"
+                disabled={openingChallenge || !finaleEligibility.eligible || Boolean(otherActiveGameId)}
+                onClick={() => { void openChallenge(); }}
+              >
+                {openingChallenge ? 'Opdracht openen…' : 'Opdracht openen'}
+              </button>
+            </>
+          ) : null}
+          {canPlay ? (
+            <details className="stop-location-details">
+              <summary>Locatiegegevens</summary>
+              <p className="muted">{currentStop.navigation.clue}</p>
+              <p className="muted small">{currentStop.locationName}</p>
+            </details>
+          ) : (
+            <>
+              <p className="muted">{currentStop.navigation.clue}</p>
+              <p className="muted small">{currentStop.locationName}</p>
+            </>
+          )}
 
-        {isBonusLocation(currentStop) ? (
-          <section className="active-stop-indicator" aria-label="Afstand tot verborgen schub">
-            <p className="eyebrow">Afstand tot schub</p>
-            {bonusDistance === null ? (
-              <p role="status">{locationError?.kind === 'permission-denied'
-                ? 'Geef Chrome locatietoegang om de afstand te zien.'
-                : locationError?.message ?? 'Afstand bepalen… GPS-locatie zoeken.'}</p>
-            ) : (
-              <>
-                <p className="active-stop-indicator__distance">{bonusDistanceText}</p>
-                <p className="muted small">{deviceFixIsCurrent
-                  ? 'Hemelsbrede afstand vanaf jouw actuele GPS-positie.'
-                  : 'Hemelsbrede afstand vanaf de actuele teampositie.'}</p>
-              </>
-            )}
-          </section>
-        ) : currentStopIsActive ? (
-          <ActiveStopIndicator
-            pack={pack}
-            progress={progress}
-            location={mainStopPosition}
-            locationError={locationError}
-            showOpenButton
-            onOpenChallenge={() => { void openChallenge(); }}
-          />
-        ) : null}
+          {!canPlay && isBonusLocation(currentStop) ? (
+            <section className="active-stop-indicator" aria-label="Afstand tot verborgen schub">
+              <p className="eyebrow">Afstand tot schub</p>
+              {bonusDistance === null ? (
+                <p role="status">{locationError?.kind === 'permission-denied'
+                  ? 'Geef Chrome locatietoegang om de afstand te zien.'
+                  : locationError?.message ?? 'Afstand bepalen… GPS-locatie zoeken.'}</p>
+              ) : (
+                <>
+                  <p className="active-stop-indicator__distance">{bonusDistanceText}</p>
+                  <p className="muted small">{deviceFixIsCurrent
+                    ? 'Hemelsbrede afstand vanaf jouw actuele GPS-positie.'
+                    : 'Hemelsbrede afstand vanaf de actuele teampositie.'}</p>
+                </>
+              )}
+            </section>
+          ) : !canPlay && currentStopIsActive ? (
+            <ActiveStopIndicator
+              pack={pack}
+              progress={progress}
+              location={mainStopPosition}
+              locationError={locationError}
+            />
+          ) : null}
 
-        {gpsMessage || (!isBonusLocation(currentStop) && !currentStopIsActive && !canPlay && locationError) ? (
-          <div className="location-status" role="status" aria-live="polite">
-            <GameIcon name={canPlay ? 'check' : 'location'} />
-            <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
-          </div>
-        ) : null}
+          {gpsMessage || (!isBonusLocation(currentStop) && !currentStopIsActive && !canPlay && locationError) ? (
+            <div className="location-status" role="status" aria-live="polite">
+              <GameIcon name={canPlay ? 'check' : 'location'} />
+              <p>{gpsMessage || (!canPlay ? locationError?.message : '')}</p>
+            </div>
+          ) : null}
 
-        {!isCompleted ? (
-          <Link className="button secondary" to={isBonusLocation(currentStop) ? `/route?schub=${encodeURIComponent(currentStop.id)}` : '/route'}>Bekijk op de routekaart</Link>
-        ) : null}
-      </section>
+          {!isCompleted ? (
+            <Link className={canPlay ? 'stop-route-link' : 'button secondary'} to={isBonusLocation(currentStop) ? `/route?schub=${encodeURIComponent(currentStop.id)}` : '/route'}>Bekijk op de routekaart</Link>
+          ) : null}
+        </section>
       ) : null}
 
       {!isBonusLocation(currentStop) && !canPlay && !isCompleted && fallbackDelayMs !== null ? (
@@ -517,16 +537,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
                 </button>
               </div>
             ) : null}
-            {!currentStopIsActive || !canPlay ? (
-              <button
-                className="button primary"
-                type="button"
-                disabled={openingChallenge || !canPlay || !finaleEligibility.eligible || Boolean(otherActiveGameId)}
-                onClick={() => { void openChallenge(); }}
-              >
-                {openingChallenge ? 'Opdracht openen…' : 'Opdracht openen'}
-              </button>
-            ) : null}
+
         </>
       )}
 
