@@ -187,7 +187,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   const revealSheetRef = useRef(false);
   const sheetDismissedRef = useRef(false);
   const [location, setLocation] = useState<LocationResult | null>(null);
-  const [locationMessage, setLocationMessage] = useState('');
+  const [locationMessage, setLocationMessage] = useState<string | null>(null);
   // Ook bij de initiële map.load-callback moet de nieuwste GPS-fix beschikbaar zijn.
   locationRef.current = location;
   const presentation = useMemo(() => getRoutePresentation(gamePack, progress), [gamePack, progress]);
@@ -509,9 +509,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
     if (deviceLocation === undefined) return;
     const current = isFreshLocation(deviceLocation ?? null, Date.now()) ? deviceLocation! : null;
     setLocation(current);
-    setLocationMessage(current
-      ? `Jij bent hier. Nauwkeurig tot ongeveer ${Math.round(current.accuracy)} meter.`
-      : locationError?.message ?? 'Locatie wordt bijgewerkt…');
+    if (current && !locationError) setLocationMessage(null);
   }, [deviceLocation, locationError, now]);
 
   // Fallback voor losse kaartweergaven buiten de gamecontext (o.a. componenttests).
@@ -524,7 +522,7 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
   function handleLocationOutcome(outcome: LocationOutcome) {
     if (isLocationResult(outcome)) {
       setLocation({ ...outcome, capturedAt: outcome.capturedAt ?? new Date().toISOString() });
-      setLocationMessage(`Jij bent hier. Nauwkeurig tot ongeveer ${Math.round(outcome.accuracy)} meter.`);
+      setLocationMessage(null);
       return;
     }
     setLocationMessage(outcome.message);
@@ -556,9 +554,8 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
 
   const activeLocation = isFreshLocation(location, Date.now()) ? location : null;
   const showHelp = offRoute && !helpDismissed && Boolean(activeLocation) && !locationError;
-  const gpsMessage = !activeLocation ? locationError?.message ?? 'Locatie wordt bijgewerkt…'
-    : activeLocation.accuracy > 40 ? `GPS is onnauwkeurig (± ${Math.round(activeLocation.accuracy)} m). Ga naar een open plek.`
-    : locationError?.message ?? locationMessage;
+  const gpsMessage = locationError?.message ?? locationMessage ?? (!activeLocation ? 'Locatie wordt bijgewerkt…'
+    : activeLocation.accuracy > 40 ? `GPS is onnauwkeurig (± ${Math.round(activeLocation.accuracy)} m). Ga naar een open plek.` : null);
   const fallbackLocationPosition = activeLocation
     ? projectFallback([activeLocation.longitude, activeLocation.latitude])
     : null;
@@ -649,8 +646,8 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           })}
         </div>
 
-        <span className="map-follow-status">{mode === 'fallback' ? 'Offline kaart'
-          : !activeLocation ? 'GPS zoeken…' : activeLocation.accuracy > 40 ? 'GPS onnauwkeurig' : following ? 'Locatie volgen aan' : 'Volgen gepauzeerd'}</span>
+        <span className="map-follow-status" role="status" aria-live="polite">{gpsMessage
+          ?? (mode === 'fallback' ? 'Offline kaart' : following ? 'Locatie volgen aan' : 'Volgen gepauzeerd')}</span>
         {mode !== 'fallback' || !activeLocation ? <button
           className="map-location-button"
           type="button"
@@ -671,7 +668,6 @@ export function RouteMap({ gamePack, progress, visibleStops, locationProvider, d
           </section>
         ) : null}
       </div>
-      <p className="map-location-message" aria-live="polite">{gpsMessage}</p>
       {!showHelp && selectedStop && (selectedState !== 'locked' || isBonusLocation(selectedStop)) ? (
         <section ref={sheetRef} className="route-bottom-sheet" aria-label={isBonusLocation(selectedStop) ? `Schub: ${selectedStop.title}` : `Stop ${selectedStop.order}: ${selectedStop.title}`}>
           <button className="route-bottom-sheet__close" type="button" aria-label="Stopinformatie sluiten" onClick={closeStopSheet}>×</button>

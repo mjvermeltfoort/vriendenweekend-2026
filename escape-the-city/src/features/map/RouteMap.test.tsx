@@ -162,7 +162,8 @@ describe('RouteMap', () => {
     visibleStops: RouteMapProps['visibleStops'],
     progress: RouteMapProps['progress'],
     deviceLocation?: RouteMapProps['deviceLocation'],
-    focusedLocationId?: string
+    focusedLocationId?: string,
+    locationError?: RouteMapProps['locationError']
   ) {
     await act(async () => root.render(
       <MemoryRouter key={testKey}>
@@ -173,6 +174,7 @@ describe('RouteMap', () => {
           locationProvider={locationProvider()}
           deviceLocation={deviceLocation}
           focusedLocationId={focusedLocationId}
+          locationError={locationError}
         />
       </MemoryRouter>
     ));
@@ -390,6 +392,27 @@ describe('RouteMap', () => {
     }
     expect(container.querySelector('[aria-label="Navigatiehulp"]')).toBeNull();
     expect(container.querySelector('a[href*="maps"]')).toBeNull();
+  });
+
+  it('keeps ordinary GPS copy and empty status rows out of the space between map and stop', async () => {
+    const fix = { latitude: 51.689, longitude: 5.302, accuracy: 8, capturedAt: new Date().toISOString() };
+    await render(gamePack.stops.filter((stop) => !stop.isFinal), progressWithCurrentStop(), fix);
+    expect(container.textContent).not.toContain('Jij bent hier');
+    expect(container.textContent).not.toContain('Nauwkeurig tot ongeveer');
+    expect(container.querySelector('.map-location-message')).toBeNull();
+    const map = container.querySelector('.interactive-route-map')!;
+    expect(map.nextElementSibling?.classList.contains('route-bottom-sheet')).toBe(true);
+  });
+
+  it('shows necessary GPS warnings inside the map instead of between elements', async () => {
+    const fix = { latitude: 51.689, longitude: 5.302, accuracy: 80, capturedAt: new Date().toISOString() };
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    await render(stops, progressWithCurrentStop(), fix);
+    expect(container.querySelector('.interactive-route-map [role="status"]')?.textContent).toContain('GPS is onnauwkeurig');
+    const error = { kind: 'permission-denied' as const, message: 'Geef toestemming voor locatie.' };
+    await render(stops, progressWithCurrentStop(), null, undefined, error);
+    expect(container.querySelector('.interactive-route-map [role="status"]')?.textContent).toBe(error.message);
+    expect(container.querySelector('.map-location-message')).toBeNull();
   });
 
   it('moves the GPS marker on successive device updates without resetting the map', async () => {
