@@ -48,8 +48,8 @@ export function PreparationPage({ pack }: { pack: GamePack }) {
           <p className="eyebrow">Team</p>
           <h2>{activeTeam?.name ?? 'Geen actief team'}</h2>
         </div>
-        <p className="eyebrow">Wat je nu doet</p>
-        <p className="small">Teamcode controleren, locatie inschakelen en de route klaarmaken voor offline gebruik.</p>
+        <p className="eyebrow">Klaar voor het avontuur?</p>
+        <p className="small">Luister naar het welkomstverhaal en sla de route op je telefoon op. Zo zijn de opdrachten, afbeeldingen en audio ook onderweg zonder internet beschikbaar.</p>
         <ProgressBar value={collected} max={pack.stops.length} label={`Voortgang: ${collected} van ${pack.stops.length} opdrachten`} />
         <p className="small">Nog {remaining} opdracht{remaining === 1 ? '' : 'en'} open.</p>
         <ul className="prep-list">
@@ -60,9 +60,9 @@ export function PreparationPage({ pack }: { pack: GamePack }) {
         </ul>
         <SyncStatus status={syncStatus} message={syncMessage} />
         <button className="button primary" onClick={() => void prepare()} disabled={downloading || !activeTeam}>
-          {downloading ? 'Route opslaan…' : 'Routepakket voorbereiden'}
+          {downloading ? 'Route opslaan…' : 'Route opslaan en starten'}
         </button>
-        <Link className="button ghost" to="/route">Verder zonder opnieuw downloaden</Link>
+        <Link className="button ghost" to="/route">Verder naar het spel</Link>
       </section>
     </PageShell>
   );
