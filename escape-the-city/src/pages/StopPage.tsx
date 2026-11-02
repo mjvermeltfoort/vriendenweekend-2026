@@ -299,19 +299,6 @@ export function StopPage({ pack }: { pack: GamePack }) {
     }
   }
 
-  const hasDest = Number.isFinite(currentStop.coordinates.latitude)
-    && Number.isFinite(currentStop.coordinates.longitude);
-  const hasOrigin = Boolean(
-    teamLocation?.isCurrent
-    && Number.isFinite(teamLocation.latitude)
-    && Number.isFinite(teamLocation.longitude)
-  );
-  const originParam = hasOrigin ? `&origin=${teamLocation!.latitude},${teamLocation!.longitude}` : '';
-  const mapsUrl = hasDest
-    ? `https://www.google.com/maps/dir/?api=1&destination=${currentStop.coordinates.latitude},${currentStop.coordinates.longitude}${originParam}&travelmode=walking`
-    : currentStop.navigation.externalMapsQuery
-      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentStop.navigation.externalMapsQuery)}${originParam}&travelmode=walking`
-      : null;
   const observationFallbackVisible = fallbackReady || fallbackDelayMs === 0;
   const fallbackRemainingSeconds = fallbackDelayMs === null
     ? null
@@ -393,9 +380,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
         ) : null}
 
         {!isCompleted ? (
-          <>
-            {mapsUrl ? <a className="button secondary" href={mapsUrl} target="_blank" rel="noreferrer">Open in kaart</a> : null}
-          </>
+          <Link className="button secondary" to={isBonusLocation(currentStop) ? `/route?schub=${encodeURIComponent(currentStop.id)}` : '/route'}>Bekijk op de routekaart</Link>
         ) : null}
       </section>
       ) : null}

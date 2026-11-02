@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialProgress } from '../game/gameState';
 import { gamePack } from '../../game-data/moerasdraak/game';
 import type { RouteMapProps } from './mapTypes';
@@ -148,6 +148,11 @@ describe('RouteMap', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    act(() => root.render(null));
+    vi.useRealTimers();
+  });
+
   afterAll(() => {
     act(() => root.unmount());
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
@@ -186,21 +191,18 @@ describe('RouteMap', () => {
     const visibleStops = gamePack.stops.filter((stop) => !stop.isFinal);
     await render(visibleStops, progressWithCurrentStop());
 
-    expect(mapState.easeTo).not.toHaveBeenCalled();
+    expect(mapState.easeTo).toHaveBeenCalledWith(expect.objectContaining({ zoom: 16.5 }));
     expect(mapState.fitBounds).toHaveBeenCalled();
     expect(mapState.getSource).toHaveBeenCalledWith('route-accuracy');
     expect(container.querySelector('[data-testid="route-gps-marker"]')).not.toBeNull();
 
-    // Icon-only controls stay accessible and keep their existing actions.
-    const locationButton = container.querySelector<HTMLButtonElement>('button[aria-label="Locatie aan"]');
     const centerButton = container.querySelector<HTMLButtonElement>('button[aria-label="Centreer op mijn locatie"]');
-    expect(locationButton).not.toBeNull();
     expect(centerButton).not.toBeNull();
-    expect(locationButton?.textContent?.trim()).toBe('');
     expect(centerButton?.textContent?.trim()).toBe('');
-    expect(locationButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(centerButton?.getAttribute('aria-pressed')).toBe('true');
     await act(async () => centerButton?.click());
-    expect(mapState.easeTo).toHaveBeenCalledWith({ center: [5.3, 51.69], duration: 300 });
+    expect(mapState.easeTo).toHaveBeenCalledWith({ center: [5.3, 51.69], zoom: 16.5, duration: 300 });
+    expect(container.querySelector('a[href*="maps"]')).toBeNull();
   });
 
   it('keeps map instance stable when visibleStops gets a new equal array', async () => {
@@ -324,6 +326,72 @@ describe('RouteMap', () => {
     expect(container.querySelector('.route-bottom-sheet')).toBeNull();
   });
 
+  it('pauses following on drag and resumes with the location control', async () => {
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    const first = { latitude: 51.69, longitude: 5.302, accuracy: 12, capturedAt: new Date().toISOString() };
+    await render(stops, progressWithCurrentStop(), first);
+    const drag = mapState.on.mock.calls.find(([event]) => event === 'dragstart')![1];
+    await act(async () => drag());
+    mapState.easeTo.mockClear();
+    await render(stops, progressWithCurrentStop(), { ...first, longitude: 5.303 });
+    expect(mapState.easeTo).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Volgen gepauzeerd');
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Centreer op mijn locatie"]')?.click());
+    expect(mapState.easeTo).toHaveBeenCalledWith(expect.objectContaining({ center: [5.303, 51.69] }));
+  });
+
+  it('offers external navigation only after sustained deviation and clears it on stale GPS', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-02T12:00:00Z'));
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    const progress = progressAtGerritje();
+    const fix = () => ({ latitude: 51.682, longitude: 5.32, accuracy: 12, capturedAt: new Date().toISOString() });
+    await render(stops, progress, fix());
+    expect(container.querySelector('a[href*="maps"]')).toBeNull();
+    for (let step = 0; step < 3; step += 1) {
+      await act(async () => vi.advanceTimersByTime(10_000));
+      await render(stops, progress, fix());
+    }
+    expect(container.textContent).toContain('Even de weg kwijt?');
+    expect(container.querySelector('a[href*="maps"]')?.textContent).toBe('Open wandelnavigatie');
+    expect(container.querySelector('a[href*="maps"]')?.getAttribute('href')).toContain(`${stops[1].coordinates.latitude},${stops[1].coordinates.longitude}`);
+    await act(async () => vi.advanceTimersByTime(16_000));
+    expect(container.querySelector('[data-testid="route-gps-marker"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Navigatiehulp"]')).toBeNull();
+    expect(container.textContent).toContain('Locatie wordt bijgewerkt…');
+  });
+
+  it('keeps a dismissed warning closed for the same deviation episode', async () => {
+    vi.useFakeTimers();
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    const progress = progressAtGerritje();
+    const fix = () => ({ latitude: 51.682, longitude: 5.32, accuracy: 12, capturedAt: new Date().toISOString() });
+    await render(stops, progress, fix());
+    for (let step = 0; step < 3; step += 1) {
+      await act(async () => vi.advanceTimersByTime(10_000));
+      await render(stops, progress, fix());
+    }
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Navigatiehulp sluiten"]')?.click());
+    await act(async () => vi.advanceTimersByTime(5_000));
+    await render(stops, progress, fix());
+    expect(container.querySelector('[aria-label="Navigatiehulp"]')).toBeNull();
+  });
+
+  it('suppresses deviation help while deliberately visiting a schub', async () => {
+    vi.useFakeTimers();
+    const progress = progressAtGerritje();
+    const stops = gamePack.stops.filter((stop) => !stop.isFinal);
+    const bonus = gamePack.bonusLocations![0];
+    const fix = () => ({ latitude: 51.682, longitude: 5.32, accuracy: 12, capturedAt: new Date().toISOString() });
+    await render(stops, progress, fix(), bonus.id);
+    for (let step = 0; step < 4; step += 1) {
+      await act(async () => vi.advanceTimersByTime(10_000));
+      await render(stops, progress, fix(), bonus.id);
+    }
+    expect(container.querySelector('[aria-label="Navigatiehulp"]')).toBeNull();
+    expect(container.querySelector('a[href*="maps"]')).toBeNull();
+  });
+
   it('moves the GPS marker on successive device updates without resetting the map', async () => {
     const stops = gamePack.stops.filter((stop) => !stop.isFinal);
     const first = { latitude: 51.689, longitude: 5.302, accuracy: 14, capturedAt: new Date().toISOString() };
@@ -347,7 +415,7 @@ describe('RouteMap', () => {
     expect(mapState.project).toHaveBeenCalledWith([second.longitude, second.latitude]);
     expect(mapState.fitBounds.mock.calls.length).toBe(fitsBefore);
     expect(mapState.addSource.mock.calls.length).toBe(addBefore);
-    expect(mapState.easeTo).not.toHaveBeenCalled();
+    expect(mapState.easeTo).toHaveBeenCalledWith(expect.objectContaining({ zoom: 16.5 }));
   });
 });
 
