@@ -1,3 +1,4 @@
+import { useSpacingWait } from '../features/spacing/TeamSpacing';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import type { GamePack } from '../features/game/gameTypes';
@@ -35,6 +36,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
     submitBonusObservation,
     submitSimulatedLocation
   } = useGame();
+  const spacingWait = useSpacingWait();
   const stop = stopId ? locationById(pack, stopId) : null;
   const [gpsMessage, setGpsMessage] = useState('');
   const [challengeOpenError, setChallengeOpenError] = useState('');
@@ -211,7 +213,7 @@ export function StopPage({ pack }: { pack: GamePack }) {
   const otherActiveGame = otherActiveGameId ? locationById(pack, otherActiveGameId) : null;
 
   async function openChallenge() {
-    if (openingChallenge) return;
+    if (openingChallenge || spacingWait) return;
     setChallengeOpenError('');
 
     if (otherActiveGameId) {
@@ -347,11 +349,12 @@ export function StopPage({ pack }: { pack: GamePack }) {
               <button
                 className="button primary"
                 type="button"
-                disabled={openingChallenge || !finaleEligibility.eligible || Boolean(otherActiveGameId)}
+                disabled={openingChallenge || Boolean(spacingWait) || !finaleEligibility.eligible || Boolean(otherActiveGameId)}
                 onClick={() => { void openChallenge(); }}
               >
                 {openingChallenge ? 'Opdracht openen…' : 'Opdracht openen'}
               </button>
+              {spacingWait ? <p>Geef het andere team even voorsprong. <strong>{spacingWait}</strong></p> : null}
             </>
           ) : null}
           {canPlay ? (

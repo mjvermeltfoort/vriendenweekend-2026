@@ -10,6 +10,8 @@ export interface SpacingStatus {
   serverNow: string;
   schedule: SpacingSchedule | null;
   noticeId: string | null;
+  schubId?: string | null;
+  waitUntil?: string | null;
 }
 export interface DashboardSpacing extends SpacingSchedule {
   teamId: string;

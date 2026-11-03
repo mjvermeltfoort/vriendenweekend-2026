@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGame } from '../../app/gameContext';
 import { useAudio } from '../audio/audioContext';
@@ -10,6 +10,12 @@ import { spacingSchub } from './suggestion';
 
 export const SPACING_TRANSCRIPT = 'Ho even, speurneuzen! Jullie zitten een ander team op de hielen. Geef ze wat voorsprong. Zelfs een Moerasdraak houdt van persoonlijke ruimte! Misschien ligt er nog een verborgen schub in de buurt. Ik zou even op de kaart kijken!';
 const clip = `${import.meta.env.BASE_URL}audio/henk/spacing.mp3`;
+
+const SpacingWait = createContext<string | null>(null);
+
+export function useSpacingWait() {
+  return useContext(SpacingWait);
+}
 
 export function TeamSpacing({ children }: { children: ReactNode }) {
   const { activeTeam, teamSessionId, progress, teamLocation, syncNow } = useGame();
@@ -45,7 +51,11 @@ export function TeamSpacing({ children }: { children: ReactNode }) {
           offset.current = Date.parse(next.serverNow) - Date.now();
           setStatus(next);
         }
-      } catch { if (!stopped && generation.current === id) setStatus(null); } // Advisory failures must never stall play.
+      } catch {
+        if (!stopped && generation.current === id) {
+          setStatus(previous => previous?.waitUntil ? { ...previous, noticeId: null, schedule: null } : null);
+        }
+      }
       finally { pending = false; }
     }
     void poll();
@@ -68,7 +78,10 @@ export function TeamSpacing({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, [location.pathname]);
 
-  const visible = online && location.pathname === '/route' && shown && status?.noticeId === shown;
+  const wait = status?.waitUntil && Date.parse(status.waitUntil) > now && !progress?.finalized
+    ? countdown(status.waitUntil, now)
+    : null;
+  const visible = online && location.pathname === '/route' && shown && status?.noticeId === shown && status.schubId !== null;
   useEffect(() => {
     if (!visible) return;
     const controller = latest.current;
@@ -85,7 +98,7 @@ export function TeamSpacing({ children }: { children: ReactNode }) {
   const gate = online && schedule?.enabled && !schedule.departedAt && !progress?.finalized
     && /^\/(route|stop\/|challenge\/)/.test(location.pathname);
   const waiting = schedule ? Date.parse(schedule.scheduledAt) > now : false;
-  const schub = progress ? spacingSchub(gamePack, progress, teamLocation && teamLocation.isCurrent ? teamLocation : null) : null;
+  const schub = status?.schubId === undefined && progress ? spacingSchub(gamePack, progress, teamLocation && teamLocation.isCurrent ? teamLocation : null) : gamePack.bonusLocations?.find(bonus => bonus.id === status?.schubId);
 
   if (gate) return <PageShell title="Jullie vertrek" navigation={false}>
     <section className="card stack center">
@@ -108,9 +121,13 @@ export function TeamSpacing({ children }: { children: ReactNode }) {
     </section>
   </PageShell>;
 
-  return <>
+  return <SpacingWait.Provider value={wait}>
     {children}
-    {visible ? <aside className="spacing-henk card stack" role="region" aria-label="Bericht van Hint Henk" aria-live="polite">
+    {wait && location.pathname === '/route' ? <aside className="spacing-henk card stack" aria-label="Wachttijd van Hint Henk">
+      <div className="spacing-henk__heading"><HenkFlame speaking={false} /><h2>Even ruimte geven!</h2></div>
+      <p>Geef het andere team even voorsprong.</p>
+      <strong className="spacing-countdown" aria-label="Tijd tot opdracht vrij is">{wait}</strong>
+    </aside> : visible ? <aside className="spacing-henk card stack" role="region" aria-label="Bericht van Hint Henk" aria-live="polite">
       <button className="spacing-henk__close" aria-label="Bericht van Henk sluiten" onClick={() => void dismiss()}>×</button>
       <div className="spacing-henk__heading"><HenkFlame speaking={audio.narration.source === clip && audio.narration.playing} /><h2>Even ruimte geven!</h2></div>
       <p>{SPACING_TRANSCRIPT}</p>
@@ -121,5 +138,5 @@ export function TeamSpacing({ children }: { children: ReactNode }) {
       <button className="button ghost" onClick={() => void dismiss()}>Begrepen, Henk</button>
       <p className="small">Dit advies kost geen punten. Jullie kunnen verder spelen.</p>
     </aside> : null}
-  </>;
+  </SpacingWait.Provider>;
 }
