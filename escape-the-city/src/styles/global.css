@@ -2421,3 +2421,31 @@ details {
 .stop-route-link { display: flex; min-height: 48px; align-items: center; justify-content: center; text-align: center; font-size: 0.875rem; text-underline-offset: 3px; }
 
 .fallback-route-map__connector { stroke: #35d4c7; stroke-width: 4; stroke-dasharray: 2 2; }
+
+
+.game-score {
+  position: relative;
+}
+
+.game-score summary {
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+  padding: .35rem .45rem;
+  font-size: .8rem;
+}
+
+.game-score__breakdown {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  right: 0;
+  display: grid;
+  gap: .3rem;
+  width: max-content;
+  padding: .65rem;
+  border: 1px solid #526253;
+  border-radius: .5rem;
+  background: #101c15;
+  color: #fff;
+}

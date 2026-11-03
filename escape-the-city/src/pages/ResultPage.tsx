@@ -33,7 +33,9 @@ export function ResultPage({ pack }: { pack: GamePack }) {
   if (!progress || !activeTeam || !canViewResult(progress, pack)) {
     return <Navigate to="/route" replace />;
   }
-  const score = result?.score ?? progress?.totalScore ?? 0;
+  const routeScore = result?.score ?? progress.totalScore;
+  const startingScore = activeTeam.startingScore ?? 0;
+  const score = startingScore + routeScore;
   const resultDate = new Date(result?.createdAt ?? Date.now()).toLocaleDateString('nl-NL');
   const hints = result?.hintsUsed ?? progress?.totalHintsUsed ?? 0;
   const wrongAttempts = result?.wrongAttempts ?? progress?.wrongAttempts ?? 0;
@@ -126,7 +128,7 @@ export function ResultPage({ pack }: { pack: GamePack }) {
       <section className="result-stats" aria-label="Spelresultaten">
         <div className="result-stat"><GameIcon name="time" /><span>Tijd</span><strong>{result?.durationMinutes ?? 0} min</strong></div>
         <div className="result-stat"><GameIcon name="lightbulb" /><span>Hints</span><strong>{hints}</strong></div>
-        <div className="result-stat"><GameIcon name="star" /><span>Score</span><strong>{score}</strong></div>
+        <div className="result-stat"><GameIcon name="star" /><span>Totaal</span><strong>{score}</strong><small>Start {startingScore} · Route {routeScore}</small></div>
         <div className="result-stat"><GameIcon name="scroll" /><span>Fouten</span><strong>{wrongAttempts}</strong></div>
         <div className="result-stat"><span aria-hidden="true">◈</span><span>Schubben</span><strong>{completedBonuses.length} / {bonuses.length}</strong></div>
       </section>

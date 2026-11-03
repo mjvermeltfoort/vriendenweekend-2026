@@ -113,6 +113,7 @@ function TeamRow({ team, selected, now, onSelect }: {
       <p>Stop {team.currentStopIndex ?? '–'} van {gamePack.stops.length} · {stop?.locationName ?? 'Nog niet gestart'}</p>
       <p>Opdracht: {team.activeGame ? stopById.get(team.activeGame.gameId)?.title ?? team.activeGame.gameId : 'geen actieve opdracht'}</p>
       <div className="team-row__meta">
+        <span>{(team.startingScore ?? 0) + team.score} punten</span>
         <span>{participants.length} {participants.length === 1 ? 'deelnemer' : 'deelnemers'}</span>
         <span>Laatst actief {ageLabel(team.lastSeenAt ?? team.updatedAt, now)}</span>
         <span>
@@ -135,7 +136,7 @@ export function DashboardDialog({ state, busy, error, onClose, onSubmit }: {
   if (!state) return null;
   const copy = {
     create: ['Nieuw team', 'Maak een team met een automatisch gegenereerde of zelfgekozen code.'],
-    rename: ['Teamnaam wijzigen', `Wijzig de naam van ${state.kind === 'rename' ? state.team.name : ''}.`],
+    rename: ['Team bewerken', `Bewerk ${state.kind === 'rename' ? state.team.name : ''}.`],
     rotate: ['Nieuwe code genereren', 'De oude code werkt hierna niet meer voor nieuwe deelnemers. Bestaande actieve deelnemers blijven verbonden.'],
     disable: ['Team uitschakelen', 'Alle actieve teamsessies worden ingetrokken. Resultaten blijven bewaard.'],
     reset: ['Voortgang resetten', state.kind === 'reset' ? `Weet je zeker dat je de volledige voortgang van ${state.team.name} wilt resetten?` : ''],
@@ -167,6 +168,22 @@ export function DashboardDialog({ state, busy, error, onClose, onSubmit }: {
         ) : null}
         {state.kind === 'rename' ? (
           <label>Teamnaam<input name="name" minLength={2} maxLength={80} required defaultValue={state.team.name} autoFocus /></label>
+        ) : null}
+        {state.kind === 'create' || state.kind === 'rename' ? (
+          <label>
+            Startscore
+            <input
+              name="startingScore"
+              type="number"
+              min={0}
+              max={2147483647}
+              step={1}
+              required
+              defaultValue={state.kind === 'rename' ? state.team.startingScore ?? 0 : 0}
+              disabled={state.kind === 'rename' && state.team.startingScoreLocked}
+            />
+            {state.kind === 'rename' && state.team.startingScoreLocked ? <small>Vastgezet bij vertrek.</small> : null}
+          </label>
         ) : null}
         {state.kind === 'release' ? (
           <label>
@@ -304,11 +321,13 @@ export function DashboardApp() {
     setBusy(true);
     setActionError('');
     try {
+      const scoreField = formData.get('startingScore');
+      const startingScore = scoreField === null ? null : Number(scoreField);
       let updated: DashboardTeam;
       if (dialog.kind === 'create') {
-        updated = await dashboardActions.createTeam(String(formData.get('name')), String(formData.get('code') ?? ''));
+        updated = await dashboardActions.createTeam(String(formData.get('name')), String(formData.get('code') ?? ''), startingScore ?? 0);
       } else if (dialog.kind === 'rename') {
-        updated = await dashboardActions.renameTeam(dialog.team.id, String(formData.get('name')));
+        updated = await dashboardActions.renameTeam(dialog.team.id, String(formData.get('name')), startingScore);
       } else if (dialog.kind === 'rotate') {
         updated = await dashboardActions.rotateCode(dialog.team.id);
       } else if (dialog.kind === 'disable') {
@@ -425,7 +444,7 @@ export function DashboardApp() {
                   <p>Code <strong>{selectedTeam.code}</strong> · {statusLabel(selectedTeam, now)}</p>
                 </div>
                 <div className="detail-actions">
-                  <button type="button" onClick={() => setDialog({ kind: 'rename', team: selectedTeam })}>Naam wijzigen</button>
+                  <button type="button" onClick={() => setDialog({ kind: 'rename', team: selectedTeam })}>Team bewerken</button>
                   <button type="button" onClick={() => setDialog({ kind: 'rotate', team: selectedTeam })}>Nieuwe code</button>
                   {selectedTeam.status === 'disabled'
                     ? <button type="button" onClick={() => {
@@ -459,7 +478,7 @@ export function DashboardApp() {
                   <h3>Voortgang</h3>
                   <p>Stop {selectedTeam.currentStopIndex ?? '–'} van {gamePack.stops.length}</p>
                   <p>{selectedStop?.title ?? 'Nog niet gestart'} · {selectedStop?.locationName ?? 'Geen stop'}</p>
-                  <p>Score {selectedTeam.score} · versie {selectedTeam.progressVersion}</p>
+                  <p>Start {selectedTeam.startingScore ?? 0} · Route {selectedTeam.score} · Totaal {(selectedTeam.startingScore ?? 0) + selectedTeam.score}</p>
                   <ol className="progress-list">
                     {gamePack.stops.map((stop) => {
                       const progress = selectedTeam.stopProgress.find((item) => item.stopId === stop.id);

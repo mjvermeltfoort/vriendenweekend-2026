@@ -40,6 +40,8 @@ export interface DashboardTeam {
   code: string;
   status: 'active' | 'completed' | 'disabled';
   score: number;
+  startingScore?: number;
+  startingScoreLocked?: boolean;
   currentStopIndex: number | null;
   currentStopId: string | null;
   currentStepId: string | null;
@@ -104,6 +106,8 @@ export function normalizeDashboardTeam(input: unknown): DashboardTeam {
     code,
     status: status as DashboardTeam['status'],
     score: numberValue(item.score),
+    startingScore: numberValue(item.startingScore),
+    startingScoreLocked: item.startingScoreLocked === true,
     currentStopIndex: typeof item.currentStopIndex === 'number' ? item.currentStopIndex : null,
     currentStopId: typeof item.currentStopId === 'string' ? item.currentStopId : null,
     currentStepId: typeof item.currentStepId === 'string' ? item.currentStepId : null,

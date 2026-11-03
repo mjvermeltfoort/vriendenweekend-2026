@@ -1,7 +1,9 @@
 select set_config('request.jwt.claim.sub','20000000-0000-0000-0000-000000000001',false);
 do $$ declare a jsonb; b jsonb; joined jsonb; sid uuid; rival_sid uuid; result jsonb; first_notice text;
 begin
-  a:=public.dashboard_create_team('Spacing integration A','ABCDEF','50000000-0000-0000-0000-000000000001');
+  a:=public.dashboard_create_team_with_score('Spacing integration A','ABCDEF','50000000-0000-0000-0000-000000000001',251);
+  if (a->>'startingScore')::int is distinct from 251 then raise exception 'starting score not returned after creation'; end if;
+  a:=public.dashboard_update_team_with_score((a->>'id')::uuid,'Spacing integration A','50000000-0000-0000-0000-000000000001',252);
   b:=public.dashboard_create_team('Spacing integration B','GHJKLM','50000000-0000-0000-0000-000000000001');
   perform public.dashboard_plan_spacing('Integration',array[(a->>'id')::uuid,(b->>'id')::uuid],now()+interval '1 hour',5,100,'50000000-0000-0000-0000-000000000001');
   joined:=public.join_team_by_code('ABCDEF','40000000-0000-0000-0000-000000000001','Test browser');
@@ -14,6 +16,14 @@ begin
   perform public.dashboard_update_spacing((a->>'id')::uuid,now()-interval '1 minute',null,'50000000-0000-0000-0000-000000000001');
   perform public.get_team_spacing(sid,true);
   result:=public.get_team_state(sid);
+  if (result->'state'->'team'->>'startingScore')::int is distinct from 252
+    or (result->'state'->'progress'->>'totalScore')::int is distinct from 0 then
+    raise exception 'team state did not separate start and route scores';
+  end if;
+  begin
+    perform public.dashboard_update_team_with_score((a->>'id')::uuid,'Spacing integration A','50000000-0000-0000-0000-000000000001',300);
+    raise exception 'departed team starting score changed';
+  exception when others then if sqlerrm <> 'STARTING_SCORE_LOCKED' then raise; end if; end;
   if result->'state'->'team'->>'startedAt' is null then raise exception 'actual departure missing from snapshot'; end if;
   joined:=public.join_team_by_code('GHJKLM','40000000-0000-0000-0000-000000000002','Rival browser');
   rival_sid:=(joined->'session'->>'id')::uuid;
@@ -53,6 +63,9 @@ begin
     raise exception 'new encounter did not cause a second timeout';
   end if;
   perform public.dashboard_reset_team_progress((a->>'id')::uuid,'50000000-0000-0000-0000-000000000001');
+  if (public.get_team_state(sid)->'state'->'team'->>'startingScore')::int is distinct from 252 then
+    raise exception 'reset lost starting score';
+  end if;
   if public.get_team_spacing(sid)->'schedule'->>'departedAt' is not null then raise exception 'reset retained departure'; end if;
   if has_table_privilege('authenticated','city_game.spacing_events','select')
     or has_table_privilege('authenticated','city_game.spacing_members','select')
