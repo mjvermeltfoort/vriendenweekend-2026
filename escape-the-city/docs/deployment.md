@@ -18,3 +18,7 @@ Voer `supabase/migrations/042_wrong_answer_cooldown.sql` uit in de Supabase SQL-
 Een fout antwoord verwerkt de bestaande puntenformule meteen en legt een gedeelde deadline van 60 seconden vast. Hints en kaart blijven beschikbaar. Voltooien vervangt de tijdelijke negatieve scoreboeking door de uiteindelijke opdrachtscore, zodat er geen dubbele aftrek ontstaat. De totale score kan vóór de eerste voltooide opdracht negatief zijn. Bonusopdrachten behouden hun bestaande factoren en scorevloer; de melding toont de werkelijke aftrek, ook als die nul is.
 
 CI voert de migratie en regressies uit op een geïsoleerde PostgreSQL 16-database, inclusief twee gelijktijdige teaminzendingen. De SQL-fixture in `supabase/tests/` is uitsluitend voor die lege testdatabase en mag niet op de spelomgeving worden uitgevoerd.
+
+## Versie 0.1.60
+
+Voer `supabase/migrations/046_team_starting_score.sql` uit na migratie 045 en vóór de frontenddeploy. Bestaande en nieuwe teams beginnen standaard op 0. Vul de gewenste startscore per team in via **Team bewerken** voordat het team vertrekt. Voortgang resetten bewaart de startscore.

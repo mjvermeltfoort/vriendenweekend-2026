@@ -113,7 +113,9 @@ export function AudioControl({ className = '' }: { className?: string }) {
 
 export function GameTopBar({ title, backTo }: { title: string; backTo?: string }) {
   const navigate = useNavigate();
-  const { syncStatus, syncMessage } = useGame();
+  const { activeTeam, progress, syncStatus, syncMessage } = useGame();
+  const startingScore = activeTeam?.startingScore ?? 0;
+  const routeScore = progress?.totalScore ?? 0;
   return (
     <header className="game-topbar">
       {backTo ? (
@@ -123,6 +125,16 @@ export function GameTopBar({ title, backTo }: { title: string; backTo?: string }
       ) : <span className="topbar-spacer" />}
       <span className="game-topbar__title">{title}</span>
       <div className="game-topbar__actions">
+        {activeTeam && progress ? (
+          <details className="game-score">
+            <summary>★ {(startingScore + routeScore).toLocaleString('nl-NL')} p.</summary>
+            <div className="game-score__breakdown">
+              <span>Startpunten {startingScore.toLocaleString('nl-NL')}</span>
+              <span>Routepunten {routeScore.toLocaleString('nl-NL')}</span>
+              <strong>Totaal {(startingScore + routeScore).toLocaleString('nl-NL')}</strong>
+            </div>
+          </details>
+        ) : null}
         <SyncStatus status={syncStatus} message={syncMessage} compact />
         <AudioControl />
       </div>

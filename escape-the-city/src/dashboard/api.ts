@@ -56,13 +56,15 @@ async function deleteTeam(teamId: string): Promise<DashboardTeam | null> {
 }
 
 export const dashboardActions = {
-  createTeam: (name: string, code?: string) => mutate('dashboard_create_team', {
+  createTeam: (name: string, code?: string, startingScore = 0) => mutate('dashboard_create_team_with_score', {
     p_name: name,
-    p_join_code: code?.trim() || null
+    p_join_code: code?.trim() || null,
+    p_starting_score: startingScore
   }),
-  renameTeam: (teamId: string, name: string) => mutate('dashboard_update_team_name', {
+  renameTeam: (teamId: string, name: string, startingScore: number | null = null) => mutate('dashboard_update_team_with_score', {
     p_team_id: teamId,
-    p_name: name
+    p_name: name,
+    p_starting_score: startingScore
   }),
   rotateCode: (teamId: string) => mutate('dashboard_rotate_team_code', { p_team_id: teamId }),
   setStatus: (teamId: string, status: 'active' | 'disabled') => mutate(
