@@ -15,6 +15,20 @@ begin
   perform public.get_team_spacing(sid,true);
   result:=public.get_team_state(sid);
   if result->'state'->'team'->>'startedAt' is null then raise exception 'actual departure missing from snapshot'; end if;
+  update city_game.spacing_members set notice_at=now(),wait_until=now()+interval '1 minute'
+    where team_id=(a->>'id')::uuid;
+  result:=public.get_team_spacing(sid);
+  if (result->>'waitUntil')::timestamptz is distinct from now()+interval '1 minute' then
+    raise exception 'team wait disappeared after proximity cleared';
+  end if;
+  result:=public.start_or_resume_team_game(sid,'drakenfontein');
+  if result->'error'->>'code' is distinct from 'TEAM_SPACING_WAIT' then
+    raise exception 'team wait did not block opening the challenge';
+  end if;
+  update city_game.spacing_members set wait_until=now()-interval '1 second' where team_id=(a->>'id')::uuid;
+  if public.get_team_spacing(sid)->>'waitUntil' is not null then raise exception 'expired wait retained'; end if;
+  result:=public.start_or_resume_team_game(sid,'drakenfontein');
+  if result->'error'->>'code' = 'TEAM_SPACING_WAIT' then raise exception 'expired wait blocked opening'; end if;
   perform public.dashboard_reset_team_progress((a->>'id')::uuid,'50000000-0000-0000-0000-000000000001');
   if public.get_team_spacing(sid)->'schedule'->>'departedAt' is not null then raise exception 'reset retained departure'; end if;
   if has_table_privilege('authenticated','city_game.spacing_events','select')

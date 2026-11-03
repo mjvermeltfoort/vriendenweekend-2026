@@ -12,6 +12,7 @@ export type TeamSyncErrorCode =
   | 'SESSION_NOT_FOUND'
   | 'VERSION_CONFLICT'
   | 'START_NOT_RELEASED'
+  | 'TEAM_SPACING_WAIT'
   | 'ANSWER_COOLDOWN'
   | 'ACTIVE_GAME_EXISTS'
   | 'GAME_NOT_AVAILABLE'
@@ -208,6 +209,7 @@ const errorMessages: Record<Exclude<TeamSyncErrorCode, 'UNKNOWN'>, string> = {
   SESSION_NOT_FOUND: 'Deze teamsessie is niet meer beschikbaar. Voer de teamcode opnieuw in.',
   VERSION_CONFLICT: 'De teamvoortgang is op een ander toestel bijgewerkt. De nieuwste stand wordt geladen.',
   START_NOT_RELEASED: 'Jullie vertrekmoment is nog niet aangebroken.',
+  TEAM_SPACING_WAIT: 'Geef het andere team even voorsprong. Probeer het na de wachttijd opnieuw.',
   ANSWER_COOLDOWN: 'Jullie team heeft nog bedenktijd. Wacht tot de afteller afgelopen is.',
   ACTIVE_GAME_EXISTS: 'Jullie team is al bezig met een andere opdracht. Rond die opdracht eerst af.',
   GAME_NOT_AVAILABLE: 'Deze opdracht is nu nog niet beschikbaar.',
